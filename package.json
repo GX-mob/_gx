@@ -1,0 +1,24 @@
+{
+  "name": "gx-rideshare",
+  "version": "0.0.0",
+  "description": "An awesome Open-Source project for a ride sharing platform that wants equally distributes net income to social non-profit organizations.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GX-mob/gx.git"
+  },
+  "keywords": [
+    "rideshare"
+  ],
+  "author": "Fernando",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/GX-mob/gx/issues"
+  },
+  "homepage": "https://github.com/GX-mob/gx#readme",
+  "devDependencies": {}
+}

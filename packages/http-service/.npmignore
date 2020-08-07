@@ -1,0 +1,4 @@
+.env.example
+.eslintrc.json
+jest.*
+tsconfig.json
