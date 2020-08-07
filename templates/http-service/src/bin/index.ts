@@ -2,20 +2,26 @@ import * as sourceMapSupport from "source-map-support";
 sourceMapSupport.install();
 
 import "reflect-metadata";
-import { MongoMemoryServer } from "mongodb-memory-server";
-
 import { bootstrap } from "@gx-mob/http-service";
-import IORedisMock from "ioredis-mock";
 import { resolve } from "path";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 export const start = async () => {
   try {
-    const mongoServer = new MongoMemoryServer();
-    process.env.MONGO_URI = await mongoServer.getUri();
+    if (!isProduction) {
+      const MongoMemoryServer = require("mongodb-memory-server"); // eslint-disable-line @typescript-eslint/no-var-requires
+      const mongoServer = new MongoMemoryServer();
+      process.env.MONGO_URI = await mongoServer.getUri();
+    }
+
+    const redis = isProduction
+      ? process.env.REDIS_URI
+      : new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 
     const instance = bootstrap({
       directory: resolve(__dirname, "../"),
-      redis: new IORedisMock(),
+      redis,
     });
 
     await instance.ready();

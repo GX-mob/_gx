@@ -1,6 +1,10 @@
 import "reflect-metadata";
 import { join } from "path";
-import fastify, { FastifyInstance, FastifyServerOptions } from "fastify";
+import fastify, {
+  FastifyInstance,
+  FastifyServerOptions,
+  FastifyRequest,
+} from "fastify";
 import fastifyMultipart from "fastify-multipart";
 import fastifyRateLimit from "fastify-rate-limit";
 import fastifyCircuitBreak from "fastify-circuit-breaker";
@@ -9,6 +13,16 @@ import { bootstrap } from "fastify-decorators";
 import { logger, DataBaseConnection } from "./helpers";
 import { getClientIp } from "request-ip";
 import { Redis } from "ioredis";
+
+// fastify augmentation
+import { User } from "./models/user";
+
+declare module "fastify" {
+  export interface FastifyRequest {
+    getRealIp(): string;
+    user?: User;
+  }
+}
 
 type ServiceSettings = {
   directory: string;

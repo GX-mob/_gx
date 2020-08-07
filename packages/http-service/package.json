@@ -1,7 +1,7 @@
 {
   "name": "@gx-mob/http-service",
-  "version": "0.0.5",
-  "description": "Service to create new accounts",
+  "version": "0.0.7",
+  "description": "Base modules of http services",
   "main": "./dist/index.js",
   "files": [
     "dist"

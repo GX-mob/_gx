@@ -1,7 +1,7 @@
 /**
  * Rides model
  *
- * @group unit/models
+ * @group unit/models/ride
  */
 import { RideModel } from "./ride";
 

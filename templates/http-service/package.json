@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "scripts": {
-    "start": "node index.js",
+    "start": "node ./dist/bin/index.js",
+    "test": "NODE_ENV=test jest --runInBand",
+    "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
+    "build": "rimraf ./dist && tsc --sourceMap -p ./ && copyfiles -u 1 \"./src/**/*.css\" ./dist",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' --files ./src/bin/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile-schemas": "json2ts -i ./src/schemas -o ./src/types"
   },
   "author": "",
   "license": "ISC",

@@ -1,0 +1,22 @@
+{
+  "title": "Register Body Schema",
+  "type": "object",
+  "properties": {
+    "phone": { "type": "string" },
+    "firstName": { "type": "string" },
+    "lastName": { "type": "string" },
+    "cpf": { "type": "string" },
+    "birth": { "type": "string" },
+    "terms": { "type": "boolean" }
+  },
+  "additionalProperties": false,
+  "required": [
+    "phone",
+    "code",
+    "firstName",
+    "lastName",
+    "cpf",
+    "birth",
+    "terms"
+  ]
+}

@@ -112,8 +112,18 @@ export class Handler<Model> {
   }
 }
 
-export class Data {
-  constructor(public cache: CacheService) {}
+@Service()
+export class DataService {
+  @Inject(CacheService)
+  public cache!: CacheService;
+
+  public users = this.create<User>(UserModel, {
+    namespace: "users",
+    linkingKeys: ["phones", "emails", "cpf"],
+  });
+  public sessions = this.create<Session>(SessionModel, {
+    namespace: "users",
+  });
   /**
    *
    * @param model
@@ -128,19 +138,5 @@ export class Data {
     cacheSettings: CacheSettings<Model>
   ): Handler<Model> {
     return new Handler<Model>(this.cache, model, cacheSettings);
-  }
-}
-
-@Service()
-export class DataService extends Data {
-  public users = this.create<User>(UserModel, {
-    namespace: "users",
-    linkingKeys: ["primaryEmail", "primaryPhone", "cpf"],
-  });
-  public sessions = this.create<Session>(SessionModel, {
-    namespace: "users",
-  });
-  constructor(public cache: CacheService) {
-    super(cache);
   }
 }

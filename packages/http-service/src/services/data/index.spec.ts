@@ -15,8 +15,7 @@ const mockUser = {
   firstName: "First",
   lastName: "Last",
   cpf: "123.456.789-09",
-  primaryPhone: "82988888888",
-  primaryEmail: "valid@email.com",
+  phones: ["82988888888"],
   birth: new Date("06/13/1994"),
   groups: [1],
   credential: "asd",
@@ -45,7 +44,7 @@ describe("Service: Data", () => {
 
     users = handler.create<User>(UserModel, {
       namespace: "users",
-      linkingKeys: ["primaryPhone", "primaryEmail"],
+      linkingKeys: ["phones"],
     });
 
     mongoServer = new MongoMemoryServer();
@@ -102,10 +101,10 @@ describe("Service: Data", () => {
   });
 
   it("get by a linking key", async () => {
-    const user = await users.get({ primaryEmail: mockUser.primaryEmail });
+    const user = await users.get({ phones: mockUser.phones });
 
     expect(user instanceof UserModel).toBeTruthy();
-    expect(user.primaryPhone).toBe(mockUser.primaryPhone);
+    expect(user.firstName).toBe(mockUser.firstName);
     expect(user.cpf).toBe(mockUser.cpf);
   });
 

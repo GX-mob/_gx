@@ -1,0 +1,10 @@
+{
+  "title": "Phone Check Verification Body Schema",
+  "type": "object",
+  "properties": {
+    "phone": { "type": "string" },
+    "code": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "required": ["phone", "code"]
+}

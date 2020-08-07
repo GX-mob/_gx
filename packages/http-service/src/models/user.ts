@@ -11,10 +11,8 @@ export interface User {
   firstName: string;
   lastName: string;
   cpf: string;
-  primaryPhone: string;
-  primaryEmail: string;
-  phones?: Types.Array<string>;
-  emails?: Types.Array<string>;
+  phones: string[];
+  emails?: string[];
   createdAt?: Date;
   updatedAt?: Date | null;
   birth: Date;
@@ -33,34 +31,12 @@ export const UserSchema: Schema = new Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    primaryPhone: {
-      type: String,
-      require: true,
-      validate: {
-        /**
-         * Validate the mobile phone
-         */
-        validator: (value: string) => isValidMobilePhone(value),
-        message: (props) => `${props.value} isn't a valid mobile phone`,
-      },
-    },
-    primaryEmail: {
-      type: String,
-      required: true,
-      validate: {
-        /**
-         * Validate the email
-         */
-        validator: (value: string) => isValidEmail(value),
-        message: (props) => `${props.value} isn't a valid email`,
-      },
-    },
     cpf: {
       type: String,
       required: true,
       unique: true,
       validate: {
-        validator(v) {
+        validator(v: string) {
           return isValidCPF(v);
         },
         message(props) {
@@ -75,10 +51,11 @@ export const UserSchema: Schema = new Schema(
         /**
          * Validate all mobile phone numbers in the list
          */
-        validator: (v) =>
+        validator: (v: string[]) =>
           v.filter((phone) => isValidMobilePhone(phone)).length === v.length,
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
+      required: true,
     },
     emails: {
       type: Array,
@@ -87,7 +64,7 @@ export const UserSchema: Schema = new Schema(
         /**
          * Validate all emails in the list
          */
-        validator: (v) =>
+        validator: (v: string[]) =>
           v.filter((email) => isValidEmail(email)).length === v.length,
         message: (props) => `${props.value} has an invalid email`,
       },
@@ -105,7 +82,10 @@ export const UserSchema: Schema = new Schema(
 export async function preSave() {
   this.createdAt = new Date();
   this.groups = [1];
-  this.credential = await bcrypt.hash(this.credential, 10);
+
+  if (this.credential) {
+    this.credential = await bcrypt.hash(this.credential, 10);
+  }
 }
 
 UserSchema.pre("save", preSave);
