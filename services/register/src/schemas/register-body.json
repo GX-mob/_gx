@@ -2,6 +2,7 @@
   "title": "Register Body Schema",
   "type": "object",
   "properties": {
+    "code": { "type": "string" },
     "phone": { "type": "string" },
     "firstName": { "type": "string" },
     "lastName": { "type": "string" },

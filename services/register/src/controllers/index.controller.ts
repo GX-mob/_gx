@@ -42,6 +42,8 @@ import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-bod
 
 @Controller("/")
 export default class PhoneController {
+  private managedErrors = ["UnprocessableEntityError", "UnauthorizedError"];
+
   @Inject(FastifyInstanceToken)
   private instance!: FastifyInstance;
 
@@ -76,11 +78,16 @@ export default class PhoneController {
     const { phone } = request.body;
 
     if (process.env.NODE_ENV === "development") {
+      if (phone === "82988888888") {
+        throw new httpErrors.UnprocessableEntity("phone-already-registred");
+      }
+
       return { ok: true };
     }
 
-    const previousRequest = await this.cache.get("verifications", phone);
+    const previousRequest = await this.getCache(phone);
 
+    // Prevent resend before expiration
     if (previousRequest && previousRequest.iat + 1000 * 60 < Date.now()) {
       await this.requestVerification(phone);
       return { ok: true };
@@ -100,7 +107,7 @@ export default class PhoneController {
 
   async requestVerification(phone: string) {
     await this.verify.request(phone);
-    await this.cache.set("verifications", phone, { iat: Date.now() });
+    await this.setCache(phone, { iat: Date.now() });
   }
 
   @POST({
@@ -120,16 +127,22 @@ export default class PhoneController {
     const { phone, code } = request.body;
 
     if (process.env.NODE_ENV === "development") {
-      await this.cache.set("verifications", phone, {
-        validated: "000000" === code,
-      });
-      return { ok: "000000" === code };
+      if ("000000" === code) {
+        await this.setCache(phone, {
+          code: "000000",
+          validated: true,
+        });
+
+        return { ok: true };
+      }
+
+      return { ok: false };
     }
 
     const valid = await this.verify.verify(phone, code);
 
     if (valid) {
-      await this.cache.set("verifications", phone, { validated: true });
+      await this.setCache(phone, { code, validated: true });
       return { ok: true };
     }
 
@@ -150,6 +163,12 @@ export default class PhoneController {
                 id: { type: "string" },
               },
             },
+            session: {
+              type: "object",
+              properties: {
+                token: { type: "string" },
+              },
+            },
           },
         },
       },
@@ -158,7 +177,15 @@ export default class PhoneController {
   async finishHandler(
     request: FastifyRequest<{ Body: IRegisterBodySchema }>
   ): Promise<any> {
-    const { phone, firstName, lastName, cpf, birth, terms } = request.body;
+    const {
+      code,
+      phone,
+      firstName,
+      lastName,
+      cpf,
+      birth,
+      terms,
+    } = request.body;
 
     /**
      * Terms acception
@@ -170,10 +197,10 @@ export default class PhoneController {
     /**
      * Check number verification
      */
-    const verification = await this.cache.get("verifications", phone);
+    const verification = await this.getCache(phone);
 
-    if (!verification.validated) {
-      throw new httpErrors.Unauthorized("phone-not-verified");
+    if (!verification?.validated || verification?.code !== code) {
+      throw new httpErrors.Unauthorized("phone-verification-failed");
     }
 
     /**
@@ -223,8 +250,19 @@ export default class PhoneController {
    */
   @ErrorHandler()
   errorHandler(error: Error, request: FastifyRequest, reply: FastifyReply) {
+    if (this.managedErrors.includes(error.constructor.name)) {
+      return reply.send(error);
+    }
+
     this.instance.log.error(error);
 
     reply.send(httpErrors(500));
+  }
+
+  private setCache(key: string, value: any) {
+    return this.cache.set("registryVerifications", key, value);
+  }
+  private getCache(key: string) {
+    return this.cache.get("registryVerifications", key);
   }
 }

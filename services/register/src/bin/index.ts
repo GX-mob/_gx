@@ -18,12 +18,16 @@
 
 import * as sourceMapSupport from "source-map-support";
 sourceMapSupport.install();
+import { resolve } from "path";
 
 import "reflect-metadata";
 import { bootstrap } from "@gx-mob/http-service";
-import { resolve } from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
+
+if (!isProduction) {
+  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
+}
 
 export const start = async () => {
   try {

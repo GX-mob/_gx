@@ -6,11 +6,11 @@
  */
 
 export interface RegisterBodySchema {
+  code: string;
   phone: string;
   firstName: string;
   lastName: string;
   cpf: string;
   birth: string;
   terms: boolean;
-  credential?: string;
 }
