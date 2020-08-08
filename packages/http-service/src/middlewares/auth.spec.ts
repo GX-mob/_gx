@@ -1,7 +1,7 @@
 /**
  * Authentication/Authorization middleware
  *
- * @group unit/middlewares
+ * @group unit/middlewares/auth
  */
 import { FastifyInstance } from "fastify";
 import {
@@ -68,6 +68,7 @@ describe("Middleware: Authentication/Authorization", () => {
   };
   const sessionServiceMock = {
     verify: jest.fn(),
+    hasPermission: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -99,13 +100,17 @@ describe("Middleware: Authentication/Authorization", () => {
 
   it("should deny due to not have permission", async () => {
     sessionServiceMock.verify.mockResolvedValue({
-      _id: id1,
-      uid: id2,
-      groups: [1],
-      userAgent,
-      lastIp,
-      active: true,
+      session: {
+        _id: id1,
+        user: id2,
+        groups: [1],
+        userAgent,
+        lastIp,
+        active: true,
+      },
     });
+
+    sessionServiceMock.hasPermission.mockReturnValue(false);
 
     const response = await instance.inject({
       url: "/",
@@ -122,13 +127,17 @@ describe("Middleware: Authentication/Authorization", () => {
 
   it("should authorize", async () => {
     sessionServiceMock.verify.mockResolvedValue({
-      _id: id1,
-      uid: id2,
-      groups: [2],
-      userAgent,
-      lastIp,
-      active: true,
+      session: {
+        _id: id1,
+        user: id2,
+        groups: [1],
+        userAgent,
+        lastIp,
+        active: true,
+      },
     });
+
+    sessionServiceMock.hasPermission.mockReturnValue(true);
 
     const response = await instance.inject({
       url: "/",
@@ -158,5 +167,34 @@ describe("Middleware: Authentication/Authorization", () => {
 
     expect(body).toMatchObject(internal);
     expect(fastifyInstanceMock.log.error.mock.calls.length).toBe(1);
+  });
+
+  it("should response with error due to not found/deactivated session", async () => {
+    sessionServiceMock.verify
+      .mockResolvedValue({ error: "not-found" })
+      .mockResolvedValue({ error: "deactivated" });
+
+    const notFoundResponse = await instance.inject({
+      url: "/",
+      method: "GET",
+      headers: {
+        Authorization: "Bearer XXXXXXXXXXX",
+      },
+    });
+
+    const deactivatedResponse = await instance.inject({
+      url: "/",
+      method: "GET",
+      headers: {
+        Authorization: "Bearer XXXXXXXXXXX",
+      },
+    });
+
+    const deactivatedBody = JSON.parse(deactivatedResponse.body);
+
+    expect(deactivatedBody).toMatchObject({
+      ...unauthorized,
+      message: "deactivated",
+    });
   });
 });

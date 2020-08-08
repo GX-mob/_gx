@@ -58,7 +58,7 @@ export default function instanceBootstrap(
     mask: /(\.)?(controller)\.(js|ts)$/,
   });
 
-  // Augmentations
+  // Augmentation
   instance.decorateRequest("getRealIp", "");
   instance.addHook("onRequest", (request, _reply, next) => {
     let ip: string;

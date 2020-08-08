@@ -63,7 +63,7 @@ export class SessionService {
     const { _id, groups } = user;
 
     const session = await this.data.sessions.create({
-      uid: _id,
+      user: _id,
       groups,
       userAgent: session_data.ua,
       ips: [session_data.ip],
@@ -117,11 +117,21 @@ export class SessionService {
     return tokenBody;
   }
 
-  private async checkState(session_id: Types.ObjectId, ip: string) {
+  private async checkState(
+    session_id: Types.ObjectId,
+    ip: string
+  ): Promise<{
+    error?: "deactivated" | "not-found";
+    session?: Session;
+  }> {
     const sessionData = await this.get(session_id);
 
-    if (!sessionData || !sessionData.active) {
-      throw new Error("Session deactivated");
+    if (!sessionData) {
+      return { error: "not-found" };
+    }
+
+    if (!sessionData.active) {
+      return { error: "deactivated" };
     }
 
     const session = { ...sessionData };
@@ -133,7 +143,11 @@ export class SessionService {
       handleRejectionByUnderHood(update);
     }
 
-    return session;
+    return { session };
+  }
+
+  public hasPermission(session: Session, group: number[]) {
+    return !!group.find((id) => session.groups.includes(id));
   }
 
   async get(_id: Types.ObjectId) {

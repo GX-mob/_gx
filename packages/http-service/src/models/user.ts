@@ -23,7 +23,7 @@ export interface User {
 
 export interface UserDocument extends User, Document {}
 
-interface UserModel extends UserDocument {
+export interface UserModel extends UserDocument {
   compareCredential(plain: string): Promise<boolean>;
 }
 
@@ -56,6 +56,7 @@ export const UserSchema: Schema = new Schema(
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,
+      unique: true,
     },
     emails: {
       type: Array,

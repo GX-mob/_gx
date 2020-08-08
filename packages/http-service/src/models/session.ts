@@ -1,9 +1,9 @@
 import { Document, Schema, Types, model } from "mongoose";
-import { UserDocument } from "./user";
+import { User } from "./user";
 
 export interface Session {
   _id: Types.ObjectId | any;
-  uid: UserDocument["_id"];
+  user: User;
   groups: number[];
   userAgent: string;
   ips: string[];
@@ -15,7 +15,7 @@ export interface SessionDocument extends Session, Document {}
 
 export const SessionSchema: Schema = new Schema(
   {
-    uid: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+    user: { type: Schema.Types.ObjectId, required: true, ref: "User" },
     groups: { type: Array, of: Number, required: true },
     userAgent: { type: String, required: true },
     ips: { type: Array, of: String, required: true },

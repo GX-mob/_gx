@@ -30,22 +30,20 @@ export class AuthMiddleware {
 
       const ip = request.getRealIp();
       const token = request.headers.authorization.replace("Bearer ", "");
-      const session = await this._session.verify(token, ip);
+      const { session, error } = await this._session.verify(token, ip);
 
-      if (!this._checkPermission(session.groups)) {
+      if (error) {
+        return reply.send(new httpError.Unauthorized(error));
+      }
+
+      if (!this._session.hasPermission(session, this.authSettings.groups)) {
         return reply.send(new httpError.Forbidden());
       }
 
-      request.user = await this._data.users.get({ _id: session.uid });
+      request.user = session.user;
     } catch (error) {
       this._instance.log.error(error);
       return reply.send(httpError(500));
     }
-  }
-
-  private _checkPermission(userGroups: number[]) {
-    const groups = this.authSettings.groups;
-
-    return !!groups.find((id) => userGroups.includes(id));
   }
 }

@@ -5,6 +5,7 @@
  */
 import { Types } from "mongoose";
 import { configureServiceTest } from "fastify-decorators/testing";
+import { Session } from "../../models/session";
 import { SessionService } from ".";
 import { DataService } from "../data";
 import { CacheService } from "../cache";
@@ -114,6 +115,24 @@ describe("Service: Session", () => {
     process.env = processDotEnv;
   });
 
+  it("should check permission", () => {
+    const session1 = { groups: [1] };
+    const session2 = { groups: [1, 2] };
+    const group1 = [1];
+    const group2 = [2];
+    const group3 = [2, 3];
+    const group4 = [4];
+
+    expect(service.hasPermission(session1 as Session, group1)).toBeTruthy();
+    expect(service.hasPermission(session1 as Session, group2)).toBeFalsy();
+    expect(service.hasPermission(session1 as Session, group3)).toBeFalsy();
+    expect(service.hasPermission(session1 as Session, group4)).toBeFalsy();
+    expect(service.hasPermission(session2 as Session, group1)).toBeTruthy();
+    expect(service.hasPermission(session2 as Session, group2)).toBeTruthy();
+    expect(service.hasPermission(session2 as Session, group3)).toBeTruthy();
+    expect(service.hasPermission(session2 as Session, group4)).toBeFalsy();
+  });
+
   it("should verify a token", async () => {
     cacheService.get.mockResolvedValue(null);
     cacheService.set.mockResolvedValue("OK");
@@ -134,10 +153,10 @@ describe("Service: Session", () => {
       active: true,
     });
 
-    const sessionData = await service.verify(token, ip);
+    const { session: sessionData } = await service.verify(token, ip);
 
     expect(sessionData._id instanceof Types.ObjectId).toBeTruthy();
-    expect(sessionData.uid).toBe(userId);
+    //expect(sessionData.user._id.toString()).toBe(userId.toString());
     expect(Array.isArray(sessionData.groups)).toBeTruthy();
     expect(sessionData.userAgent).toBe(ua);
     expect(sessionData.ips[0]).toBe(ip);
@@ -145,10 +164,10 @@ describe("Service: Session", () => {
 
     cacheService.get.mockResolvedValue(sessionData);
 
-    const fromCache = await service.verify(token, ip);
+    const { session: fromCache } = await service.verify(token, ip);
 
     expect(fromCache._id instanceof Types.ObjectId).toBeTruthy();
-    expect(fromCache.uid).toBe(userId);
+    //expect(fromCache.user._id.toString()).toBe(userId.toString());
     expect(Array.isArray(fromCache.groups)).toBeTruthy();
     expect(fromCache.userAgent).toBe(ua);
     expect(fromCache.ips[0]).toBe(ip);
@@ -166,15 +185,15 @@ describe("Service: Session", () => {
 
     dataService.sessions.get.mockResolvedValue(null);
 
-    await expect(service.verify(token, ip)).rejects.toThrow(
-      "Session deactivated"
-    );
+    const { error: err1 } = await service.verify(token, ip);
+
+    expect(err1).toBe("not-found");
 
     dataService.sessions.get.mockResolvedValue({ active: false });
 
-    await expect(service.verify(token, ip)).rejects.toThrow(
-      "Session deactivated"
-    );
+    const { error: err2 } = await service.verify(token, ip);
+
+    expect(err2).toBe("deactivated");
   });
 
   it("should not create a session due to not found the user", async () => {
@@ -208,7 +227,9 @@ describe("Service: Session", () => {
 
     const newIp = "127.0.0.2";
 
-    const { ips } = await service.verify(token, newIp);
+    const {
+      session: { ips },
+    } = await service.verify(token, newIp);
 
     expect(ips.includes(newIp)).toBeTruthy();
   });

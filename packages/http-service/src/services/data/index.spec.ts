@@ -6,8 +6,8 @@
 import { configureServiceTest } from "fastify-decorators/testing";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { User, UserModel } from "../../models/user";
-import { DataService, Handler } from ".";
+import { UserModel } from "../../models/user";
+import { DataService } from ".";
 import IORedisMock from "ioredis-mock";
 import { FastifyInstanceToken } from "fastify-decorators";
 
@@ -18,14 +18,19 @@ const mockUser = {
   phones: ["82988888888"],
   birth: new Date("06/13/1994"),
   groups: [1],
-  credential: "asd",
+};
+
+const mockSession = {
+  groups: [1],
+  userAgent: "test",
+  ips: ["127.0.0.1"],
 };
 
 describe("Service: Data", () => {
   let handler: DataService;
-  let users: Handler<User>;
 
   let cached;
+  let session;
   let nonCached;
   let mongoServer;
 
@@ -42,11 +47,6 @@ describe("Service: Data", () => {
       ],
     });
 
-    users = handler.create<User>(UserModel, {
-      namespace: "users",
-      linkingKeys: ["phones"],
-    });
-
     mongoServer = new MongoMemoryServer();
     const URI = await mongoServer.getUri();
 
@@ -56,7 +56,12 @@ describe("Service: Data", () => {
       useUnifiedTopology: true,
     });
 
-    nonCached = await UserModel.create({ ...mockUser, cpf: "649.688.734-92" });
+    nonCached = await UserModel.create({
+      ...mockUser,
+      phones: ["82988444444"],
+      cpf: "649.688.734-92",
+      credential: "asd",
+    });
   });
 
   afterAll((done) => {
@@ -67,13 +72,11 @@ describe("Service: Data", () => {
   });
 
   it("should create", async () => {
-    cached = await users.create(mockUser);
-
-    mockUser.credential = cached.credential;
+    cached = await handler.users.create(mockUser);
 
     expect(cached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
 
-    const persistent = await users.get({ _id: cached._id });
+    const persistent = await handler.users.get({ _id: cached._id });
     const fromCache = await handler.cache.get("users", { _id: cached._id });
 
     expect(persistent.firstName === cached.firstName);
@@ -84,16 +87,29 @@ describe("Service: Data", () => {
     });
   });
 
-  it("should get cached record", async () => {
-    const user = await users.get({ _id: cached._id });
+  it("should create and return populated", async () => {
+    session = await handler.sessions.create(
+      {
+        ...mockSession,
+        user: cached._id,
+      },
+      { cache: false }
+    );
 
-    expect(user instanceof UserModel).toBeTruthy();
+    expect(session.userAgent).toBe(mockSession.userAgent);
+    expect(session.user._id.toString()).toBe(cached._id.toString());
+  });
+
+  it("should get cached record", async () => {
+    const user = await handler.users.get({ _id: cached._id });
+
+    expect(user.cpf).toBe(cached.cpf);
   });
 
   it("should get non-cached record", async () => {
-    const user = await users.get({ _id: nonCached._id });
+    const user = await handler.users.get({ _id: nonCached._id });
 
-    expect(user instanceof UserModel).toBeTruthy();
+    expect(user.cpf).toBe(nonCached.cpf);
 
     const fromCache = await handler.cache.get("users", { _id: nonCached._id });
 
@@ -101,9 +117,8 @@ describe("Service: Data", () => {
   });
 
   it("get by a linking key", async () => {
-    const user = await users.get({ phones: mockUser.phones });
+    const user = await handler.users.get({ phones: mockUser.phones });
 
-    expect(user instanceof UserModel).toBeTruthy();
     expect(user.firstName).toBe(mockUser.firstName);
     expect(user.cpf).toBe(mockUser.cpf);
   });
@@ -111,7 +126,7 @@ describe("Service: Data", () => {
   it("should update in both storages", async () => {
     const query = { _id: cached._id };
 
-    await users.update(query, { firstName: "Second" });
+    await handler.users.update(query, { firstName: "Second" });
 
     const persistent = await UserModel.findOne(query);
     const fromCache = await handler.cache.get("users", query);
@@ -120,13 +135,36 @@ describe("Service: Data", () => {
     expect(fromCache.firstName === "Second").toBeTruthy();
   });
 
+  it("should do auto populate", async () => {
+    const sessionPopulated = await handler.sessions.get({ _id: session._id });
+
+    expect(sessionPopulated.user._id.toString()).toBe(cached._id.toString());
+  });
+
   it("should remove in both storages", async () => {
     const query = { _id: cached._id };
 
-    await users.remove(query);
+    await handler.users.remove(query);
 
-    const user = await users.get(query);
+    const user = await handler.users.get(query);
 
     expect(user).toBe(null);
+  });
+
+  it("check empty value of linking key variable", () => {
+    const array = ["foo"];
+    const object = { foo: "bar" };
+    const string = "foo";
+
+    const emptyArray = [];
+    const emptyObject = {};
+    const emptyString = "";
+
+    expect(handler.users.isEmpty(array)).toBeFalsy();
+    expect(handler.users.isEmpty(object)).toBeFalsy();
+    expect(handler.users.isEmpty(string)).toBeFalsy();
+    expect(handler.users.isEmpty(emptyArray)).toBeTruthy();
+    expect(handler.users.isEmpty(emptyObject)).toBeTruthy();
+    expect(handler.users.isEmpty(emptyString)).toBeTruthy();
   });
 });

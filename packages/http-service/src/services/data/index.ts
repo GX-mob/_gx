@@ -1,32 +1,27 @@
 import { Service, Inject } from "fastify-decorators";
 import { CacheService } from "../cache";
-import mongoose from "mongoose";
+import mongoose, { DocumentQuery, Document } from "mongoose";
 import { handleRejectionByUnderHood } from "../../helpers/utils";
 
 // Standard handlers
 import { User, UserModel } from "../../models/user";
 import { Session, SessionModel } from "../../models/session";
 
-interface CacheSettings<Model> {
+interface Settings<Model> {
   namespace: string;
   linkingKeys?: Array<keyof Model>;
+  autoPopulate?: Array<keyof Model>;
 }
 
 /**
  * Abstraction to manipulate the cached and persistent data of a single record, respectively.
  */
 export class Handler<Model> {
-  private namespace: string;
-  private linkingKeys: Array<keyof Model>;
-
   constructor(
-    public cache: CacheService,
-    public model: mongoose.Model<any>,
-    cacheConfiguration: CacheSettings<Model>
-  ) {
-    this.namespace = cacheConfiguration.namespace;
-    this.linkingKeys = cacheConfiguration.linkingKeys;
-  }
+    private cache: CacheService,
+    private model: mongoose.Model<any>,
+    private settings: Settings<Model>
+  ) {}
 
   /**
    * Get a record from the cache, if it doesn't exist, get from persistent and update the cache
@@ -34,19 +29,51 @@ export class Handler<Model> {
    * @returns
    * @constructs {Model}
    */
-  async get(query: Partial<Model>): Promise<Model | null> {
-    const cache = await this.cache.get(this.namespace, query);
+  async get(
+    query: Partial<Model>,
+    populate: Array<keyof Model> | false = this.settings.autoPopulate
+  ): Promise<Model | null> {
+    const cache = await this.cache.get(this.settings.namespace, query);
 
-    if (cache) return new this.model(cache);
+    if (cache) {
+      return cache;
+    }
 
-    const persistent = await this.model.findOne(query);
+    const persistent = await this.makeQuery(query, populate);
+
     if (persistent) {
-      const setCache = this.cache.set(this.namespace, query, persistent);
+      const setCache = this.cache.set(
+        this.settings.namespace,
+        query,
+        persistent,
+        { link: this.settings.linkingKeys && this.mountLinkingKeys(persistent) }
+      );
       handleRejectionByUnderHood(setCache);
 
-      return persistent;
+      return persistent as Model;
     }
     return null;
+  }
+
+  private async makeQuery(
+    query: Partial<Model>,
+    populate: Array<keyof Model> | false
+  ) {
+    const _query = this.model.findOne(query).lean();
+
+    if (populate) {
+      this.populateObject(_query);
+    }
+
+    return _query;
+  }
+
+  private populateObject(query: DocumentQuery<any, any> | Document) {
+    for (let i = 0; i < this.settings.autoPopulate.length; i++) {
+      query.populate(this.settings.autoPopulate[i] as string);
+    }
+
+    return query;
   }
 
   /**
@@ -62,37 +89,39 @@ export class Handler<Model> {
   /**
    * Creates a item in persistent storage and cache it
    * @param data
-   * @param keys[] A list of keys to link cache data with one record
+   * @param cache Cache after created
+   * @default true
    * @returns
-   * @constructs {RecordHandler}
+   * @constructs {Model}
    */
   async create(
     data: Omit<Model, "_id">,
-    keySchema: (queryResult: Model) => any = ({ _id }: any) => ({
-      _id,
-    })
+    options = { cache: true }
   ): Promise<Model> {
-    const mongooseResult = await this.model.create(data as Model);
+    let modelResult = await this.model.create(data as Model);
 
-    const key = keySchema(mongooseResult);
+    if (this.settings.autoPopulate) {
+      modelResult = await (this.populateObject(
+        modelResult
+      ) as Document).execPopulate();
+    }
 
-    await this.setCache(key, mongooseResult._doc);
-
-    // return mongooseResult;
-    return mongooseResult;
+    if (options.cache)
+      await this.setCache({ _id: modelResult._doc._id }, modelResult._doc);
+    return modelResult;
   }
 
   async setCache(key: any, data: any): Promise<void> {
-    const saved = await this.cache.get(this.namespace, key);
+    const saved = await this.cache.get(this.settings.namespace, key);
 
     await this.cache.set(
-      this.namespace,
+      this.settings.namespace,
       key,
       {
         ...(saved || {}),
         ...data,
       },
-      { link: this.mountLinkingKeys(data) }
+      { link: this.settings.linkingKeys && this.mountLinkingKeys(data) }
     );
   }
 
@@ -104,11 +133,25 @@ export class Handler<Model> {
    */
   async remove(query: any) {
     await this.model.deleteOne(query);
-    await this.cache.del(this.namespace, query);
+    await this.cache.del(this.settings.namespace, query);
   }
 
   mountLinkingKeys(data) {
-    return this.linkingKeys.map((key) => JSON.stringify({ [key]: data[key] }));
+    return this.settings.linkingKeys
+      .filter((key) => !this.isEmpty(data[key]))
+      .map((key) => JSON.stringify({ [key]: data[key] }));
+  }
+
+  isEmpty(value) {
+    if (Array.isArray(value)) {
+      return value.length === 0;
+    }
+
+    if (value instanceof Object) {
+      return Object.keys(value).length === 0;
+    }
+
+    return !value;
   }
 }
 
@@ -122,21 +165,23 @@ export class DataService {
     linkingKeys: ["phones", "emails", "cpf"],
   });
   public sessions = this.create<Session>(SessionModel, {
-    namespace: "users",
+    namespace: "sessions",
+    autoPopulate: ["user"],
   });
   /**
    *
    * @param model
-   * @param cacheSettings
-   * @param cacheSettings.namespace Cache namespace
-   * @param cacheSettings.linkingKeys Cache linking keys
+   * @param settings
+   * @param settings.namespace Cache namespace
+   * @param settings.linkingKeys Cache linking keys
+   * @param settings.autoPopulate Model auto populate
    * @returns
    * @constructs {Handler}
    */
   create<Model>(
     model: mongoose.Model<any>,
-    cacheSettings: CacheSettings<Model>
+    settings: Settings<Model>
   ): Handler<Model> {
-    return new Handler<Model>(this.cache, model, cacheSettings);
+    return new Handler<Model>(this.cache, model, settings);
   }
 }
