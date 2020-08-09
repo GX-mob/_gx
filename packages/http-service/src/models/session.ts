@@ -19,8 +19,8 @@ export const SessionSchema: Schema = new Schema(
     groups: { type: Array, of: Number, required: true },
     userAgent: { type: String, required: true },
     ips: { type: Array, of: String, required: true },
-    createdAt: { type: Date },
-    active: { type: Boolean },
+    createdAt: { type: Date, default: Date.now },
+    active: Boolean,
   },
   { collection: "sessions" }
 );

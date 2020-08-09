@@ -41,12 +41,6 @@ class TestController extends AuthMiddleware {
     groups: [2],
   };
 
-  @Hook("onRequest")
-  onRequestHook(request, _reply, next) {
-    request.getRealIp = () => request.ip;
-    next();
-  }
-
   @GET("/")
   async handler() {
     return authorized;

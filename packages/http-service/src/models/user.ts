@@ -11,11 +11,12 @@ export interface User {
   firstName: string;
   lastName: string;
   cpf: string;
-  phones: string[];
+  phones: string | string[];
+  birth: Date;
+  avatar?: string;
   emails?: string[];
   createdAt?: Date;
   updatedAt?: Date | null;
-  birth: Date;
   groups?: number[];
   credential?: string;
   ["2fa"]?: string;
@@ -70,20 +71,18 @@ export const UserSchema: Schema = new Schema(
         message: (props) => `${props.value} has an invalid email`,
       },
     },
-    createdAt: { type: Date },
-    updatedAt: { type: Date },
+    avatar: String,
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: Date,
     birth: { type: Date, required: true },
-    groups: { type: Array, of: Number },
-    credential: { type: String },
-    ["2fa"]: { type: String },
+    groups: { type: Array, of: Number, default: [1] },
+    credential: String,
+    ["2fa"]: String,
   },
   { collection: "users" }
 );
 
 export async function preSave() {
-  this.createdAt = new Date();
-  this.groups = [1];
-
   if (this.credential) {
     this.credential = await bcrypt.hash(this.credential, 10);
   }

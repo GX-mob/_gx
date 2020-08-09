@@ -15,7 +15,7 @@ const mockUser = {
   firstName: "First",
   lastName: "Last",
   cpf: "123.456.789-09",
-  phones: ["82988888888"],
+  phones: ["82988888888", "82988444445"],
   birth: new Date("06/13/1994"),
   groups: [1],
 };
@@ -79,8 +79,8 @@ describe("Service: Data", () => {
     const persistent = await handler.users.get({ _id: cached._id });
     const fromCache = await handler.cache.get("users", { _id: cached._id });
 
-    expect(persistent.firstName === cached.firstName);
-    expect(fromCache.firstName === cached.firstName);
+    expect(persistent.firstName).toBe(cached.firstName);
+    expect(fromCache.firstName).toBe(cached.firstName);
     expect(fromCache).toMatchObject({
       ...mockUser,
       birth: mockUser.birth.toISOString(),
@@ -113,14 +113,18 @@ describe("Service: Data", () => {
 
     const fromCache = await handler.cache.get("users", { _id: nonCached._id });
 
-    expect(user.firstName === fromCache.firstName);
+    expect(user.firstName).toBe(fromCache.firstName);
   });
 
   it("get by a linking key", async () => {
     const user = await handler.users.get({ phones: mockUser.phones });
+    const user2 = await handler.users.get({ phones: mockUser.phones[0] });
 
     expect(user.firstName).toBe(mockUser.firstName);
     expect(user.cpf).toBe(mockUser.cpf);
+
+    expect(user2.firstName).toBe(mockUser.firstName);
+    expect(user2.cpf).toBe(mockUser.cpf);
   });
 
   it("should update in both storages", async () => {
@@ -131,8 +135,8 @@ describe("Service: Data", () => {
     const persistent = await UserModel.findOne(query);
     const fromCache = await handler.cache.get("users", query);
 
-    expect(persistent.firstName === "Second").toBeTruthy();
-    expect(fromCache.firstName === "Second").toBeTruthy();
+    expect(persistent.firstName).toBe("Second");
+    expect(fromCache.firstName).toBe("Second");
   });
 
   it("should do auto populate", async () => {

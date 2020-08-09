@@ -25,10 +25,14 @@ import {
 } from "fastify-decorators";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import {
+  // Services
   CacheService,
   DataService,
   ContactVerificationService,
   SessionService,
+
+  // Helpers
+  utils,
 } from "@gx-mob/http-service";
 import httpErrors from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
@@ -41,7 +45,7 @@ import { PhoneCheckVerificationBodySchema as IPhoneVerifySchema } from "../types
 import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-body";
 
 @Controller("/")
-export default class PhoneController {
+export default class StandardRegisterController {
   private managedErrors = ["UnprocessableEntityError", "UnauthorizedError"];
 
   @Inject(FastifyInstanceToken)
@@ -250,13 +254,12 @@ export default class PhoneController {
    */
   @ErrorHandler()
   errorHandler(error: Error, request: FastifyRequest, reply: FastifyReply) {
-    if (this.managedErrors.includes(error.constructor.name)) {
-      return reply.send(error);
-    }
-
-    this.instance.log.error(error);
-
-    reply.send(httpErrors(500));
+    utils.manageControllerError(
+      this.managedErrors,
+      error,
+      reply,
+      this.instance.log
+    );
   }
 
   private setCache(key: string, value: any) {

@@ -117,10 +117,7 @@ export class Handler<Model> {
     await this.cache.set(
       this.settings.namespace,
       key,
-      {
-        ...(saved || {}),
-        ...data,
-      },
+      { ...(saved || {}), ...data },
       { link: this.settings.linkingKeys && this.mountLinkingKeys(data) }
     );
   }
@@ -137,9 +134,27 @@ export class Handler<Model> {
   }
 
   mountLinkingKeys(data) {
-    return this.settings.linkingKeys
-      .filter((key) => !this.isEmpty(data[key]))
-      .map((key) => JSON.stringify({ [key]: data[key] }));
+    const clean = this.settings.linkingKeys.filter(
+      (key) => !this.isEmpty(data[key])
+    );
+
+    return clean.reduce((final, key) => {
+      const value = data[key];
+
+      /**
+       * Creates a link key to each value of array
+       * to work according to "least one"
+       * approach of mongo querying array field
+       */
+      if (Array.isArray(value)) {
+        return [
+          ...final,
+          ...value.map((value) => JSON.stringify({ [key]: value })),
+        ];
+      }
+
+      return [...final, JSON.stringify({ [key]: value })];
+    }, []);
   }
 
   isEmpty(value) {

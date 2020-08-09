@@ -11,7 +11,6 @@ import fastifyCircuitBreak from "fastify-circuit-breaker";
 import fastifyRedis from "fastify-redis";
 import { bootstrap } from "fastify-decorators";
 import { logger, DataBaseConnection } from "./helpers";
-import { getClientIp } from "request-ip";
 import { Redis } from "ioredis";
 
 // fastify augmentation
@@ -56,14 +55,6 @@ export default function instanceBootstrap(
   instance.register(bootstrap, {
     directory: join(directory, "controllers"),
     mask: /(\.)?(controller)\.(js|ts)$/,
-  });
-
-  // Augmentation
-  instance.decorateRequest("getRealIp", "");
-  instance.addHook("onRequest", (request, _reply, next) => {
-    let ip: string;
-    request.getRealIp = () => ip || (ip = getClientIp(request.raw));
-    next();
   });
 
   return instance;

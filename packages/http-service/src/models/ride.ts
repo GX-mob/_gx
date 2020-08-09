@@ -85,22 +85,9 @@ export const RideSchema: Schema = new Schema(
       of: Schema.Types.ObjectId,
       required: true,
       ref: "User",
-      validate: {
-        /**
-         * Users id
-         */
-        validator: (v: Array<mongoose.Types.ObjectId>) => {
-          return (
-            v.length > 0 &&
-            v.filter((id) => mongoose.Types.ObjectId.isValid(id)).length ===
-              v.length
-          );
-        },
-        message: () => `has not a valid user ID`,
-      },
     },
     route: { type: Route, required: true },
-    options: { type: Object },
+    options: Object,
     driver: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { collection: "rides" }
