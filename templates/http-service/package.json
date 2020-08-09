@@ -1,5 +1,5 @@
 {
-  "name": "test",
+  "name": "gx-http-service-template",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,7 +10,7 @@
     "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
     "build": "rimraf ./dist && tsc --sourceMap -p ./ && copyfiles -u 1 \"./src/**/*.css\" ./dist",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' --files ./src/bin/index.ts",
-    "compile-schemas": "json2ts -i ./src/schemas -o ./src/types"
+    "compile-schemas": "rimraf ./src/types/* && json2ts -i ./src/schemas -o ./src/types"
   },
   "author": "",
   "license": "ISC",

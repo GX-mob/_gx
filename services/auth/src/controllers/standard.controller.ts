@@ -25,10 +25,13 @@ import {
 } from "fastify-decorators";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import {
+  // Services
   CacheService,
   DataService,
   ContactVerificationService,
   SessionService,
+
+  // Helpers
   utils,
 } from "@gx-mob/http-service";
 import {
@@ -37,6 +40,8 @@ import {
   isValidCPF,
 } from "@brazilian-utils/brazilian-utils";
 import httpErrors from "http-errors";
+import bcrypt from "bcrypt";
+import { getClientIp } from "request-ip";
 
 import IdentifyBodySchema from "../schemas/identify-body.json";
 import AuthenticateBodySchema from "../schemas/authenticate-body.json";
@@ -67,6 +72,18 @@ export default class StandardAuthCotnroller {
     options: {
       schema: {
         body: IdentifyBodySchema,
+        response: {
+          "200": {
+            id: { type: "string" },
+            avatar: { type: "string" },
+            next: { type: "string" },
+          },
+          "201": {
+            id: { type: "string" },
+            avatar: { type: "string" },
+            next: { type: "string" },
+          },
+        },
       },
     },
   })
@@ -75,21 +92,39 @@ export default class StandardAuthCotnroller {
     reply: FastifyReply
   ) {
     const { id } = request.body;
-    const key = this.getIdKey(id);
-
-    const user = await this.data.users.get({ [key]: id });
+    const user = await this.getUser(id);
 
     if (!user) {
       throw new httpErrors.UnprocessableEntity("not-found");
     }
 
+    if (!user.credential) {
+      await this.verify.request(user.phones[0]);
+
+      reply.code(201);
+
+      return {
+        id: user._id,
+        avatar: user.avatar,
+        next: "code",
+        last4: user.phones[0].slice(user.phones[0].length - 4),
+      };
+    }
+
     return {
       id: user._id,
       avatar: user.avatar,
+      next: "credential",
     };
   }
 
-  getIdKey(id: string): "phones" | "emails" | "cpf" {
+  private getUser(id: string) {
+    const key = this.getIdKey(id);
+
+    return this.data.users.get({ [key]: id });
+  }
+
+  private getIdKey(id: string): "phones" | "emails" | "cpf" {
     if (isValidMobilePhone(id)) {
       return "phones";
     }
@@ -116,7 +151,23 @@ export default class StandardAuthCotnroller {
   async authenticate(
     request: FastifyRequest<{ Body: IAuthenticateBodySchema }>,
     reply: FastifyReply
-  ) {}
+  ) {
+    const { id, credential } = request.body;
+    const user = await this.getUser(id);
+
+    const match = await bcrypt.compare(credential, user.credential);
+
+    if (!match) {
+      throw new httpErrors.UnprocessableEntity("wrong-credential");
+    }
+
+    const { token } = await this.sessions.create(user._id, {
+      ua: request.headers["user-agent"],
+      ip: getClientIp(request.raw),
+    });
+
+    return { token };
+  }
 
   /**
    * Prevent expose internal errors

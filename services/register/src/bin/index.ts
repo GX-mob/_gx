@@ -31,15 +31,13 @@ if (!isProduction) {
 
 export const start = async () => {
   try {
-    if (!isProduction) {
+    if (!process.env.MONGO_URI) {
       const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
 
-    const redis = isProduction
-      ? process.env.REDIS_URI
-      : new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
+    const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 
     const instance = bootstrap({
       directory: resolve(__dirname, "../"),

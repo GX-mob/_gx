@@ -16,6 +16,8 @@ const DataBaseConnection: FastifyPlugin = async (instance, _opts) => {
   await Mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
     keepAlive: true,
+    useCreateIndex: true,
+    useUnifiedTopology: true,
     autoIndex: process.env.NODE_ENV !== "production",
   });
 };

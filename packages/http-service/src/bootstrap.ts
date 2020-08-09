@@ -18,7 +18,6 @@ import { User } from "./models/user";
 
 declare module "fastify" {
   export interface FastifyRequest {
-    getRealIp(): string;
     user?: User;
   }
 }
@@ -56,6 +55,8 @@ export default function instanceBootstrap(
     directory: join(directory, "controllers"),
     mask: /(\.)?(controller)\.(js|ts)$/,
   });
+
+  instance.decorateRequest("user", "");
 
   return instance;
 }

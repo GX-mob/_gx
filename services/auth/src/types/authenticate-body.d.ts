@@ -7,4 +7,5 @@
 
 export interface AuthenticateBodySchema {
   id: string;
+  credential: string;
 }

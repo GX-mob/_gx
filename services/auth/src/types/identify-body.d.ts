@@ -7,5 +7,4 @@
 
 export interface IdentifyBodySchema {
   id: string;
-  credential: string;
 }

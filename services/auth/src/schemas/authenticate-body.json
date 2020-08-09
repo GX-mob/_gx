@@ -2,8 +2,9 @@
   "title": "Authenticate Body Schema",
   "type": "object",
   "properties": {
-    "id": { "type": "string" }
+    "id": { "type": "string" },
+    "credential": { "type": "string" }
   },
   "additionalProperties": false,
-  "required": ["id"]
+  "required": ["id", "credential"]
 }

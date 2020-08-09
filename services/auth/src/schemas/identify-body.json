@@ -2,9 +2,8 @@
   "title": "Identify Body Schema",
   "type": "object",
   "properties": {
-    "id": { "type": "string" },
-    "credential": { "type": "string" }
+    "id": { "type": "string" }
   },
   "additionalProperties": false,
-  "required": ["id", "credential"]
+  "required": ["id"]
 }
