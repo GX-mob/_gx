@@ -31,6 +31,8 @@ if (!isProduction) {
 
 export const start = async () => {
   try {
+    console.log(process.env.MONGO_URI);
+
     if (!process.env.MONGO_URI) {
       const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();

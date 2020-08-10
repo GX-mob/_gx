@@ -19,7 +19,11 @@ const { spawn } = require("child_process");
 const { join } = require("path");
 const chalk = require("chalk");
 const Prompt = require("prompt-checkbox");
-const prompt = new Prompt({
+const MongoMemoryServer = require("mongodb-memory-server").default;
+
+const wait = (ts) => new Promise((resolve) => setTimeout(resolve, ts));
+
+const applicationsPrompt = new Prompt({
   name: "Start development environment",
   message: "What you want to run?",
   radio: true,
@@ -41,6 +45,14 @@ const prompt = new Prompt({
   },
 });
 
+const mongoPrompt = new Prompt({
+  name: "MongoDB Server",
+  message:
+    "Mongo URI environment variable not found, you want start one server now?",
+  radio: true,
+  choices: ["Yes", "No"],
+});
+
 const titles = {
   services: { title: "Service", color: "cyan" },
   apps: { title: "App", color: "blue" },
@@ -48,18 +60,63 @@ const titles = {
 };
 
 (async function init() {
-  const selected = (await prompt.run({})).map((options) => options.split("/"));
+  const applications = (await applicationsPrompt.run({})).map((options) =>
+    options.split("/")
+  );
 
-  if (!selected.length) return;
+  if (!applications.length) return;
 
-  console.log(chalk.bold("Starting development environment"));
-  selected.map((run, idx) => startApplication(idx, run));
+  if (!process.env.MONGO_URI) {
+    const startMongo = (await mongoPrompt.run({}))[0] === "Yes";
+
+    if (startMongo) {
+      console.log(
+        `${chalk.bold.inverse(" MongoDB ")} ${chalk.yellow("Starting Server")}`
+      );
+      const mongoServer = new MongoMemoryServer();
+      process.env.MONGO_URI = await mongoServer.getUri();
+      console.log(
+        `${chalk.bold.inverse(" MongoDB ")} ${chalk.yellow(
+          `URI: ${chalk.bold(process.env.MONGO_URI)}`
+        )}`
+      );
+
+      console.log(
+        chalk.bold.inverse(" MongoDB "),
+        chalk.yellow(`Setted MONGO_URI enviroment variable`)
+      );
+    } else {
+      console.log(
+        `\n${chalk.bold.red.inverse(
+          "                       WARNING                       "
+        )}\n${chalk.bgRed.bold.whiteBright(
+          " Run services that interact with each other without  \n" +
+            " a central MongoDB server probably will cause        \n" +
+            " data inconsistency issues.                          "
+        )} `
+      );
+
+      await wait(3000);
+    }
+  }
+
+  console.log(`\n${chalk.bold("Starting development environment")}\n`);
+
+  applications.map((run) => start(run));
 })().catch((err) => console.log(err));
 
-async function startApplication(idx, [directory, app]) {
-  const { title, color } = titles[directory];
+const colors = ["green", "yellow", "blue", "magenta", "red", "cyan"];
+let colorIdx = 0;
+
+function start([directory, app]) {
+  const color = colors[colorIdx];
+  const { title, color: typeColor } = titles[directory];
   const appTitle = capitalize(app);
-  console.log(chalk.bold("Starting"), chalk[color].bold(title), appTitle);
+  console.log(
+    chalk.bold("Starting"),
+    chalk[typeColor].bold(title),
+    chalk[color].bold(appTitle)
+  );
 
   const child = spawn(`npm run dev`, [], {
     shell: true,
@@ -70,12 +127,13 @@ async function startApplication(idx, [directory, app]) {
 
   child.stdout.on("data", (data) => {
     console.log(
-      `[${chalk.bold(title)}] ${chalk[color].bold(appTitle)}: ${data.slice(
-        0,
-        -1
-      )}`
+      `${chalk.bold.inverse(` ${title} `)} ${chalk[color].bold(
+        appTitle
+      )}: ${data.slice(0, -1)}`
     );
   });
+
+  ++colorIdx;
 }
 
 const capitalize = (s) => {
