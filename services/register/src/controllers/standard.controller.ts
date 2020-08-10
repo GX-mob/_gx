@@ -229,6 +229,7 @@ export default class StandardRegisterController extends ControllerAugment {
   private setCache(key: string, value: any) {
     return this.cache.set("registryVerifications", key, value);
   }
+
   private getCache(key: string) {
     return this.cache.get("registryVerifications", key);
   }
