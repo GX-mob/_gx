@@ -23,35 +23,36 @@ const MongoMemoryServer = require("mongodb-memory-server").default;
 
 const wait = (ts) => new Promise((resolve) => setTimeout(resolve, ts));
 
-const applicationsPrompt = new Prompt({
-  name: "Start development environment",
-  message: "What you want to run?",
-  radio: true,
-  choices: {
-    Services: [
-      "services/register",
-      "services/auth",
-      "services/account",
-      "services/rides",
-      "services/chat",
-    ],
-    "Native apps": [
-      "apps/voyager",
-      "apps/rider",
-      "apps/enterprise",
-      "apps/business",
-    ],
-    PWA: ["pwa/voyager", "pwa/assistant"],
-  },
-});
-
-const mongoPrompt = new Prompt({
-  name: "MongoDB Server",
-  message:
-    "Mongo URI environment variable not found, you want start one server now?",
-  radio: true,
-  choices: ["Yes", "No"],
-});
+const prompts = {
+  applications: new Prompt({
+    name: "Start development environment",
+    message: "What you want to run?",
+    radio: true,
+    choices: {
+      Services: [
+        "services/register",
+        "services/auth",
+        "services/account",
+        "services/rides",
+        "services/chat",
+      ],
+      "Native apps": [
+        "apps/voyager",
+        "apps/rider",
+        "apps/enterprise",
+        "apps/business",
+      ],
+      PWA: ["pwa/voyager", "pwa/assistant"],
+    },
+  }),
+  mongo: new Prompt({
+    name: "MongoDB Server",
+    message:
+      "Mongo URI environment variable not found, you want start one server now?",
+    radio: true,
+    choices: ["Yes", "No"],
+  }),
+};
 
 const titles = {
   services: { title: "Service", color: "cyan" },
@@ -73,14 +74,14 @@ function log(title, content, formatTitle = true) {
 }
 
 (async function init() {
-  const applications = (await applicationsPrompt.run({})).map((options) =>
+  const applications = (await prompts.applications.run({})).map((options) =>
     options.split("/")
   );
 
   if (!applications.length) return;
 
   if (applications.length > 1 && !process.env.MONGO_URI) {
-    const startMongo = (await mongoPrompt.run({}))[0] === "Yes";
+    const startMongo = (await prompts.mongo.run({}))[0] === "Yes";
 
     if (startMongo) {
       log("MongoDB", chalk`{yellow Starting Server}`);

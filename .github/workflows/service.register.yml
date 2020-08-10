@@ -2,13 +2,15 @@ name: Register Service
 
 on:
   push:
-    branches: [master, production]
+    branches: [master, beta, production]
     paths:
       - "services/register/**"
 
 jobs:
   defaults:
     runs-on: ubuntu-latest
+    env:
+      working-directory: ./services/register
     steps:
       - uses: actions/checkout@v2
       - name: Node.js 12.x
@@ -17,13 +19,16 @@ jobs:
           node-version: 12.x
       - name: Build gx-http-service module
         run: npm pack ./packages/http-service
-      - run: npm ci
-      - run: npm lint
-      - run: npm test -- --coverage
-      - run: npm build
+      - name: Lint, test and build
+        run: |
+          npm ci
+          npm lint
+          npm test -- --coverage
+          npm build
+        working-directory: ${{env.working-directory}}
       - name: Initialize Google Cloud SDK
-        if: github.ref == 'refs/heads/production'
-        uses: zxyle/publish-gae-action@master
+        if: ${{ github.ref == 'refs/heads/production' || github.ref == 'refs/heads/beta' }}
+        uses: GX-mob/publish-gae-action@master
         with:
           service_account_email: ${{ secrets.GCP_SA_EMAIL }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
@@ -32,11 +37,12 @@ jobs:
           gae_config_path: "./services/register/app.yml"
 
       - name: Publish service to Google App Engine
-        if: github.ref == 'refs/heads/production'
+        if: ${{ github.ref == 'refs/heads/production' || github.ref == 'refs/heads/beta' }}
         run: |
           gcloud auth activate-service-account ${{ secrets.GCP_SA_EMAIL }} --key-file=client-secret.json
           gcloud config set project ${{ secrets.PROJECT_ID }}
           gcloud -q app deploy app.yaml --promote
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        working-directory: ${{env.working-directory}}
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v1
+#        working-directory: ${{env.working-directory}}
