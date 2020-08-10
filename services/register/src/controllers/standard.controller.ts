@@ -36,6 +36,7 @@ import {
 } from "@gx-mob/http-service";
 import httpErrors from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
+import { getClientIp } from "request-ip";
 
 import PhoneRequestBodySchema from "../schemas/phone-request-body.json";
 import PhoneVerifyBodySchema from "../schemas/phone-verify-body.json";
@@ -235,7 +236,7 @@ export default class StandardRegisterController {
     const user = await this.data.users.create(userObject);
     const session = await this.sessions.create(user._id, {
       ua: request.headers["user-agent"],
-      ip: request.getRealIp(),
+      ip: getClientIp(request.raw),
     });
 
     return {

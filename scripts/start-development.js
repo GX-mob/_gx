@@ -15,10 +15,12 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+const { spawn } = require("child_process");
+const { join } = require("path");
 const chalk = require("chalk");
 const Prompt = require("prompt-checkbox");
 const prompt = new Prompt({
-  name: "Start development",
+  name: "Start development environment",
   message: "What you want to run?",
   radio: true,
   choices: {
@@ -51,16 +53,29 @@ const titles = {
   if (!selected.length) return;
 
   console.log(chalk.bold("Starting development environment"));
-  selected.map((run) => startApplication(run));
+  selected.map((run, idx) => startApplication(idx, run));
 })().catch((err) => console.log(err));
 
-async function startApplication([type, app]) {
-  const { title, color } = titles[type];
-  console.log(
-    chalk.bold("Starting"),
-    chalk[color].bold(title),
-    capitalize(app)
-  );
+async function startApplication(idx, [directory, app]) {
+  const { title, color } = titles[directory];
+  const appTitle = capitalize(app);
+  console.log(chalk.bold("Starting"), chalk[color].bold(title), appTitle);
+
+  const child = spawn(`npm run dev`, [], {
+    shell: true,
+    cwd: join(directory, app),
+  });
+
+  process.stdin.pipe(child.stdin);
+
+  child.stdout.on("data", (data) => {
+    console.log(
+      `[${chalk.bold(title)}] ${chalk[color].bold(appTitle)}: ${data.slice(
+        0,
+        -1
+      )}`
+    );
+  });
 }
 
 const capitalize = (s) => {
