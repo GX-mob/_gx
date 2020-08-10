@@ -16,7 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
-    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.14.tgz",
+    "@gx-mob/http-service": "file:gx-mob-http-service-0.0.14.tgz",
     "fastify": "^3.1.1",
     "fastify-decorators": "^3.1.1",
     "fastify-plugin": "^2.0.3",
