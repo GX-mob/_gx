@@ -59,6 +59,19 @@ const titles = {
   pwa: { title: "PWA", color: "green" },
 };
 
+function log(title, content, formatTitle = true) {
+  if (!title && !content) {
+    return (title) => (content) =>
+      log(title, content, typeof title === "undefined");
+  }
+
+  if (!content) {
+    return console.log(title);
+  }
+
+  console.log(formatTitle ? chalk.bold.inverse(` ${title} `) : title, content);
+}
+
 (async function init() {
   const applications = (await applicationsPrompt.run({})).map((options) =>
     options.split("/")
@@ -66,25 +79,16 @@ const titles = {
 
   if (!applications.length) return;
 
-  if (!process.env.MONGO_URI) {
+  if (applications.length > 1 && !process.env.MONGO_URI) {
     const startMongo = (await mongoPrompt.run({}))[0] === "Yes";
 
     if (startMongo) {
-      console.log(
-        `${chalk.bold.inverse(" MongoDB ")} ${chalk.yellow("Starting Server")}`
-      );
+      log("MongoDB", chalk`{yellow Starting Server}`);
+
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
-      console.log(
-        `${chalk.bold.inverse(" MongoDB ")} ${chalk.yellow(
-          `URI: ${chalk.bold(process.env.MONGO_URI)}`
-        )}`
-      );
-
-      console.log(
-        chalk.bold.inverse(" MongoDB "),
-        chalk.yellow(`Setted MONGO_URI enviroment variable`)
-      );
+      log("MongoDB", chalk`{yellow URI: ${chalk.bold(process.env.MONGO_URI)}}`);
+      log("MongoDB", chalk`{yellow Setted MONGO_URI enviroment variable}`);
     } else {
       console.log(
         `\n${chalk.bold.red.inverse(
@@ -100,10 +104,13 @@ const titles = {
     }
   }
 
-  console.log(`\n${chalk.bold("Starting development environment")}\n`);
+  log(chalk`\n{bold Starting development environment}\n`);
 
-  applications.map((run) => start(run));
-})().catch((err) => console.log(err));
+  applications.map((run, idx) => start(run, idx));
+})().catch((err) => {
+  console.log(err);
+  process.abort();
+});
 
 const colors = ["green", "yellow", "blue", "magenta", "red", "cyan"];
 let colorIdx = 0;
@@ -112,11 +119,12 @@ function start([directory, app]) {
   const color = colors[colorIdx];
   const { title, color: typeColor } = titles[directory];
   const appTitle = capitalize(app);
-  console.log(
-    chalk.bold("Starting"),
-    chalk[typeColor].bold(title),
-    chalk[color].bold(appTitle)
+
+  const print = log(false)(
+    chalk`{bold {inverse  ${title} }{bgBlack  ${chalk[color](appTitle)} }}:`
   );
+
+  print(chalk`{bold Starting} `);
 
   const child = spawn(`npm run dev`, [], {
     shell: true,
@@ -126,14 +134,12 @@ function start([directory, app]) {
   process.stdin.pipe(child.stdin);
 
   child.stdout.on("data", (data) => {
-    console.log(
-      `${chalk.bold.inverse(` ${title} `)} ${chalk[color].bold(
-        appTitle
-      )}: ${data.slice(0, -1)}`
-    );
+    print(chalk`${data.slice(0, -1)}`);
   });
 
   ++colorIdx;
+
+  return child;
 }
 
 const capitalize = (s) => {

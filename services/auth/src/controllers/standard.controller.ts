@@ -16,24 +16,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import {
-  Controller,
-  Inject,
-  POST,
-  ErrorHandler,
-  FastifyInstanceToken,
-} from "fastify-decorators";
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import {
-  // Services
-  CacheService,
-  DataService,
-  ContactVerificationService,
-  SessionService,
-
-  // Helpers
-  utils,
-} from "@gx-mob/http-service";
+import { Controller, POST } from "fastify-decorators";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { ControllerAugment } from "@gx-mob/http-service";
 import {
   isValidMobilePhone,
   isValidEmail,
@@ -44,28 +29,18 @@ import bcrypt from "bcrypt";
 import { getClientIp } from "request-ip";
 
 import IdentifyBodySchema from "../schemas/identify-body.json";
-import AuthenticateBodySchema from "../schemas/authenticate-body.json";
+import CredentialsBodySchema from "../schemas/credentials-body.json";
+import CodeBodySchema from "../schemas/code-body.json";
 import { IdentifyBodySchema as IIdentifyBodySchema } from "../types/identify-body";
-import { AuthenticateBodySchema as IAuthenticateBodySchema } from "../types/authenticate-body";
+import { CredentialsBodySchema as ICredentialsBodySchema } from "../types/credentials-body";
+import { CodeBodySchema as ICodeBodySchema } from "../types/code-body";
 
-@Controller("/credential")
-export default class StandardAuthCotnroller {
-  private managedErrors = ["UnprocessableEntityError", "UnauthorizedError"];
-
-  @Inject(FastifyInstanceToken)
-  private instance!: FastifyInstance;
-
-  @Inject(CacheService)
-  private cache!: CacheService;
-
-  @Inject(ContactVerificationService)
-  private verify!: ContactVerificationService;
-
-  @Inject(DataService)
-  private data!: DataService;
-
-  @Inject(SessionService)
-  private sessions!: SessionService;
+@Controller("/")
+export default class StandardAuthController extends ControllerAugment {
+  public settings = {
+    protected: false,
+    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
+  };
 
   @POST({
     url: "/identify",
@@ -87,20 +62,15 @@ export default class StandardAuthCotnroller {
       },
     },
   })
-  async identify(
+  async identifyHandler(
     request: FastifyRequest<{ Body: IIdentifyBodySchema }>,
     reply: FastifyReply
   ) {
     const { id } = request.body;
     const user = await this.getUser(id);
 
-    if (!user) {
-      throw new httpErrors.UnprocessableEntity("not-found");
-    }
-
     if (!user.credential) {
-      await this.verify.request(user.phones[0]);
-
+      await this.requestVerify(user.phones[0]);
       reply.code(201);
 
       return {
@@ -118,10 +88,15 @@ export default class StandardAuthCotnroller {
     };
   }
 
-  private getUser(id: string) {
+  private async getUser(id: string) {
     const key = this.getIdKey(id);
+    const user = await this.data.users.get({ [key]: id });
 
-    return this.data.users.get({ [key]: id });
+    if (!user) {
+      throw new httpErrors.UnprocessableEntity("user-not-found");
+    }
+
+    return user;
   }
 
   private getIdKey(id: string): "phones" | "emails" | "cpf" {
@@ -140,16 +115,33 @@ export default class StandardAuthCotnroller {
     throw new httpErrors.UnprocessableEntity("invalid-id");
   }
 
+  requestVerify(id: string) {
+    if (process.env.NODE_ENV === "development") {
+      return;
+    }
+
+    return this.verify.request(id);
+  }
+
   @POST({
-    url: "/authenticate",
+    url: "/credential",
     options: {
       schema: {
-        body: AuthenticateBodySchema,
+        body: CredentialsBodySchema,
+        response: {
+          "200": {
+            token: { type: "string" },
+          },
+          "201": {
+            next: { type: "string" },
+            last4: { type: "string" },
+          },
+        },
       },
     },
   })
-  async authenticate(
-    request: FastifyRequest<{ Body: IAuthenticateBodySchema }>,
+  async credentialHandler(
+    request: FastifyRequest<{ Body: ICredentialsBodySchema }>,
     reply: FastifyReply
   ) {
     const { id, credential } = request.body;
@@ -161,24 +153,67 @@ export default class StandardAuthCotnroller {
       throw new httpErrors.UnprocessableEntity("wrong-credential");
     }
 
-    const { token } = await this.sessions.create(user._id, {
-      ua: request.headers["user-agent"],
-      ip: getClientIp(request.raw),
-    });
+    if (user["2fa"]) {
+      await this.requestVerify(user["2fa"]);
+
+      reply.code(201);
+      return {
+        next: "code",
+        last4: user["2fa"].slice(user["2fa"].length - 4),
+      };
+    }
+
+    const { token } = await this.createSession(user._id, request);
 
     return { token };
   }
 
-  /**
-   * Prevent expose internal errors
-   */
-  @ErrorHandler()
-  errorHandler(error: Error, request: FastifyRequest, reply: FastifyReply) {
-    utils.manageControllerError(
-      this.managedErrors,
-      error,
-      reply,
-      this.instance.log
-    );
+  private createSession(userId: string, request: FastifyRequest) {
+    return this.session.create(userId, {
+      ua: request.headers["user-agent"],
+      ip: getClientIp(request.raw),
+    });
+  }
+
+  @POST({
+    url: "/code",
+    options: {
+      schema: {
+        body: CodeBodySchema,
+        response: {
+          "200": {
+            token: { type: "string" },
+          },
+          "201": {
+            next: { type: "string" },
+            last4: { type: "string" },
+          },
+        },
+      },
+    },
+  })
+  async codeHandler(request: FastifyRequest<{ Body: ICodeBodySchema }>) {
+    const { id, code } = request.body;
+    const user = await this.getUser(id);
+
+    if (process.env.NODE_ENV === "development") {
+      if ("000000" === code) {
+        const { token } = await this.createSession(user._id, request);
+
+        return { token };
+      }
+
+      throw new httpErrors.UnprocessableEntity("wrong-code");
+    }
+
+    const valid = await this.verify.verify(id, code);
+
+    if (!valid) {
+      throw new httpErrors.UnprocessableEntity("wrong-code");
+    }
+
+    const { token } = await this.createSession(user._id, request);
+
+    return { token };
   }
 }

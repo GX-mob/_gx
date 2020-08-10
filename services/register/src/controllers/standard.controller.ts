@@ -16,24 +16,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import {
-  Controller,
-  Inject,
-  POST,
-  ErrorHandler,
-  FastifyInstanceToken,
-} from "fastify-decorators";
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import {
-  // Services
-  CacheService,
-  DataService,
-  ContactVerificationService,
-  SessionService,
-
-  // Helpers
-  utils,
-} from "@gx-mob/http-service";
+import { Controller, POST } from "fastify-decorators";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { ControllerAugment } from "@gx-mob/http-service";
 import httpErrors from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import { getClientIp } from "request-ip";
@@ -46,23 +31,11 @@ import { PhoneCheckVerificationBodySchema as IPhoneVerifySchema } from "../types
 import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-body";
 
 @Controller("/")
-export default class StandardRegisterController {
-  private managedErrors = ["UnprocessableEntityError", "UnauthorizedError"];
-
-  @Inject(FastifyInstanceToken)
-  private instance!: FastifyInstance;
-
-  @Inject(CacheService)
-  private cache!: CacheService;
-
-  @Inject(ContactVerificationService)
-  private verify!: ContactVerificationService;
-
-  @Inject(DataService)
-  private data!: DataService;
-
-  @Inject(SessionService)
-  private sessions!: SessionService;
+export default class StandardRegisterController extends ControllerAugment {
+  public settings = {
+    protected: false,
+    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
+  };
 
   @POST({
     url: "/phone/request",
@@ -141,17 +114,17 @@ export default class StandardRegisterController {
         return { ok: true };
       }
 
-      return { ok: false };
+      throw new httpErrors.UnprocessableEntity("wrong-code");
     }
 
     const valid = await this.verify.verify(phone, code);
 
-    if (valid) {
-      await this.setCache(phone, { code, validated: true });
-      return { ok: true };
+    if (!valid) {
+      throw new httpErrors.UnprocessableEntity("wrong-code");
     }
 
-    return { ok: false };
+    await this.setCache(phone, { code, validated: true });
+    return { ok: true };
   }
 
   @POST({
@@ -180,7 +153,8 @@ export default class StandardRegisterController {
     },
   })
   async finishHandler(
-    request: FastifyRequest<{ Body: IRegisterBodySchema }>
+    request: FastifyRequest<{ Body: IRegisterBodySchema }>,
+    reply: FastifyReply
   ): Promise<any> {
     const {
       code,
@@ -234,10 +208,12 @@ export default class StandardRegisterController {
     };
 
     const user = await this.data.users.create(userObject);
-    const session = await this.sessions.create(user._id, {
+    const session = await this.session.create(user._id, {
       ua: request.headers["user-agent"],
       ip: getClientIp(request.raw),
     });
+
+    reply.code(201);
 
     return {
       ok: true,
@@ -248,19 +224,6 @@ export default class StandardRegisterController {
         token: session.token,
       },
     };
-  }
-
-  /**
-   * Prevent expose internal errors
-   */
-  @ErrorHandler()
-  errorHandler(error: Error, request: FastifyRequest, reply: FastifyReply) {
-    utils.manageControllerError(
-      this.managedErrors,
-      error,
-      reply,
-      this.instance.log
-    );
   }
 
   private setCache(key: string, value: any) {

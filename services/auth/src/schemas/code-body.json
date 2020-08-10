@@ -1,0 +1,10 @@
+{
+  "title": "Code Body Schema",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "code": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "required": ["id", "code"]
+}
