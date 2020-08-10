@@ -15,41 +15,16 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-import {
-  FastifyInstanceToken,
-  Controller,
-  Inject,
-  POST,
-} from "fastify-decorators";
+import { Controller, Inject, POST } from "fastify-decorators";
 import { FastifyInstance, FastifyRequest } from "fastify";
-import {
-  CacheService,
-  DataService,
-  ContactVerificationService,
-  SessionService,
-} from "@gx-mob/http-service";
+import { ControllerAugment } from "@gx-mob/http-service";
 import httpErrors from "http-errors";
-import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { Http2ServerResponse } from "http2";
 
 @Controller("/google-auth")
-export default class GoogleAuthRegistration {
-  private managedErrors = ["UnprocessableEntityError", "UnauthorizedError"];
-
-  @Inject(FastifyInstanceToken)
-  private instance!: FastifyInstance;
-
-  @Inject(CacheService)
-  private cache!: CacheService;
-
-  @Inject(ContactVerificationService)
-  private verify!: ContactVerificationService;
-
-  @Inject(DataService)
-  private data!: DataService;
-
-  @Inject(SessionService)
-  private sessions!: SessionService;
+export default class GoogleAuthRegistration extends ControllerAugment {
+  public settings = {
+    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
+  };
 }
 
 /*

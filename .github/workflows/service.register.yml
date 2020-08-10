@@ -17,10 +17,11 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12.x
-      - name: Build gx-http-service module
-        run: npm pack ./packages/http-service
       - name: Lint, test and build
         run: |
+# this step will be not needed, will be publish to npm
+          npm pack ./packages/http-service
+#
           npm ci
           npm lint
           npm test -- --coverage
