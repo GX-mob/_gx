@@ -19,7 +19,7 @@ jobs:
           node-version: 12.x
       - name: Lint, test and build
         run: |
-          npm pack ./packages/http-service
+          npm pack ../../packages/http-service
           npm ci
           npm lint
           npm test -- --coverage

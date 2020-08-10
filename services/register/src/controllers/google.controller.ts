@@ -18,7 +18,7 @@
 import { Controller } from "fastify-decorators";
 import { ControllerAugment } from "@gx-mob/http-service";
 
-@Controller("/google-auth")
+@Controller("/google")
 export default class GoogleAuthRegistration extends ControllerAugment {
   public settings = {
     managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
