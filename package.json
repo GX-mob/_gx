@@ -23,6 +23,7 @@
   "homepage": "https://github.com/GX-mob/gx#readme",
   "devDependencies": {
     "chalk": "^4.1.0",
+    "mongodb-memory-server": "^6.6.3",
     "prompt-checkbox": "^2.2.0"
   }
 }
