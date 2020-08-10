@@ -15,10 +15,8 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Controller, Inject, POST } from "fastify-decorators";
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { Controller } from "fastify-decorators";
 import { ControllerAugment } from "@gx-mob/http-service";
-import httpErrors from "http-errors";
 
 @Controller("/google-auth")
 export default class GoogleAuthRegistration extends ControllerAugment {
@@ -26,37 +24,3 @@ export default class GoogleAuthRegistration extends ControllerAugment {
     managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
   };
 }
-
-/*
-@Controller("/google-auth")
-export default class GoogleAuthRegistration {
-
-  @Inject(CacheService)
-  private cache!: CacheService
-
-  @Inject(DataService)
-  private data!: DataService
-
-  @POST("/save-phone")
-  async savePhon(request): Promise<any> {
-
-    const { phone, uid: user_id } = request.body;
-
-    const verification = this.cache.get("verifications", phone);
-
-    if(!verification.validated){
-      throw new httpErrors.error();
-    }
-
-    const user = this.data.users.get({ _id: user_id });
-
-    if(!user){
-      throw new httpErrors.error();
-    }
-
-    await this.data.users.update({ _id: user_id }, { phone })
-
-  }
-
-}
-*/

@@ -19,9 +19,7 @@ jobs:
           node-version: 12.x
       - name: Lint, test and build
         run: |
-# this step will be not needed, will be publish to npm
           npm pack ./packages/http-service
-#
           npm ci
           npm lint
           npm test -- --coverage
