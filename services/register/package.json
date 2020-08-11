@@ -8,7 +8,7 @@
     "start": "node ./dist/bin/index.js",
     "test": "NODE_ENV=test jest --runInBand",
     "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
-    "build": "rimraf ./dist && tsc --sourceMap -p ./ && copyfiles -u 1 \"./src/**/*.css\" ./dist",
+    "build": "rimraf ./dist && tsc --sourceMap -p ./",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' --files ./src/bin/index.ts",
     "compile-schemas": "rimraf ./src/types/* && json2ts -i ./src/schemas -o ./src/types"
   },
@@ -27,6 +27,7 @@
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
+    "@tsconfig/node12": "^1.0.7",
     "@types/ioredis": "^4.17.3",
     "@types/jest": "^26.0.8",
     "@types/node": "^14.0.27",

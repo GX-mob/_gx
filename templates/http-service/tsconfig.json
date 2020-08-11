@@ -2,20 +2,18 @@
   "compilerOptions": {
     "baseUrl": ".",
     "declaration": true,
-    "lib": ["es2016", "esnext"],
     "paths": {
       "*": ["src/*"]
     },
     "allowJs": true,
-    "target": "es2016",
-    "module": "commonjs",
-    "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "./dist",
-    "esModuleInterop": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
+    "strict": false
   },
+  "extends": "@tsconfig/node12/tsconfig.json",
   "include": ["./src/**/*.ts"],
   "exclude": [
     "node_modules",
