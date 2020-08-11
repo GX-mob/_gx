@@ -42,57 +42,38 @@ export default class StandardRegisterController extends ControllerAugment {
     options: {
       schema: {
         body: PhoneRequestBodySchema,
-        response: {
-          "200": {
-            ok: { type: "boolean" },
-          },
-        },
       },
     },
   })
   async requestHandler(
-    request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>
+    request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>,
+    reply: FastifyReply
   ): Promise<any> {
     const { phone } = request.body;
-
-    const user = await this.data.users.get({ phones: phone });
+    const user = await this.data.users.get({ phones: `+55${phone}` });
 
     if (user) {
-      console.log(user);
       throw new httpErrors.UnprocessableEntity("phone-already-registred");
     }
 
     if (process.env.NODE_ENV === "development") {
-      if (phone === "82988888888") {
-        throw new httpErrors.UnprocessableEntity("phone-already-registred");
-      }
-
-      return { ok: true };
+      return reply.code(201).send();
     }
-
-    const previousRequest = await this.getCache(phone);
 
     // Prevent resend before expiration
-    if (previousRequest && previousRequest.iat + 1000 * 60 < Date.now()) {
+    const previousRequest = await this.getCache(phone);
+
+    if (!previousRequest || previousRequest.iat + 1000 * 60 < Date.now()) {
       await this.requestVerification(phone);
-      return { ok: true };
+      return reply.code(201).send();
     }
 
-    // Check if number is already registred
-    const exist = await this.data.users.get({ phones: [phone] });
-
-    if (exist) {
-      throw new httpErrors.UnprocessableEntity("phone-already-registred");
-    }
-
-    await this.requestVerification(phone);
-
-    return { ok: true };
+    return reply.code(200).send();
   }
 
   async requestVerification(phone: string) {
     await this.verify.request(phone);
-    await this.setCache(phone, { iat: Date.now() });
+    await this.setCache(`+55${phone}`, { iat: Date.now() });
   }
 
   @POST({
@@ -100,15 +81,13 @@ export default class StandardRegisterController extends ControllerAugment {
     options: {
       schema: {
         body: PhoneVerifyBodySchema,
-        response: {
-          "200": {
-            ok: { type: "boolean" },
-          },
-        },
       },
     },
   })
-  async verifyHandler(request: FastifyRequest<{ Body: IPhoneVerifySchema }>) {
+  async verifyHandler(
+    request: FastifyRequest<{ Body: IPhoneVerifySchema }>,
+    reply: FastifyReply
+  ) {
     const { phone, code } = request.body;
 
     if (process.env.NODE_ENV === "development") {
@@ -118,7 +97,7 @@ export default class StandardRegisterController extends ControllerAugment {
           validated: true,
         });
 
-        return { ok: true };
+        return reply.code(200).send();
       }
 
       throw new httpErrors.UnprocessableEntity("wrong-code");
@@ -131,7 +110,7 @@ export default class StandardRegisterController extends ControllerAugment {
     }
 
     await this.setCache(phone, { code, validated: true });
-    return { ok: true };
+    return reply.code(200).send();
   }
 
   @POST({
@@ -140,8 +119,7 @@ export default class StandardRegisterController extends ControllerAugment {
       schema: {
         body: RegisterBodySchema,
         response: {
-          "200": {
-            ok: { type: "boolean" },
+          "201": {
             user: {
               type: "object",
               properties: {
@@ -207,7 +185,7 @@ export default class StandardRegisterController extends ControllerAugment {
     }
 
     const userObject: any = {
-      phones: [phone],
+      phones: [`+55${phone}`],
       firstName,
       lastName,
       cpf,
@@ -223,7 +201,6 @@ export default class StandardRegisterController extends ControllerAugment {
     reply.code(201);
 
     return {
-      ok: true,
       user: {
         id: user._id,
       },

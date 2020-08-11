@@ -14,11 +14,11 @@ import { logger, DataBaseConnection } from "./helpers";
 import { Redis } from "ioredis";
 
 // fastify augmentation
-import { User } from "./models/user";
+import { Session } from "./models/session";
 
 declare module "fastify" {
   export interface FastifyRequest {
-    user?: User;
+    session?: Session;
   }
 }
 
@@ -56,7 +56,7 @@ export default function instanceBootstrap(
     mask: /(\.)?(controller)\.(js|ts)$/,
   });
 
-  instance.decorateRequest("user", "");
+  instance.decorateRequest("session", "");
 
   return instance;
 }

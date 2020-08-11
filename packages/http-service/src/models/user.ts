@@ -5,6 +5,7 @@ import {
   isValidEmail,
   isValidMobilePhone,
 } from "@brazilian-utils/brazilian-utils";
+import { phoneRegex } from "../helpers/utils";
 
 export interface User {
   _id: any;
@@ -14,7 +15,7 @@ export interface User {
   phones: string | string[];
   birth: Date;
   avatar?: string;
-  emails?: string[];
+  emails?: string | string[];
   createdAt?: Date;
   updatedAt?: Date | null;
   groups?: number[];
@@ -53,7 +54,7 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter((phone) => isValidMobilePhone(phone)).length === v.length,
+          v.filter((phone) => phoneRegex.test(phone)).length === v.length,
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,

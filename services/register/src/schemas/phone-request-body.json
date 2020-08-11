@@ -2,7 +2,7 @@
   "title": "Phone Verification Request Body Schema",
   "type": "object",
   "properties": {
-    "phone": { "type": "string" }
+    "phone": { "type": "string", "pattern": "^[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$" }
   },
   "additionalProperties": false,
   "required": ["phone"]

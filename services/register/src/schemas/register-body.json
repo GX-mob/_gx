@@ -2,13 +2,17 @@
   "title": "Register Body Schema",
   "type": "object",
   "properties": {
-    "code": { "type": "string" },
-    "phone": { "type": "string" },
-    "firstName": { "type": "string" },
-    "lastName": { "type": "string" },
+    "phone": {
+      "type": "string",
+      "pattern": "^[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$"
+    },
+    "code": { "type": "string", "pattern": "^[0-9]{6}$" },
+    "firstName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
+    "lastName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
     "cpf": { "type": "string" },
-    "birth": { "type": "string" },
-    "terms": { "type": "boolean" }
+    "birth": { "type": "string", "format": "date-time" },
+    "terms": { "type": "boolean" },
+    "credential": { "type": "string", "pattern": "^(?=.*\\d)(?=.*[a-z]).{5,}$" }
   },
   "additionalProperties": false,
   "required": [

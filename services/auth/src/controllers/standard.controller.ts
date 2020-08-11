@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Controller, POST } from "fastify-decorators";
+import { Controller, GET, POST } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ControllerAugment } from "@gx-mob/http-service";
 import {
@@ -24,14 +24,12 @@ import {
   isValidEmail,
   isValidCPF,
 } from "@brazilian-utils/brazilian-utils";
-import httpErrors from "http-errors";
+import HttpErrors from "http-errors";
 import bcrypt from "bcrypt";
 import { getClientIp } from "request-ip";
 
-import IdentifyBodySchema from "../schemas/identify-body.json";
 import CredentialsBodySchema from "../schemas/credentials-body.json";
 import CodeBodySchema from "../schemas/code-body.json";
-import { IdentifyBodySchema as IIdentifyBodySchema } from "../types/identify-body";
 import { CredentialsBodySchema as ICredentialsBodySchema } from "../types/credentials-body";
 import { CodeBodySchema as ICodeBodySchema } from "../types/code-body";
 
@@ -42,11 +40,10 @@ export default class StandardAuthController extends ControllerAugment {
     managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
   };
 
-  @POST({
-    url: "/identify",
+  @GET({
+    url: "/id/:id",
     options: {
       schema: {
-        body: IdentifyBodySchema,
         response: {
           "200": {
             id: { type: "string" },
@@ -57,16 +54,18 @@ export default class StandardAuthController extends ControllerAugment {
             id: { type: "string" },
             avatar: { type: "string" },
             next: { type: "string" },
+            last4: { type: "string" },
           },
         },
       },
     },
   })
   async identifyHandler(
-    request: FastifyRequest<{ Body: IIdentifyBodySchema }>,
+    request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    const { id } = request.body;
+    const { id } = request.params;
+
     const user = await this.getUser(id);
 
     if (!user.credential) {
@@ -89,30 +88,32 @@ export default class StandardAuthController extends ControllerAugment {
   }
 
   private async getUser(id: string) {
-    const key = this.getIdKey(id);
-    const user = await this.data.users.get({ [key]: id });
+    const query = this.userQuery(id);
+    const user = await this.data.users.get(query);
 
     if (!user) {
-      throw new httpErrors.UnprocessableEntity("user-not-found");
+      throw new HttpErrors.UnprocessableEntity("user-not-found");
     }
 
     return user;
   }
 
-  private getIdKey(id: string): "phones" | "emails" | "cpf" {
+  private userQuery(
+    id: string
+  ): { phones: string } | { emails: string } | { cpf: string } {
     if (isValidMobilePhone(id)) {
-      return "phones";
+      return { phones: `+55${id}` };
     }
 
     if (isValidEmail(id)) {
-      return "emails";
+      return { emails: id };
     }
 
     if (isValidCPF(id)) {
-      return "cpf";
+      return { cpf: id };
     }
 
-    throw new httpErrors.UnprocessableEntity("invalid-id");
+    throw new HttpErrors.UnprocessableEntity("invalid-id");
   }
 
   async requestVerify(id: string) {
@@ -150,7 +151,7 @@ export default class StandardAuthController extends ControllerAugment {
     const match = await bcrypt.compare(credential, user.credential);
 
     if (!match) {
-      throw new httpErrors.UnprocessableEntity("wrong-credential");
+      throw new HttpErrors.UnprocessableEntity("wrong-credential");
     }
 
     if (user["2fa"]) {
@@ -199,13 +200,13 @@ export default class StandardAuthController extends ControllerAugment {
         return { token };
       }
 
-      throw new httpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpErrors.UnprocessableEntity("wrong-code");
     }
 
     const valid = await this.verify.verify(id, code);
 
     if (!valid) {
-      throw new httpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpErrors.UnprocessableEntity("wrong-code");
     }
 
     const { token } = await this.createSession(user._id, request);

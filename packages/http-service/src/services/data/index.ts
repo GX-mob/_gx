@@ -39,20 +39,15 @@ export class Handler<Model> {
       return cache;
     }
 
-    const persistent = await this.makeQuery(query, populate);
+    const data = await this.makeQuery(query, populate);
 
-    if (persistent) {
-      const setCache = this.cache.set(
-        this.settings.namespace,
-        { _id: (persistent as any)._id }, // prevent circular for linking keys
-        persistent,
-        { link: this.settings.linkingKeys && this.mountLinkingKeys(persistent) }
-      );
-      handleRejectionByUnderHood(setCache);
-
-      return persistent as Model;
+    if (!data) {
+      return null;
     }
-    return null;
+
+    this.setCache(data);
+
+    return data as Model;
   }
 
   private async makeQuery(
@@ -76,23 +71,32 @@ export class Handler<Model> {
     return query;
   }
 
+  private async setCache(data: any): Promise<void> {
+    const promise = this.cache.set(
+      this.settings.namespace,
+      { _id: data._id }, // using the doc._id to prevent a circular reference on linking keys
+      data,
+      { link: this.settings.linkingKeys && this.mountLinkingKeys(data) }
+    );
+    handleRejectionByUnderHood(promise);
+  }
+
   /**
-   * Updates a record in persistent storage and cache it
+   * Updates a record in persistent storage and cache
    * @param query
    * @param data
    */
   async update(query: any, data: Partial<Model>) {
     await this.model.updateOne(query, data);
-    await this.setCache(query, data);
+    this.updateCache(query);
   }
 
   /**
    * Creates a item in persistent storage and cache it
    * @param data
-   * @param cache Cache after created
+   * @param options.cache Cache after created
    * @default true
-   * @returns
-   * @constructs {Model}
+   * @returns Lean document
    */
   async create(
     data: Omit<Model, "_id">,
@@ -106,20 +110,19 @@ export class Handler<Model> {
       ) as Document).execPopulate();
     }
 
-    if (options.cache)
-      await this.setCache({ _id: modelResult._doc._id }, modelResult._doc);
+    if (options.cache) {
+      this.setCache(modelResult._doc);
+    }
+
     return modelResult;
   }
 
-  async setCache(key: any, data: any): Promise<void> {
-    const saved = await this.cache.get(this.settings.namespace, key);
+  async updateCache(query: Partial<Model>) {
+    const data = await this.makeQuery(query, this.settings.autoPopulate);
 
-    await this.cache.set(
-      this.settings.namespace,
-      key,
-      { ...(saved || {}), ...data },
-      { link: this.settings.linkingKeys && this.mountLinkingKeys(data) }
-    );
+    if (!data) return;
+
+    this.setCache(data);
   }
 
   /**

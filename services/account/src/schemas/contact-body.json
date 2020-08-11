@@ -1,10 +1,10 @@
 {
-  "title": "Code Body Schema",
+  "title": "Update Contact Body Schema",
   "type": "object",
   "properties": {
-    "id": { "type": "string" },
+    "contact": { "type": "string" },
     "code": { "type": "string", "pattern": "^[0-9]{6}$" }
   },
   "additionalProperties": false,
-  "required": ["id", "code"]
+  "required": ["contact"]
 }

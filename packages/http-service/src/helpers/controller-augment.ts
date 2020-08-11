@@ -75,6 +75,7 @@ export class ControllerAugment {
       }
 
       if (
+        this.settings.protected !== true &&
         !this.session.hasPermission(
           session,
           this.settings.protected as number[]
@@ -83,7 +84,7 @@ export class ControllerAugment {
         return reply.send(new httpError.Forbidden("unauthorized"));
       }
 
-      request.user = session.user;
+      request.session = session;
     } catch (error) {
       this.instance.log.error(error);
 
@@ -100,7 +101,10 @@ export class ControllerAugment {
     _request: FastifyRequest,
     reply: FastifyReply
   ) {
-    if (this.settings.managedErrors.includes(error.constructor.name)) {
+    if (
+      (error as any).validation ||
+      this.settings.managedErrors.includes(error.constructor.name)
+    ) {
       return reply.send(error);
     }
 

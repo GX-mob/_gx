@@ -22,3 +22,5 @@ export const manageControllerError = (
 
   reply.send(createError(500));
 };
+
+export const phoneRegex = /^(\+?[1-9]{2,3})?[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$/;
