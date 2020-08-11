@@ -44,7 +44,7 @@ export class Handler<Model> {
     if (persistent) {
       const setCache = this.cache.set(
         this.settings.namespace,
-        query,
+        { _id: (persistent as any)._id }, // prevent circular for linking keys
         persistent,
         { link: this.settings.linkingKeys && this.mountLinkingKeys(persistent) }
       );

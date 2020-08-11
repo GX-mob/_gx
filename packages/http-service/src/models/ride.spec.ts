@@ -24,7 +24,7 @@ describe("Model: Ride", () => {
     const ride = new RideModel();
 
     ride.validate((err) => {
-      expect(Object.keys(err.errors).length).toBe(2);
+      expect(Object.keys(err.errors).length).toBe(1);
       //expect(Object.keys(err.errors).length).toBe(6);
       done();
     });

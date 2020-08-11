@@ -1,9 +1,4 @@
-import {
-  FastifyInstance,
-  FastifyRequest,
-  FastifyReply,
-  HookHandlerDoneFunction,
-} from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import {
   Hook,
   Inject,
@@ -56,39 +51,51 @@ export class ControllerAugment {
   @Hook("onRequest")
   private async _protectedRequestHook(
     request: FastifyRequest,
-    reply: FastifyReply,
-    next: HookHandlerDoneFunction
+    reply: FastifyReply
   ) {
     if (!this.settings.protected) {
-      return next();
+      return;
     }
 
-    if (!request.headers.authorization) {
-      return reply.send(new httpError.Unauthorized());
+    try {
+      if (!request.headers.authorization) {
+        return reply.send(new httpError.Unauthorized());
+      }
+
+      const ip = getClientIp(request.raw);
+      const token = request.headers.authorization.replace("Bearer ", "");
+      const { session, error } = await this.session.verify(token, ip);
+
+      switch (error) {
+        case "deactivated":
+          return reply.send(new httpError.Forbidden("deactivated"));
+        case "not-found":
+          return reply.send(new httpError.Unauthorized("not-found"));
+        default:
+      }
+
+      if (
+        !this.session.hasPermission(
+          session,
+          this.settings.protected as number[]
+        )
+      ) {
+        return reply.send(new httpError.Forbidden("unauthorized"));
+      }
+
+      request.user = session.user;
+    } catch (error) {
+      this.instance.log.error(error);
+
+      return reply.send(httpError(500));
     }
-
-    const ip = getClientIp(request.raw);
-    const token = request.headers.authorization.replace("Bearer ", "");
-    const { session, error } = await this.session.verify(token, ip);
-
-    if (error) {
-      throw new httpError.Unauthorized(error);
-    }
-
-    if (
-      !this.session.hasPermission(session, this.settings.protected as number[])
-    ) {
-      throw new httpError.Forbidden();
-    }
-
-    request.user = session.user;
   }
 
   /**
    * Used to prevent expose internal errors
    */
   @ErrorHandler()
-  private controllerErrorHandler(
+  private _controllerErrorHandler(
     error: Error,
     _request: FastifyRequest,
     reply: FastifyReply
@@ -99,6 +106,6 @@ export class ControllerAugment {
 
     this.instance.log.error(error);
 
-    reply.send(httpError(500));
+    return reply.send(httpError(500));
   }
 }

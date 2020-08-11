@@ -8,6 +8,12 @@ import Mail from "nodemailer/lib/mailer";
 import { configureServiceTest } from "fastify-decorators/testing";
 import render from "./render";
 
+process.env.SMTP_HOST = "smtp.ethereal.email";
+process.env.SMTP_PORT = "587";
+process.env.SMTP_FROM = "Lesly Armstrong <lesly44@ethereal.email>";
+process.env.SMTP_USER = "lesly44@ethereal.email";
+process.env.SMTP_PASS = "DddzT1YgHfb2WnssVR";
+
 describe("Service: Email", () => {
   let service: EmailService;
 

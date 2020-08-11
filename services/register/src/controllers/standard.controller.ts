@@ -55,6 +55,13 @@ export default class StandardRegisterController extends ControllerAugment {
   ): Promise<any> {
     const { phone } = request.body;
 
+    const user = await this.data.users.get({ phones: phone });
+
+    if (user) {
+      console.log(user);
+      throw new httpErrors.UnprocessableEntity("phone-already-registred");
+    }
+
     if (process.env.NODE_ENV === "development") {
       if (phone === "82988888888") {
         throw new httpErrors.UnprocessableEntity("phone-already-registred");

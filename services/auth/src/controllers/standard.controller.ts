@@ -115,9 +115,9 @@ export default class StandardAuthController extends ControllerAugment {
     throw new httpErrors.UnprocessableEntity("invalid-id");
   }
 
-  requestVerify(id: string) {
+  async requestVerify(id: string) {
     if (process.env.NODE_ENV === "development") {
-      return;
+      return Promise.resolve();
     }
 
     return this.verify.request(id);
@@ -183,10 +183,6 @@ export default class StandardAuthController extends ControllerAugment {
         response: {
           "200": {
             token: { type: "string" },
-          },
-          "201": {
-            next: { type: "string" },
-            last4: { type: "string" },
           },
         },
       },
