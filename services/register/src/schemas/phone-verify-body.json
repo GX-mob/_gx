@@ -2,12 +2,10 @@
   "title": "Phone Check Verification Body Schema",
   "type": "object",
   "properties": {
-    "phone": {
-      "type": "string",
-      "pattern": "^[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$"
-    },
+    "cc": { "type": "string" },
+    "phone": { "type": "string" },
     "code": { "type": "string", "pattern": "^[0-9]{6}$" }
   },
-  "additionalProperties": true,
-  "required": ["phone", "code"]
+  "additionalProperties": false,
+  "required": ["cc", "phone", "code"]
 }

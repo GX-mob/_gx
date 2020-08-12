@@ -5,7 +5,7 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PhoneVerificationRequestBodySchema {
-  cc: string;
-  phone: string;
+export interface Update2FABodySchema {
+  password: string;
+  "2fa": string;
 }

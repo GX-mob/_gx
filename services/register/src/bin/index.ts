@@ -18,20 +18,19 @@
 
 import * as sourceMapSupport from "source-map-support";
 sourceMapSupport.install();
-import { resolve } from "path";
-
 import "reflect-metadata";
-import { bootstrap } from "@gx-mob/http-service";
-
+import { resolve } from "path";
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isProduction) {
   require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
 }
 
+import { bootstrap } from "@gx-mob/http-service";
+
 export const start = async () => {
   try {
-    if (!process.env.MONGO_URI) {
+    if (!process.env.MONGO_URI && !isProduction) {
       const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();

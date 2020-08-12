@@ -15,13 +15,17 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-import { Controller, POST } from "fastify-decorators";
+import { Controller, POST, Inject, ErrorHandler } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment } from "@gx-mob/http-service";
+import {
+  DataService,
+  ContactVerificationService,
+  SessionService,
+  HandleError,
+  utils,
+} from "@gx-mob/http-service";
 import httpErrors from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { getClientIp } from "request-ip";
 
 import PhoneRequestBodySchema from "../schemas/phone-request-body.json";
 import PhoneVerifyBodySchema from "../schemas/phone-verify-body.json";
@@ -29,14 +33,26 @@ import RegisterBodySchema from "../schemas/register-body.json";
 import { PhoneVerificationRequestBodySchema as IPhoneRequestBodySchema } from "../types/phone-request-body";
 import { PhoneCheckVerificationBodySchema as IPhoneVerifySchema } from "../types/phone-verify-body";
 import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-body";
-import { STATUS_CODES } from "http";
 
 @Controller("/")
-export default class StandardRegisterController extends ControllerAugment {
-  public settings = {
-    protected: false,
-    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
-  };
+export default class StandardRegisterController {
+  @Inject(DataService)
+  private data: DataService;
+
+  @Inject(ContactVerificationService)
+  private verify: ContactVerificationService;
+
+  @Inject(SessionService)
+  private session: SessionService;
+
+  @ErrorHandler()
+  private errorHandler(
+    error: Error,
+    _request: FastifyRequest,
+    reply: FastifyReply
+  ) {
+    HandleError(error, reply);
+  }
 
   @POST({
     url: "/phone/request",
@@ -50,9 +66,9 @@ export default class StandardRegisterController extends ControllerAugment {
     request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const { phone } = request.body;
-    console.log(request.body);
-    const user = await this.data.users.get({ phones: `+55${phone}` });
+    const phone = this.phone(request.body);
+
+    const user = await this.data.users.get({ phones: phone });
 
     if (user) {
       throw new httpErrors.UnprocessableEntity("phone-already-registred");
@@ -62,7 +78,7 @@ export default class StandardRegisterController extends ControllerAugment {
       return reply.code(202).send();
     }
 
-    // Prevent resend before expiration
+    // Prevent resent before expiration
     const previousRequest = await this.getCache(phone);
 
     /**
@@ -77,9 +93,27 @@ export default class StandardRegisterController extends ControllerAugment {
     return reply.send();
   }
 
+  /**
+   * Mount and validate final phone number
+   * @param body
+   * @return {string} Country Coude + Phone Number
+   */
+  private phone(
+    body: IPhoneRequestBodySchema | IPhoneVerifySchema | IRegisterBodySchema
+  ): string {
+    const { cc, phone } = body;
+    const contact = `${cc}${phone}`;
+
+    if (!utils.mobileNumberRegex.test(contact)) {
+      throw new httpErrors.UnprocessableEntity("invalid-number");
+    }
+
+    return contact;
+  }
+
   async requestVerification(phone: string) {
     await this.verify.request(phone);
-    await this.setCache(`+55${phone}`, { iat: Date.now() });
+    await this.setCache(phone, { iat: Date.now() });
   }
 
   @POST({
@@ -94,7 +128,8 @@ export default class StandardRegisterController extends ControllerAugment {
     request: FastifyRequest<{ Body: IPhoneVerifySchema }>,
     reply: FastifyReply
   ) {
-    const { phone, code } = request.body;
+    const { code } = request.body;
+    const phone = this.phone(request.body);
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
@@ -120,7 +155,7 @@ export default class StandardRegisterController extends ControllerAugment {
   }
 
   @POST({
-    url: "/",
+    url: "/sign-up",
     options: {
       schema: {
         body: RegisterBodySchema,
@@ -147,15 +182,8 @@ export default class StandardRegisterController extends ControllerAugment {
     request: FastifyRequest<{ Body: IRegisterBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const {
-      code,
-      phone,
-      firstName,
-      lastName,
-      cpf,
-      birth,
-      terms,
-    } = request.body;
+    const { code, firstName, lastName, cpf, birth, terms } = request.body;
+    const phone = this.phone(request.body);
 
     /**
      * Terms acception
@@ -191,7 +219,7 @@ export default class StandardRegisterController extends ControllerAugment {
     }
 
     const userObject: any = {
-      phones: [`+55${phone}`],
+      phones: [phone],
       firstName,
       lastName,
       cpf,
@@ -199,10 +227,7 @@ export default class StandardRegisterController extends ControllerAugment {
     };
 
     const user = await this.data.users.create(userObject);
-    const session = await this.session.create(user._id, {
-      ua: request.headers["user-agent"],
-      ip: getClientIp(request.raw),
-    });
+    const session = await this.session.create(user, request);
 
     reply.code(201);
 
@@ -217,10 +242,10 @@ export default class StandardRegisterController extends ControllerAugment {
   }
 
   private setCache(key: string, value: any) {
-    return this.cache.set("registryVerifications", key, value);
+    return this.data.cache.set("registryVerifications", key, value);
   }
 
   private getCache(key: string) {
-    return this.cache.get("registryVerifications", key);
+    return this.data.cache.get("registryVerifications", key);
   }
 }

@@ -1,11 +1,7 @@
 import { Document, Schema, Types, model } from "mongoose";
 import bcrypt from "bcrypt";
-import {
-  isValidCPF,
-  isValidEmail,
-  isValidMobilePhone,
-} from "@brazilian-utils/brazilian-utils";
-import { phoneRegex } from "../helpers/utils";
+import { isValidCPF } from "@brazilian-utils/brazilian-utils";
+import { emailRegex, mobileNumberRegex } from "../helpers/utils";
 
 export interface User {
   _id: any;
@@ -19,7 +15,7 @@ export interface User {
   createdAt?: Date;
   updatedAt?: Date | null;
   groups?: number[];
-  credential?: string;
+  password?: string;
   ["2fa"]?: string;
 }
 
@@ -54,7 +50,8 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter((phone) => phoneRegex.test(phone)).length === v.length,
+          v.filter((phone) => mobileNumberRegex.test(phone)).length ===
+          v.length,
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,
@@ -68,7 +65,7 @@ export const UserSchema: Schema = new Schema(
          * Validate all emails in the list
          */
         validator: (v: string[]) =>
-          v.filter((email) => isValidEmail(email)).length === v.length,
+          v.filter((email) => emailRegex.test(email)).length === v.length,
         message: (props) => `${props.value} has an invalid email`,
       },
     },
@@ -77,19 +74,11 @@ export const UserSchema: Schema = new Schema(
     updatedAt: Date,
     birth: { type: Date, required: true },
     groups: { type: Array, of: Number, default: [1] },
-    credential: String,
+    password: String,
     ["2fa"]: String,
   },
   { collection: "users" }
 );
-
-export async function preSave() {
-  if (this.credential) {
-    this.credential = await bcrypt.hash(this.credential, 10);
-  }
-}
-
-UserSchema.pre("save", preSave);
 
 UserSchema.pre<UserDocument>("updateOne", async function () {
   this.set({ updatedAt: new Date() });

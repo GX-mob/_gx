@@ -1,10 +1,7 @@
 import { Service, Inject } from "fastify-decorators";
-import {
-  isValidEmail,
-  isValidMobilePhone,
-} from "@brazilian-utils/brazilian-utils";
 import Twilio from "twilio";
 import { ServiceContext } from "twilio/lib/rest/verify/v2/service";
+import { emailRegex, mobileNumberRegex } from "../../helpers/utils";
 
 @Service()
 export class TwilioService {
@@ -38,7 +35,7 @@ export class ContactVerificationService {
     const channel = this.checkChannel(to);
 
     const { sid } = await this.twilio.verify.verifications.create({
-      to: channel === "sms" ? `+55${to}` : to,
+      to,
       channel,
     });
 
@@ -46,9 +43,9 @@ export class ContactVerificationService {
   }
 
   checkChannel(target: string): string {
-    const emailVerify = isValidEmail(target);
+    const emailVerify = emailRegex.test(target);
 
-    if (!emailVerify && !isValidMobilePhone(target)) {
+    if (!emailVerify && !mobileNumberRegex.test(target)) {
       throw new Error(
         "Verification target must be an email or mobile phone number"
       );

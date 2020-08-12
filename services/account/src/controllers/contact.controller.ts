@@ -33,12 +33,8 @@ import { RemoveContactBodySchema } from "../types/contact/remove-body";
 export default class StandardAuthController extends ControllerAugment {
   public settings = {
     protected: true,
-    managedErrors: [
-      "UnauthorizedError",
-      "UnprocessableEntity",
-      "ValidationError",
-    ],
   };
+
   @POST("/", {
     schema: {
       description: "Request a verification to add the contact",

@@ -13,7 +13,7 @@ const mockUser = {
   phones: ["82988888888"],
   emails: ["valid@email.com"],
   birth: new Date("06/13/1994"),
-  credential: "asd",
+  password: "asd",
 };
 
 describe("Model: User", () => {

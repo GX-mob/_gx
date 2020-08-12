@@ -15,12 +15,27 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-import { Controller } from "fastify-decorators";
-import { ControllerAugment } from "@gx-mob/http-service";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { Controller, GET, ErrorHandler } from "fastify-decorators";
+import { HandleError } from "@gx-mob/http-service";
 
 @Controller("/google")
-export default class GoogleAuthRegistration extends ControllerAugment {
+export default class GoogleAuthRegistration {
   public settings = {
-    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
+    protected: false,
   };
+
+  @ErrorHandler()
+  private errorHandler(
+    error: Error,
+    _request: FastifyRequest,
+    reply: FastifyReply
+  ) {
+    HandleError(error, reply);
+  }
+
+  @GET("/")
+  async handler() {
+    return {};
+  }
 }

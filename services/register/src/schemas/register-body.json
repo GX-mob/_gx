@@ -2,10 +2,8 @@
   "title": "Register Body Schema",
   "type": "object",
   "properties": {
-    "phone": {
-      "type": "string",
-      "pattern": "^[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$"
-    },
+    "cc": { "type": "string" },
+    "phone": { "type": "string" },
     "code": { "type": "string", "pattern": "^[0-9]{6}$" },
     "firstName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
     "lastName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
@@ -16,6 +14,7 @@
   },
   "additionalProperties": false,
   "required": [
+    "cc",
     "phone",
     "code",
     "firstName",

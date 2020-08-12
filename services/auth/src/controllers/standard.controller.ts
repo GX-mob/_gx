@@ -18,15 +18,9 @@
 
 import { Controller, GET, POST } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment } from "@gx-mob/http-service";
-import {
-  isValidMobilePhone,
-  isValidEmail,
-  isValidCPF,
-} from "@brazilian-utils/brazilian-utils";
+import { ControllerAugment, utils } from "@gx-mob/http-service";
 import HttpErrors from "http-errors";
 import bcrypt from "bcrypt";
-import { getClientIp } from "request-ip";
 
 import CredentialsBodySchema from "../schemas/credentials-body.json";
 import CodeBodySchema from "../schemas/code-body.json";
@@ -37,7 +31,6 @@ import { CodeBodySchema as ICodeBodySchema } from "../types/code-body";
 export default class StandardAuthController extends ControllerAugment {
   public settings = {
     protected: false,
-    managedErrors: ["UnprocessableEntityError", "UnauthorizedError"],
   };
 
   @GET({
@@ -46,12 +39,12 @@ export default class StandardAuthController extends ControllerAugment {
       schema: {
         response: {
           "200": {
-            id: { type: "string" },
+            firstName: { type: "string" },
             avatar: { type: "string" },
             next: { type: "string" },
           },
-          "201": {
-            id: { type: "string" },
+          "202": {
+            firstName: { type: "string" },
             avatar: { type: "string" },
             next: { type: "string" },
             last4: { type: "string" },
@@ -66,24 +59,24 @@ export default class StandardAuthController extends ControllerAugment {
   ) {
     const { id } = request.params;
 
-    const user = await this.getUser(id);
+    const { password, phones, firstName, avatar } = await this.getUser(id);
 
-    if (!user.credential) {
-      await this.requestVerify(user.phones[0]);
-      reply.code(201);
+    if (!password) {
+      await this.requestVerify(phones[0]);
+      reply.code(202);
 
       return {
-        id: user._id,
-        avatar: user.avatar,
+        firstName,
+        avatar,
         next: "code",
-        last4: user.phones[0].slice(user.phones[0].length - 4),
+        last4: phones[0].slice(phones[0].length - 4),
       };
     }
 
     return {
-      id: user._id,
-      avatar: user.avatar,
-      next: "credential",
+      firstName,
+      avatar,
+      next: "password",
     };
   }
 
@@ -98,19 +91,13 @@ export default class StandardAuthController extends ControllerAugment {
     return user;
   }
 
-  private userQuery(
-    id: string
-  ): { phones: string } | { emails: string } | { cpf: string } {
-    if (isValidMobilePhone(id)) {
-      return { phones: `+55${id}` };
+  private userQuery(id: string): { phones: string } | { emails: string } {
+    if (utils.mobileNumberRegex.test(id)) {
+      return { phones: id };
     }
 
-    if (isValidEmail(id)) {
+    if (utils.emailRegex.test(id)) {
       return { emails: id };
-    }
-
-    if (isValidCPF(id)) {
-      return { cpf: id };
     }
 
     throw new HttpErrors.UnprocessableEntity("invalid-id");
@@ -125,15 +112,15 @@ export default class StandardAuthController extends ControllerAugment {
   }
 
   @POST({
-    url: "/credential",
+    url: "/sign-in",
     options: {
       schema: {
         body: CredentialsBodySchema,
         response: {
-          "200": {
+          "201": {
             token: { type: "string" },
           },
-          "201": {
+          "202": {
             next: { type: "string" },
             last4: { type: "string" },
           },
@@ -148,32 +135,25 @@ export default class StandardAuthController extends ControllerAugment {
     const { id, credential } = request.body;
     const user = await this.getUser(id);
 
-    const match = await bcrypt.compare(credential, user.credential);
+    const match = await bcrypt.compare(credential, user.password);
 
     if (!match) {
-      throw new HttpErrors.UnprocessableEntity("wrong-credential");
+      throw new HttpErrors.UnprocessableEntity("wrong-password");
     }
 
     if (user["2fa"]) {
       await this.requestVerify(user["2fa"]);
 
-      reply.code(201);
+      reply.code(202);
       return {
         next: "code",
         last4: user["2fa"].slice(user["2fa"].length - 4),
       };
     }
 
-    const { token } = await this.createSession(user._id, request);
+    const { token } = await this.session.create(user, request);
 
-    return { token };
-  }
-
-  private createSession(userId: string, request: FastifyRequest) {
-    return this.session.create(userId, {
-      ua: request.headers["user-agent"],
-      ip: getClientIp(request.raw),
-    });
+    return reply.code(201).send({ token });
   }
 
   @POST({
@@ -182,22 +162,25 @@ export default class StandardAuthController extends ControllerAugment {
       schema: {
         body: CodeBodySchema,
         response: {
-          "200": {
+          "201": {
             token: { type: "string" },
           },
         },
       },
     },
   })
-  async codeHandler(request: FastifyRequest<{ Body: ICodeBodySchema }>) {
+  async codeHandler(
+    request: FastifyRequest<{ Body: ICodeBodySchema }>,
+    reply: FastifyReply
+  ) {
     const { id, code } = request.body;
     const user = await this.getUser(id);
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
-        const { token } = await this.createSession(user._id, request);
+        const { token } = await this.session.create(user, request);
 
-        return { token };
+        return reply.code(201).send({ token });
       }
 
       throw new HttpErrors.UnprocessableEntity("wrong-code");
@@ -209,8 +192,8 @@ export default class StandardAuthController extends ControllerAugment {
       throw new HttpErrors.UnprocessableEntity("wrong-code");
     }
 
-    const { token } = await this.createSession(user._id, request);
+    const { token } = await this.session.create(user, request);
 
-    return { token };
+    return reply.code(201).send({ token });
   }
 }

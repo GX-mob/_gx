@@ -1,28 +1,17 @@
+import { FastifyRequest } from "fastify";
 import { Service, Inject } from "fastify-decorators";
 import { Types } from "mongoose";
 import { promisify } from "util";
 import jwt from "jsonwebtoken";
 import { DataService } from "../data";
 import { CacheService } from "../cache";
-import { Session } from "../../models/session";
+import { User, Session } from "../../models";
+import { getClientIp } from "request-ip";
 import { handleRejectionByUnderHood } from "../../helpers/utils";
+import HttpError from "http-errors";
 
 const verify = promisify(jwt.verify);
 const sign = promisify(jwt.sign);
-
-/**
- * Session data
- */
-type SessionInfo = {
-  /**
-   * User-agent
-   */
-  ua: string;
-  /**
-   * User ip
-   */
-  ip: string;
-};
 
 @Service()
 export class SessionService {
@@ -49,27 +38,16 @@ export class SessionService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user_id: Types.ObjectId | string,
-    session_data: SessionInfo
+    user: User,
+    request: FastifyRequest
   ): Promise<{ token: string; session: Session }> {
-    const user = await this.data.users.get({
-      _id: user_id,
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const { _id, groups } = user;
-
     const session = await this.data.sessions.create({
-      user: _id,
-      groups,
-      userAgent: session_data.ua,
-      ips: [session_data.ip],
+      user: user._id,
+      userAgent: request.headers["user-agent"],
+      ips: [getClientIp(request.raw)],
     });
 
-    const token = await this.signToken({ sid: session._id, uid: _id });
+    const token = await this.signToken({ sid: session._id, uid: user._id });
 
     return { token, session };
   }
@@ -120,34 +98,33 @@ export class SessionService {
   private async checkState(
     session_id: Types.ObjectId,
     ip: string
-  ): Promise<{
-    error?: "deactivated" | "not-found";
-    session?: Session;
-  }> {
+  ): Promise<Session> {
     const sessionData = await this.get(session_id);
 
     if (!sessionData) {
-      return { error: "not-found" };
+      throw new HttpError.Unauthorized("not-found");
     }
 
     if (!sessionData.active) {
-      return { error: "deactivated" };
+      throw new HttpError.Forbidden("deactivated");
     }
 
     const session = { ...sessionData };
 
-    if (!session.ips.includes(ip)) {
-      session.ips.push(ip);
-
-      const update = this.update(session_id, { ips: session.ips });
-      handleRejectionByUnderHood(update);
+    if (session.ips.includes(ip)) {
+      return session;
     }
 
-    return { session };
+    session.ips.push(ip);
+
+    const update = this.update(session_id, { ips: session.ips });
+    handleRejectionByUnderHood(update);
+
+    return session;
   }
 
   public hasPermission(session: Session, group: number[]) {
-    return !!group.find((id) => session.groups.includes(id));
+    return !!group.find((id) => session.user.groups.includes(id));
   }
 
   async get(_id: Types.ObjectId) {
