@@ -1,0 +1,21 @@
+{
+  "title": "Confirm Contact Body Schema",
+  "type": "object",
+  "properties": {
+    "contact": {
+      "anyOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "cc": "string",
+            "number": "string"
+          }
+        }
+      ]
+    },
+    "code": { "type": "string", "pattern": "^[0-9]{6}$" }
+  },
+  "additionalProperties": false,
+  "required": ["contact"]
+}

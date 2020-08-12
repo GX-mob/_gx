@@ -18,13 +18,11 @@ import { getClientIp } from "request-ip";
 
 type Settings = {
   protected?: boolean | number[];
-  managedErrors: string[];
 };
 
 export class ControllerAugment {
   public settings: Settings = {
     protected: false,
-    managedErrors: [],
   };
 
   @Inject(FastifyInstanceToken)
@@ -102,8 +100,8 @@ export class ControllerAugment {
     reply: FastifyReply
   ) {
     if (
-      (error as any).validation ||
-      this.settings.managedErrors.includes(error.constructor.name)
+      (error as any).validation || // ? catch ajv validation errors ?
+      httpError.isHttpError(error)
     ) {
       return reply.send(error);
     }

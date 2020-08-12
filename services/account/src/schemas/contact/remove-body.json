@@ -1,0 +1,20 @@
+{
+  "title": "Remove Contact Body Schema",
+  "type": "object",
+  "properties": {
+    "contact": {
+      "anyOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "cc": "string",
+            "number": "string"
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": ["contact"]
+}

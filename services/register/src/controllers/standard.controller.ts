@@ -29,6 +29,7 @@ import RegisterBodySchema from "../schemas/register-body.json";
 import { PhoneVerificationRequestBodySchema as IPhoneRequestBodySchema } from "../types/phone-request-body";
 import { PhoneCheckVerificationBodySchema as IPhoneVerifySchema } from "../types/phone-verify-body";
 import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-body";
+import { STATUS_CODES } from "http";
 
 @Controller("/")
 export default class StandardRegisterController extends ControllerAugment {
@@ -50,6 +51,7 @@ export default class StandardRegisterController extends ControllerAugment {
     reply: FastifyReply
   ): Promise<any> {
     const { phone } = request.body;
+    console.log(request.body);
     const user = await this.data.users.get({ phones: `+55${phone}` });
 
     if (user) {
@@ -57,18 +59,22 @@ export default class StandardRegisterController extends ControllerAugment {
     }
 
     if (process.env.NODE_ENV === "development") {
-      return reply.code(201).send();
+      return reply.code(202).send();
     }
 
     // Prevent resend before expiration
     const previousRequest = await this.getCache(phone);
 
+    /**
+     * If haven't a previous request or previous
+     * request is expired, requests a new one
+     */
     if (!previousRequest || previousRequest.iat + 1000 * 60 < Date.now()) {
       await this.requestVerification(phone);
-      return reply.code(201).send();
+      reply.code(202);
     }
 
-    return reply.code(200).send();
+    return reply.send();
   }
 
   async requestVerification(phone: string) {

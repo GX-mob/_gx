@@ -1,10 +1,7 @@
 import "reflect-metadata";
 import { join } from "path";
-import fastify, {
-  FastifyInstance,
-  FastifyServerOptions,
-  FastifyRequest,
-} from "fastify";
+import fastify, { FastifyInstance, FastifyServerOptions } from "fastify";
+import fastifySwagger from "fastify-swagger";
 import fastifyMultipart from "fastify-multipart";
 import fastifyRateLimit from "fastify-rate-limit";
 import fastifyCircuitBreak from "fastify-circuit-breaker";
@@ -17,7 +14,7 @@ import { Redis } from "ioredis";
 import { Session } from "./models/session";
 
 declare module "fastify" {
-  export interface FastifyRequest {
+  interface FastifyRequest {
     session?: Session;
   }
 }
@@ -48,6 +45,9 @@ export default function instanceBootstrap(
     max: 100,
     timeWindow: 1000 * 60,
     redis: instance.redis,
+  });
+  instance.register(fastifySwagger, {
+    exposeRoute: process.env.NODE_ENV === "development",
   });
 
   // Controllers autoload

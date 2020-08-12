@@ -19,7 +19,7 @@ interface Settings<Model> {
 export class Handler<Model> {
   constructor(
     private cache: CacheService,
-    private model: mongoose.Model<any>,
+    public model: mongoose.Model<any>,
     private settings: Settings<Model>
   ) {}
 
@@ -136,7 +136,7 @@ export class Handler<Model> {
     await this.cache.del(this.settings.namespace, query);
   }
 
-  mountLinkingKeys(data) {
+  private mountLinkingKeys(data) {
     const clean = this.settings.linkingKeys.filter(
       (key) => !this.isEmpty(data[key])
     );
@@ -160,7 +160,7 @@ export class Handler<Model> {
     }, []);
   }
 
-  isEmpty(value) {
+  private isEmpty(value) {
     if (Array.isArray(value)) {
       return value.length === 0;
     }

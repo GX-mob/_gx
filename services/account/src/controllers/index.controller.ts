@@ -16,40 +16,45 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Controller, GET, PUT } from "fastify-decorators";
+import { Controller, GET, POST, PUT, DELETE } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ControllerAugment } from "@gx-mob/http-service";
+import bcrypt from "bcrypt";
+import HttpErrors from "http-errors";
 
 import UpdateProfileBodySchema from "../schemas/profile-body.json";
 import UpdateCredentialBodySchema from "../schemas/credential-body.json";
-import UpdateContactBodySchema from "../schemas/contact-body.json";
 import UpdateAvatarBodySchema from "../schemas/avatar-body.json";
 
 import { UpdateProfileBodySchema as IUpdateProfileBodySchema } from "../types/profile-body";
+import { UpdateCredentialBodySchema as IUpdateCredentialBodySchema } from "../types/credential-body";
+import { UpdateAvatarBodySchema as IUpdateAvatarBodySchema } from "../types/avatar-body";
 
 @Controller("/")
 export default class StandardAuthController extends ControllerAugment {
   public settings = {
     protected: true,
-    managedErrors: ["UnauthorizedError"],
+    managedErrors: [
+      "UnauthorizedError",
+      "UnprocessableEntity",
+      "ValidationError",
+    ],
   };
 
-  @GET({
-    url: "/",
-    options: {
-      schema: {
-        response: {
-          "200": {
-            id: { type: "string" },
-            firstName: { type: "string" },
-            lastName: { type: "string" },
-            phones: { type: "array", items: { type: "string" } },
-            emails: { type: "array", items: { type: "string" } },
-            cpf: { type: "string" },
-            birth: { type: "string" },
-            avatar: { type: "string" },
-            groups: { type: "string" },
-          },
+  @GET("/", {
+    schema: {
+      description: "Get user data",
+      response: {
+        "200": {
+          id: { type: "string" },
+          firstName: { type: "string" },
+          lastName: { type: "string" },
+          phones: { type: "array", items: { type: "string" } },
+          emails: { type: "array", items: { type: "string" } },
+          cpf: { type: "string" },
+          birth: { type: "string" },
+          avatar: { type: "string" },
+          groups: { type: "string" },
         },
       },
     },
@@ -80,12 +85,9 @@ export default class StandardAuthController extends ControllerAugment {
     };
   }
 
-  @PUT({
-    url: "/profile",
-    options: {
-      schema: {
-        body: UpdateProfileBodySchema,
-      },
+  @PUT("/profile", {
+    schema: {
+      body: UpdateProfileBodySchema,
     },
   })
   private async updateProfile(
@@ -108,19 +110,49 @@ export default class StandardAuthController extends ControllerAugment {
     await this.data.users.update({ _id: session.user._id }, request.body);
     await this.data.sessions.updateCache({ _id: session._id });
 
-    return reply.code(200).send();
+    return reply.send();
   }
 
-  @PUT({
-    url: "/credential",
-    options: {
-      schema: {
-        body: UpdateCredentialBodySchema,
-      },
+  @POST("/credential", {
+    schema: {
+      description: "Update password",
+      body: UpdateCredentialBodySchema,
     },
   })
-  private async updateCredential(
-    request: FastifyRequest<{ Body: IUpdateProfileBodySchema }>,
+  private async updateUserPassword(
+    request: FastifyRequest<{ Body: IUpdateCredentialBodySchema }>,
+    reply: FastifyReply
+  ) {
+    const { user } = request.session;
+    const { current, new: newCredential } = request.body;
+
+    const compare = await bcrypt.compare(current, user.credential);
+
+    if (!compare) {
+      throw new HttpErrors.UnprocessableEntity("wrong-credential");
+    }
+
+    const compareNew = await bcrypt.compare(newCredential, user.credential);
+
+    if (compareNew) {
+      throw new HttpErrors.UnprocessableEntity("unchanged");
+    }
+
+    const credential = await bcrypt.hash(newCredential, 10);
+
+    await this.data.users.model.updateOne({ _id: user._id }, { credential });
+
+    return reply.send();
+  }
+
+  @PUT("/avatar", {
+    schema: {
+      description: "Update avatar",
+      body: UpdateAvatarBodySchema,
+    },
+  })
+  private async updateAvatar(
+    request: FastifyRequest<{ Body: IUpdateAvatarBodySchema }>,
     reply: FastifyReply
   ) {}
 }

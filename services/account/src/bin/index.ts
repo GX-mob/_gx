@@ -22,6 +22,7 @@ import { resolve } from "path";
 
 import "reflect-metadata";
 import { bootstrap } from "@gx-mob/http-service";
+import fastifySwagger from "fastify-swagger";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -43,6 +44,8 @@ export const start = async () => {
       directory: resolve(__dirname, "../"),
       redis,
     });
+
+    instance.register(fastifySwagger);
 
     await instance.ready();
 

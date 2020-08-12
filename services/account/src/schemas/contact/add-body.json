@@ -1,0 +1,20 @@
+{
+  "title": "Add Contact Body Schema",
+  "type": "object",
+  "properties": {
+    "contact": {
+      "anyOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "cc": { "type": "string" },
+            "number": { "type": "string" }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": ["contact"]
+}

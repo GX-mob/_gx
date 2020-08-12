@@ -5,7 +5,13 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface UpdateContactBodySchema {
-  contact: string;
+export interface ConfirmContactBodySchema {
+  contact:
+    | string
+    | {
+        cc?: unknown;
+        number?: unknown;
+        [k: string]: unknown;
+      };
   code?: string;
 }

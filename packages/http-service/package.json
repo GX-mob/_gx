@@ -1,6 +1,6 @@
 {
   "name": "@gx-mob/http-service",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Base modules of http services",
   "main": "./dist/index.js",
   "files": [
@@ -34,6 +34,7 @@
     "fastify-plugin": "^2.0.3",
     "fastify-rate-limit": "^4.0.2",
     "fastify-redis": "^4.0.3",
+    "fastify-swagger": "^3.3.0",
     "file-type": "^14.7.0",
     "html-minifier": "^4.0.0",
     "http-errors": "^1.8.0",
@@ -50,7 +51,8 @@
     "schemapack": "^1.4.2",
     "source-map-support": "^0.5.19",
     "stream-file-type": "^0.5.0",
-    "twilio": "^3.48.1"
+    "twilio": "^3.48.1",
+    "validator": "^13.1.1"
   },
   "devDependencies": {
     "@shelf/jest-mongodb": "^1.2.1",
