@@ -5,7 +5,7 @@ export interface Session {
   _id: Types.ObjectId | any;
   user: User;
   userAgent: string;
-  ips: string[];
+  ips: (string | null)[];
   createdAt?: Date;
   active?: boolean;
 }

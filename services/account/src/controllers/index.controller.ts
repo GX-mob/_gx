@@ -16,30 +16,28 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Controller, GET, POST, PUT, DELETE } from "fastify-decorators";
+import { Controller, Inject, GET, POST, PUT, Hook } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment } from "@gx-mob/http-service";
-import bcrypt from "bcrypt";
-import HttpErrors from "http-errors";
+import { SessionService, DataService, GuardHook } from "@gx-mob/http-service";
 
 import UpdateProfileBodySchema from "../schemas/profile-body.json";
-import UpdateCredentialBodySchema from "../schemas/credential-body.json";
 import UpdateAvatarBodySchema from "../schemas/avatar-body.json";
 
 import { UpdateProfileBodySchema as IUpdateProfileBodySchema } from "../types/profile-body";
-import { UpdateCredentialBodySchema as IUpdateCredentialBodySchema } from "../types/credential-body";
 import { UpdateAvatarBodySchema as IUpdateAvatarBodySchema } from "../types/avatar-body";
 
-@Controller("/")
-export default class StandardAuthController extends ControllerAugment {
-  public settings = {
-    protected: true,
-    managedErrors: [
-      "UnauthorizedError",
-      "UnprocessableEntity",
-      "ValidationError",
-    ],
-  };
+@Controller("/profile")
+export default class StandardAuthController {
+  @Inject(SessionService)
+  private session!: SessionService;
+
+  @Inject(DataService)
+  private data!: DataService;
+
+  @Hook("onRequest")
+  async guard(request: FastifyRequest) {
+    await GuardHook(this.session, request);
+  }
 
   @GET("/", {
     schema: {
@@ -85,12 +83,12 @@ export default class StandardAuthController extends ControllerAugment {
     };
   }
 
-  @PUT("/profile", {
+  @PUT("/", {
     schema: {
       body: UpdateProfileBodySchema,
     },
   })
-  private async updateProfile(
+  async updateHandler(
     request: FastifyRequest<{ Body: IUpdateProfileBodySchema }>,
     reply: FastifyReply
   ) {
@@ -113,45 +111,13 @@ export default class StandardAuthController extends ControllerAugment {
     return reply.send();
   }
 
-  @POST("/credential", {
-    schema: {
-      description: "Update password",
-      body: UpdateCredentialBodySchema,
-    },
-  })
-  private async updateUserPassword(
-    request: FastifyRequest<{ Body: IUpdateCredentialBodySchema }>,
-    reply: FastifyReply
-  ) {
-    const { user } = request.session;
-    const { current, new: newCredential } = request.body;
-
-    const compare = await bcrypt.compare(current, user.credential);
-
-    if (!compare) {
-      throw new HttpErrors.UnprocessableEntity("wrong-credential");
-    }
-
-    const compareNew = await bcrypt.compare(newCredential, user.credential);
-
-    if (compareNew) {
-      throw new HttpErrors.UnprocessableEntity("unchanged");
-    }
-
-    const credential = await bcrypt.hash(newCredential, 10);
-
-    await this.data.users.model.updateOne({ _id: user._id }, { credential });
-
-    return reply.send();
-  }
-
   @PUT("/avatar", {
     schema: {
       description: "Update avatar",
       body: UpdateAvatarBodySchema,
     },
   })
-  private async updateAvatar(
+  async uploadAvatar(
     request: FastifyRequest<{ Body: IUpdateAvatarBodySchema }>,
     reply: FastifyReply
   ) {}

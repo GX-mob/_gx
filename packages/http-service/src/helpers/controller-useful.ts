@@ -24,7 +24,7 @@ import { getClientIp } from "request-ip";
 export async function GuardHook(
   service: SessionService,
   request: FastifyRequest,
-  alloweds: number[]
+  alloweds?: number[]
 ) {
   if (!request.headers.authorization) {
     throw new HttpError.Unauthorized();
@@ -43,7 +43,7 @@ export async function GuardHook(
 
 export function HandleError(error: Error, reply: FastifyReply) {
   if (
-    (error as any).validation || // ? catch ajv validation errors ?
+    (error as any).validation || // Catch ajv validation errors
     HttpError.isHttpError(error)
   ) {
     return reply.send(error);

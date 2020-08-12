@@ -96,7 +96,7 @@ export default class StandardAuthController extends ControllerAugment {
 
     if (
       // Prevent removing the last contact
-      [...user.phones, ...user.emails].length === 1 ||
+      [...user.phones, ...(user.emails || [])].length === 1 ||
       // Prevent removing the second factor authentication
       user["2fa"] === value
     ) {

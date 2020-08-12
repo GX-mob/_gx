@@ -32,11 +32,4 @@ const logger = pino(
   dest
 );
 
-// asynchronously flush every 10 seconds to keep the buffer empty
-// in periods of low activity
-/* istanbul ignore next */
-setInterval(function () {
-  logger.flush();
-}, 10000).unref();
-
 export default logger;

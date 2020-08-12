@@ -16,7 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
-    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.23.tgz",
+    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.24.tgz",
     "bcrypt": "^5.0.0",
     "fastify": "^3.1.1",
     "fastify-decorators": "^3.1.1",
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@tsconfig/node12": "^1.0.7",
+    "@types/bcrypt": "^3.0.0",
     "@types/http-errors": "^1.8.0",
     "@types/ioredis": "^4.17.3",
     "@types/jest": "^26.0.8",

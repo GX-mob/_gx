@@ -24,7 +24,7 @@ import {
   HandleError,
   utils,
 } from "@gx-mob/http-service";
-import httpErrors from "http-errors";
+import HttpError from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 
 import PhoneRequestBodySchema from "../schemas/phone-request-body.json";
@@ -37,13 +37,13 @@ import { RegisterBodySchema as IRegisterBodySchema } from "../types/register-bod
 @Controller("/")
 export default class StandardRegisterController {
   @Inject(DataService)
-  private data: DataService;
+  private data!: DataService;
 
   @Inject(ContactVerificationService)
-  private verify: ContactVerificationService;
+  private verify!: ContactVerificationService;
 
   @Inject(SessionService)
-  private session: SessionService;
+  private session!: SessionService;
 
   @ErrorHandler()
   private errorHandler(
@@ -71,7 +71,7 @@ export default class StandardRegisterController {
     const user = await this.data.users.get({ phones: phone });
 
     if (user) {
-      throw new httpErrors.UnprocessableEntity("phone-already-registred");
+      throw new HttpError.UnprocessableEntity("phone-already-registred");
     }
 
     if (process.env.NODE_ENV === "development") {
@@ -94,21 +94,26 @@ export default class StandardRegisterController {
   }
 
   /**
-   * Mount and validate final phone number
-   * @param body
-   * @return {string} Country Coude + Phone Number
+   * If pass contact like object makes full number and validate it,
+   * else validates contact like as email
+   * @param value
+   * @throws UnprocessableEntity: invalid-number
+   * @return {object} { contact: string, type: "email" | "phone" }
    */
   private phone(
-    body: IPhoneRequestBodySchema | IPhoneVerifySchema | IRegisterBodySchema
-  ): string {
-    const { cc, phone } = body;
-    const contact = `${cc}${phone}`;
+    value: { cc: string; phone: string } | string
+  ): { contact: string; type: "email" | "phone" } {
+    const type = typeof value === "string" ? "email" : "phone";
 
-    if (!utils.mobileNumberRegex.test(contact)) {
-      throw new httpErrors.UnprocessableEntity("invalid-number");
+    value = typeof value === "string" ? value : `${value.cc}${value.phone}`;
+
+    const regex = type === "phone" ? utils.mobileNumberRegex : utils.emailRegex;
+
+    if (!regex.test(value)) {
+      throw new HttpError.UnprocessableEntity("invalid-contact");
     }
 
-    return contact;
+    return { contact: value, type };
   }
 
   async requestVerification(phone: string) {
@@ -141,13 +146,13 @@ export default class StandardRegisterController {
         return reply.code(200).send();
       }
 
-      throw new httpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
     const valid = await this.verify.verify(phone, code);
 
     if (!valid) {
-      throw new httpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
     await this.setCache(phone, { code, validated: true });
@@ -189,7 +194,7 @@ export default class StandardRegisterController {
      * Terms acception
      */
     if (!terms) {
-      throw new httpErrors.UnprocessableEntity("terms-not-accepted");
+      throw new HttpError.UnprocessableEntity("terms-not-accepted");
     }
 
     /**
@@ -198,7 +203,7 @@ export default class StandardRegisterController {
     const verification = await this.getCache(phone);
 
     if (!verification?.validated || verification?.code !== code) {
-      throw new httpErrors.Unauthorized("phone-verification-failed");
+      throw new HttpError.Unauthorized("phone-verification-failed");
     }
 
     /**
@@ -206,7 +211,7 @@ export default class StandardRegisterController {
      * * Only on the first ride, the CPF is consulted with the government api
      */
     if (!isValidCPF(cpf)) {
-      throw new httpErrors.UnprocessableEntity("invalid-cpf");
+      throw new HttpError.UnprocessableEntity("invalid-cpf");
     }
 
     /**
@@ -215,7 +220,7 @@ export default class StandardRegisterController {
     const registredCPF = await this.data.users.get({ cpf });
 
     if (registredCPF) {
-      throw new httpErrors.UnprocessableEntity("cpf-already-registred");
+      throw new HttpError.UnprocessableEntity("cpf-already-registred");
     }
 
     const userObject: any = {

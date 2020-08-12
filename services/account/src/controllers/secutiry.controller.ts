@@ -16,9 +16,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Controller, PUT } from "fastify-decorators";
+import { Controller, Inject, PUT } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment } from "@gx-mob/http-service";
+import { DataService } from "@gx-mob/http-service";
 import bcrypt from "bcrypt";
 import HttpErrors from "http-errors";
 
@@ -29,41 +29,67 @@ import { UpdateCredentialBodySchema as IUpdateCredentialBodySchema } from "../ty
 import { Update2FABodySchema as IUpdate2FABodySchema } from "../types/security/2fa-body";
 
 @Controller("/secutiry")
-export default class StandardAuthController extends ControllerAugment {
-  public settings = {
-    protected: true,
-  };
+export default class StandardAuthController {
+  @Inject(DataService)
+  private data!: DataService;
 
-  @PUT("/credential", {
+  @PUT("/password", {
     schema: {
       description: "Update password",
       body: UpdateCredentialBodySchema,
     },
   })
-  private async updateUserPassword(
+  async updatePassword(
     request: FastifyRequest<{ Body: IUpdateCredentialBodySchema }>,
     reply: FastifyReply
   ) {
     const { user } = request.session;
-    const { current, new: newCredential } = request.body;
+    const { current, new: newPassword } = request.body;
 
-    const compare = await bcrypt.compare(current, user.credential);
+    if (user.password) {
+      await this.assertPasswords(
+        {
+          value: current,
+          to: user.password,
+          be: true,
+        },
+        "wrong-credential"
+      );
 
-    if (!compare) {
-      throw new HttpErrors.UnprocessableEntity("wrong-credential");
+      await this.assertPasswords(
+        {
+          value: newPassword,
+          to: user.password,
+          be: false,
+        },
+        "unchanged"
+      );
     }
 
-    const compareNew = await bcrypt.compare(newCredential, user.credential);
+    const password = await bcrypt.hash(newPassword, 10);
 
-    if (compareNew) {
-      throw new HttpErrors.UnprocessableEntity("unchanged");
-    }
-
-    const credential = await bcrypt.hash(newCredential, 10);
-
-    await this.data.users.model.updateOne({ _id: user._id }, { credential });
+    await this.data.users.model.updateOne({ _id: user._id }, { password });
 
     return reply.send();
+  }
+
+  async assertPasswords(
+    {
+      value,
+      to,
+      be,
+    }: {
+      value: string;
+      to: string;
+      be: boolean;
+    },
+    errorMsg: string
+  ) {
+    const assert = await bcrypt.compare(value, to);
+
+    if ((be && !assert) || (!be && assert)) {
+      throw new HttpErrors.UnprocessableEntity(errorMsg);
+    }
   }
 
   @PUT("/2fa", {
@@ -72,7 +98,7 @@ export default class StandardAuthController extends ControllerAugment {
       body: Update2FABodySchema,
     },
   })
-  private async updateAvatar(
+  async update2FA(
     request: FastifyRequest<{ Body: IUpdate2FABodySchema }>,
     reply: FastifyReply
   ) {}

@@ -16,15 +16,22 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import logger from "./logger";
+import HttpError from "http-errors";
+
+const CC = process.env.COUNTRY_CODE_ISO3166 as string;
 
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {
   promise.catch((error) => logger.error(error));
 };
 
-const CC = process.env.COUNTRY_CODE_ISO3166;
+type RegexGlobalsObject = {
+  [k: string]: {
+    mobilePhone: RegExp;
+  };
+};
 
-const i18nRegex = {
+const i18nRegex: RegexGlobalsObject = {
   BR: {
     mobilePhone: /^(\+?[1-9]{2,3})?[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$/,
   },
@@ -33,9 +40,41 @@ const i18nRegex = {
 /**
  * General regex
  */
+export const regexes = {
+  emailRegex: /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+\.([a-z]+)?$/i,
+  ...i18nRegex[CC],
+};
 export const emailRegex = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+\.([a-z]+)?$/i;
+export const mobileNumberRegex = i18nRegex[CC].mobilePhone;
+
+type ContactPhoneObject = {
+  cc: string;
+  number: string;
+};
 
 /**
- * Mobile phone validation
+ * Parses contact object
+ * If pass contact like object makes full number and validate it,
+ * else validates contact like as email
+ * @param value
+ * @throws UnprocessableEntity: invalid-number
+ * @return {object} { contact: string, type: "email" | "phone" }
  */
-export const mobileNumberRegex = i18nRegex[CC].mobilePhone;
+export function parseContact(
+  value: ContactPhoneObject | string
+): { contact: string; type: "email" | "phone" } {
+  const type = typeof value === "string" ? "email" : "phone";
+
+  const contact =
+    type === "email"
+      ? (value as string)
+      : `${(value as any).cc}${(value as any).number}`;
+
+  const regex = type === "phone" ? mobileNumberRegex : emailRegex;
+
+  if (!regex.test(contact)) {
+    throw new HttpError.UnprocessableEntity("invalid-contact");
+  }
+
+  return { contact, type };
+}

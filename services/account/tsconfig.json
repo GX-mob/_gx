@@ -10,8 +10,7 @@
     "outDir": "./dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "resolveJsonModule": true,
-    "strict": false
+    "resolveJsonModule": true
   },
   "extends": "@tsconfig/node12/tsconfig.json",
   "include": ["./src/**/*.ts"],

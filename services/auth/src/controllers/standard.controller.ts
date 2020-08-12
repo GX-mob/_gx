@@ -16,10 +16,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Controller, GET, POST } from "fastify-decorators";
+import { Controller, Inject, GET, POST } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment, utils } from "@gx-mob/http-service";
-import HttpErrors from "http-errors";
+import {
+  DataService,
+  SessionService,
+  ContactVerificationService,
+  utils,
+} from "@gx-mob/http-service";
+import HttpError from "http-errors";
 import bcrypt from "bcrypt";
 
 import CredentialsBodySchema from "../schemas/credentials-body.json";
@@ -28,27 +33,29 @@ import { CredentialsBodySchema as ICredentialsBodySchema } from "../types/creden
 import { CodeBodySchema as ICodeBodySchema } from "../types/code-body";
 
 @Controller("/")
-export default class StandardAuthController extends ControllerAugment {
-  public settings = {
-    protected: false,
-  };
+export default class StandardAuthController {
+  @Inject(DataService)
+  private data!: DataService;
 
-  @GET({
-    url: "/id/:id",
-    options: {
-      schema: {
-        response: {
-          "200": {
-            firstName: { type: "string" },
-            avatar: { type: "string" },
-            next: { type: "string" },
-          },
-          "202": {
-            firstName: { type: "string" },
-            avatar: { type: "string" },
-            next: { type: "string" },
-            last4: { type: "string" },
-          },
+  @Inject(SessionService)
+  private session!: SessionService;
+
+  @Inject(ContactVerificationService)
+  private verify!: ContactVerificationService;
+
+  @GET("/id/:id", {
+    schema: {
+      response: {
+        "200": {
+          firstName: { type: "string" },
+          avatar: { type: "string" },
+          next: { type: "string" },
+        },
+        "202": {
+          firstName: { type: "string" },
+          avatar: { type: "string" },
+          next: { type: "string" },
+          last4: { type: "string" },
         },
       },
     },
@@ -85,7 +92,7 @@ export default class StandardAuthController extends ControllerAugment {
     const user = await this.data.users.get(query);
 
     if (!user) {
-      throw new HttpErrors.UnprocessableEntity("user-not-found");
+      throw new HttpError.UnprocessableEntity("user-not-found");
     }
 
     return user;
@@ -100,7 +107,7 @@ export default class StandardAuthController extends ControllerAugment {
       return { emails: id };
     }
 
-    throw new HttpErrors.UnprocessableEntity("invalid-id");
+    throw new HttpError.UnprocessableEntity("invalid-id");
   }
 
   async requestVerify(id: string) {
@@ -111,19 +118,16 @@ export default class StandardAuthController extends ControllerAugment {
     return this.verify.request(id);
   }
 
-  @POST({
-    url: "/sign-in",
-    options: {
-      schema: {
-        body: CredentialsBodySchema,
-        response: {
-          "201": {
-            token: { type: "string" },
-          },
-          "202": {
-            next: { type: "string" },
-            last4: { type: "string" },
-          },
+  @POST("/sign-in", {
+    schema: {
+      body: CredentialsBodySchema,
+      response: {
+        "201": {
+          token: { type: "string" },
+        },
+        "202": {
+          next: { type: "string" },
+          last4: { type: "string" },
         },
       },
     },
@@ -135,10 +139,10 @@ export default class StandardAuthController extends ControllerAugment {
     const { id, credential } = request.body;
     const user = await this.getUser(id);
 
-    const match = await bcrypt.compare(credential, user.password);
+    const match = await bcrypt.compare(credential, user.password as string);
 
     if (!match) {
-      throw new HttpErrors.UnprocessableEntity("wrong-password");
+      throw new HttpError.UnprocessableEntity("wrong-password");
     }
 
     if (user["2fa"]) {
@@ -156,15 +160,12 @@ export default class StandardAuthController extends ControllerAugment {
     return reply.code(201).send({ token });
   }
 
-  @POST({
-    url: "/code",
-    options: {
-      schema: {
-        body: CodeBodySchema,
-        response: {
-          "201": {
-            token: { type: "string" },
-          },
+  @POST("/code", {
+    schema: {
+      body: CodeBodySchema,
+      response: {
+        "201": {
+          token: { type: "string" },
         },
       },
     },
@@ -183,13 +184,13 @@ export default class StandardAuthController extends ControllerAugment {
         return reply.code(201).send({ token });
       }
 
-      throw new HttpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
     const valid = await this.verify.verify(id, code);
 
     if (!valid) {
-      throw new HttpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
     const { token } = await this.session.create(user, request);

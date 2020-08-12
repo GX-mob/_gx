@@ -2,7 +2,7 @@ import { FastifyRequest } from "fastify";
 import { Service, Inject } from "fastify-decorators";
 import { Types } from "mongoose";
 import { promisify } from "util";
-import jwt from "jsonwebtoken";
+import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "../data";
 import { CacheService } from "../cache";
 import { User, Session } from "../../models";
@@ -10,27 +10,25 @@ import { getClientIp } from "request-ip";
 import { handleRejectionByUnderHood } from "../../helpers/utils";
 import HttpError from "http-errors";
 
-const verify = promisify(jwt.verify);
-const sign = promisify(jwt.sign);
+const verify = promisify<string, Secret, VerifyOptions, object | string>(
+  jwt.verify
+);
+const sign = promisify<string | Buffer | object, Secret, SignOptions, string>(
+  jwt.sign
+);
 
 @Service()
 export class SessionService {
   private tokenNamespace = "token";
-  private keyid: string;
-  private publicKey: string;
-  private privateKey: string;
+  private keyid = process.env.AUTH_KID as string;
+  private publicKey = process.env.AUTH_PUBLIC_KEY as string;
+  private privateKey = process.env.AUTH_PRIVATE_KEY as string;
 
   @Inject(DataService)
   private data!: DataService;
 
   @Inject(CacheService)
   private cache!: CacheService;
-
-  constructor() {
-    this.keyid = process.env.AUTH_KID;
-    this.publicKey = process.env.AUTH_PUBLIC_KEY;
-    this.privateKey = process.env.AUTH_PRIVATE_KEY;
-  }
 
   /**
    * @param user_id
@@ -43,7 +41,7 @@ export class SessionService {
   ): Promise<{ token: string; session: Session }> {
     const session = await this.data.sessions.create({
       user: user._id,
-      userAgent: request.headers["user-agent"],
+      userAgent: request.headers["user-agent"] as string,
       ips: [getClientIp(request.raw)],
     });
 
@@ -71,7 +69,7 @@ export class SessionService {
    * @param token
    * @returns session data
    */
-  async verify(token: string, ip: string) {
+  async verify(token: string, ip: string | null) {
     const tokenBody = await this.verifyToken(token);
     const session_id = Types.ObjectId(tokenBody.sid);
 
@@ -97,7 +95,7 @@ export class SessionService {
 
   private async checkState(
     session_id: Types.ObjectId,
-    ip: string
+    ip: string | null
   ): Promise<Session> {
     const sessionData = await this.get(session_id);
 
@@ -111,7 +109,7 @@ export class SessionService {
 
     const session = { ...sessionData };
 
-    if (session.ips.includes(ip)) {
+    if (!ip || session.ips.includes(ip)) {
       return session;
     }
 
@@ -124,7 +122,7 @@ export class SessionService {
   }
 
   public hasPermission(session: Session, group: number[]) {
-    return !!group.find((id) => session.user.groups.includes(id));
+    return !!group.find((id) => (session.user.groups as number[]).includes(id));
   }
 
   async get(_id: Types.ObjectId) {
