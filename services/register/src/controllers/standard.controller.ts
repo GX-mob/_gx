@@ -1,20 +1,20 @@
-/*
-  GX - Corridas
-  Copyright (C) 2020  Fernando Costa
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Affero General Public License as
-  published by the Free Software Foundation, either version 3 of the
-  License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Affero General Public License for more details.
-
-  You should have received a copy of the GNU Affero General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { Controller, POST, Inject, ErrorHandler } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
 import {
@@ -22,9 +22,9 @@ import {
   ContactVerificationService,
   SessionService,
   HandleError,
+  HttpError,
   utils,
 } from "@gx-mob/http-service";
-import HttpError from "http-errors";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 
 import PhoneRequestBodySchema from "../schemas/phone-request-body.json";
@@ -66,9 +66,9 @@ export default class StandardRegisterController {
     request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const phone = this.phone(request.body);
+    const { contact } = utils.parseContact(request.body);
 
-    const user = await this.data.users.get({ phones: phone });
+    const user = await this.data.users.get({ phones: contact });
 
     if (user) {
       throw new HttpError.UnprocessableEntity("phone-already-registred");

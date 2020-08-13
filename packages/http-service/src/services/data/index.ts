@@ -1,3 +1,20 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { Service, Inject } from "fastify-decorators";
 import { CacheService } from "../cache";
 import mongoose, { DocumentQuery, Document } from "mongoose";
@@ -29,17 +46,14 @@ export class Handler<Model> {
    * @returns
    * @constructs {Model}
    */
-  async get(
-    query: Partial<Model>,
-    populate: Array<keyof Model> | false = this.settings.autoPopulate
-  ): Promise<Model | null> {
+  async get(query: Partial<Model>): Promise<Model | null> {
     const cache = await this.cache.get(this.settings.namespace, query);
 
     if (cache) {
       return cache;
     }
 
-    const data = await this.makeQuery(query, populate);
+    const data = await this.makeQuery(query);
 
     if (!data) {
       return null;
@@ -50,20 +64,19 @@ export class Handler<Model> {
     return data as Model;
   }
 
-  private async makeQuery(
-    query: Partial<Model>,
-    populate: Array<keyof Model> | false
-  ) {
+  private async makeQuery(query: Partial<Model>) {
     const _query = this.model.findOne(query).lean();
 
-    if (populate) {
-      this.populateObject(_query);
-    }
+    this.populateObject(_query);
 
     return _query;
   }
 
   private populateObject(query: DocumentQuery<any, any> | Document) {
+    if (!this.settings.autoPopulate) {
+      return query;
+    }
+
     for (let i = 0; i < this.settings.autoPopulate.length; i++) {
       query.populate(this.settings.autoPopulate[i] as string);
     }
@@ -76,7 +89,9 @@ export class Handler<Model> {
       this.settings.namespace,
       { _id: data._id }, // using the doc._id to prevent a circular reference on linking keys
       data,
-      { link: this.settings.linkingKeys && this.mountLinkingKeys(data) }
+      {
+        link: this.mountLinkingKeys(data),
+      }
     );
     handleRejectionByUnderHood(promise);
   }
@@ -118,7 +133,7 @@ export class Handler<Model> {
   }
 
   async updateCache(query: Partial<Model>) {
-    const data = await this.makeQuery(query, this.settings.autoPopulate);
+    const data = await this.makeQuery(query);
 
     if (!data) return;
 
@@ -136,12 +151,16 @@ export class Handler<Model> {
     await this.cache.del(this.settings.namespace, query);
   }
 
-  private mountLinkingKeys(data) {
+  private mountLinkingKeys(data: any): string[] | undefined {
+    if (!this.settings.linkingKeys) {
+      return;
+    }
+
     const clean = this.settings.linkingKeys.filter(
       (key) => !this.isEmpty(data[key])
     );
 
-    return clean.reduce((final, key) => {
+    return clean.reduce<string[]>((final, key) => {
       const value = data[key];
 
       /**
@@ -160,7 +179,7 @@ export class Handler<Model> {
     }, []);
   }
 
-  private isEmpty(value) {
+  private isEmpty(value: any) {
     if (Array.isArray(value)) {
       return value.length === 0;
     }

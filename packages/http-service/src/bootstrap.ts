@@ -1,5 +1,22 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+import "source-map-support/register";
 import "reflect-metadata";
-import { join } from "path";
 import fastify, { FastifyInstance, FastifyServerOptions } from "fastify";
 import fastifySwagger from "fastify-swagger";
 import fastifyMultipart from "fastify-multipart";
@@ -19,17 +36,18 @@ declare module "fastify" {
   }
 }
 
-type ServiceSettings = {
-  directory: string;
+type Service = {
+  controllers: any[];
   redis: string | Redis;
+  options?: FastifyServerOptions;
 };
 
-export default function instanceBootstrap(
-  ServiceSettings: ServiceSettings,
-  opts: FastifyServerOptions = {}
-): FastifyInstance {
-  const instance: FastifyInstance = fastify({ ...opts, logger });
-  const { directory, redis } = ServiceSettings;
+export default function instanceBootstrap(service: Service): FastifyInstance {
+  const { controllers, redis, options } = service;
+
+  const instance: FastifyInstance = fastify(
+    options ? { ...options, logger } : { logger }
+  );
 
   // Database connection
   instance.register(DataBaseConnection);
@@ -52,8 +70,7 @@ export default function instanceBootstrap(
 
   // Controllers autoload
   instance.register(bootstrap, {
-    directory: join(directory, "controllers"),
-    mask: /(\.)?(controller)\.(js|ts)$/,
+    controllers,
   });
 
   instance.decorateRequest("session", "");

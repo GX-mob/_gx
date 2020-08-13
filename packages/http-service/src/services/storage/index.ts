@@ -1,6 +1,23 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { Service } from "fastify-decorators";
 import { Storage, Bucket, File } from "@google-cloud/storage";
-import { Readable, Writable } from "stream";
+import { Readable, Writable, Duplex } from "stream";
 import PngQuant from "pngquant";
 import JpegTran from "jpegtran";
 import { PassThrough } from "stream";
@@ -108,21 +125,29 @@ export class StorageService {
       storageWritableStream.on("error", errorHandler);
     }
 
-    if (this.compressibleMIME.includes(mime) && compress) {
-      const compressor = this.createCompressor(mime as CompressibleMIME);
-      const compressing = saveReadable.pipe(compressor);
-
-      saveReadable.on("error", (err) => compressing.destroy(err));
-      compressing.pipe(storageWritableStream);
-    } else {
-      saveReadable.pipe(storageWritableStream);
-    }
-
-    return {
+    const response = {
       bucketFile,
       storageWritableStream,
       publicUrl: getPublicUrl(filename),
     };
+
+    if (!compress) {
+      saveReadable.pipe(storageWritableStream);
+      return response;
+    }
+
+    switch (mime) {
+      case "image/png":
+      case "image/jpeg":
+        const compressor = this.createCompressor(mime);
+        const compressing = saveReadable.pipe(compressor);
+
+        saveReadable.on("error", (err) => compressing.destroy(err));
+        compressing.pipe(storageWritableStream);
+        break;
+    }
+
+    return response;
   }
 
   async getMIME(readable: Readable): Promise<string> {
@@ -135,7 +160,7 @@ export class StorageService {
     return type.mime;
   }
 
-  cloneReadable(readable): Readable[] {
+  cloneReadable(readable: Readable): Readable[] {
     const clone1 = new PassThrough();
     const clone2 = new PassThrough();
 
@@ -158,12 +183,11 @@ export class StorageService {
     }
   }
 
-  createCompressor(mime: CompressibleMIME) {
-    switch (mime) {
-      case "image/jpeg":
-        return new JpegTran();
-      case "image/png":
-        return new PngQuant([192, "--quality", "75-85", "--nofs", "-"]);
+  createCompressor(mime: CompressibleMIME): Duplex {
+    if (mime === "image/jpeg") {
+      return new JpegTran();
     }
+
+    return new PngQuant([192, "--quality", "75-85", "--nofs", "-"]);
   }
 }

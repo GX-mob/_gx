@@ -7,5 +7,5 @@
 
 export interface PhoneVerificationRequestBodySchema {
   cc: string;
-  phone: string;
+  number: string;
 }

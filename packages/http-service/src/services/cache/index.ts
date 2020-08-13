@@ -1,12 +1,24 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { FastifyInstanceToken, Inject, Service } from "fastify-decorators";
 import { Redis } from "ioredis";
-import schemapack from "schemapack";
+import schemapack, { SchemaObject, Parser } from "schemapack";
 import { FastifyInstance } from "fastify";
-
-type schemapackBuilt = {
-  encode: (object: any) => Buffer;
-  decode: (buff: Buffer) => any;
-};
 
 type setOptions = {
   ex?: number;
@@ -27,17 +39,17 @@ export class CacheService {
 
   public redis: Redis = this.instance.redis;
   public defaultLifetime = String(15 * 60 * 1000);
-  public schemas: { [key: string]: schemapackBuilt } = {};
-  private schemasStructure: { [key: string]: any } = {};
+  public schemas: { [k: string]: Parser } = {};
+  private schemasStructure: { [k: string]: any } = {};
 
   /**
    * Build schema serialization
    * @param name schema namespace
    * @param structure schema structure
    */
-  buildSchema(name: string, structure: any): schemapackBuilt {
+  buildSchema<T = any>(name: string, structure: SchemaObject): Parser<T> {
     this.schemasStructure[name] = structure;
-    return (this.schemas[name] = schemapack.build(structure));
+    return (this.schemas[name] = schemapack.build<T>(structure));
   }
 
   /**
@@ -46,9 +58,13 @@ export class CacheService {
    * @param key Key name
    * @returns Value cached or null
    */
-  async get(ns: string, key: any) {
+  async get(ns: string, key: any): Promise<any> {
     const finalKey = this.key(ns, key);
-    const data: Buffer | string = await this.redis.get(finalKey);
+    const data = await this.redis.get(finalKey);
+
+    if (!data) {
+      return null;
+    }
 
     if (this.isLink(data)) {
       return this.get(...this.getParentKey(data));
@@ -120,7 +136,7 @@ export class CacheService {
   }
 
   sanitizeValue(ns: string, value: any) {
-    const sanitized = {};
+    const sanitized: { [k: string]: any } = {};
 
     for (const prop in this.schemasStructure[ns]) {
       sanitized[prop] = value[prop];

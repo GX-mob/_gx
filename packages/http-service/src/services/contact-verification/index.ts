@@ -1,3 +1,20 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import { Service, Inject } from "fastify-decorators";
 import Twilio from "twilio";
 import { ServiceContext } from "twilio/lib/rest/verify/v2/service";
@@ -17,7 +34,7 @@ export class TwilioService {
       lazyLoading: true,
     });
 
-    this.verify = this.client.verify.services(TWILIO_VSID);
+    this.verify = this.client.verify.services(TWILIO_VSID as string);
   }
 }
 
@@ -25,7 +42,7 @@ export class TwilioService {
 @Service()
 export class ContactVerificationService {
   @Inject(TwilioService)
-  public twilio: TwilioService;
+  public twilio!: TwilioService;
   /**
    * Request a contact verification
    * @param to Target to verify, can be an email or mobile phone number

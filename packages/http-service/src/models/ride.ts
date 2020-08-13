@@ -1,3 +1,20 @@
+/**
+ * GX - Corridas
+ * Copyright (C) 2020  Fernando Costa
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 import mongoose, { Document, Schema, model } from "mongoose";
 import { User } from "./user";
 
@@ -6,7 +23,7 @@ function hasProp(obj: any, prop: string) {
 }
 
 class Route extends mongoose.SchemaType {
-  constructor(key, options) {
+  constructor(key: any, options: any) {
     super(key, options, "Route");
   }
 
@@ -31,8 +48,11 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("end", route.end);
 
     if (hasProp(route, "checkpoints")) {
-      for (let i = 0; i < route.checkpoints.length; ++i)
-        this.checkPoint(`checkpoint[${i}]`, route.checkpoints[i]);
+      for (let i = 0; i < (route.checkpoints as RoutePoint[]).length; ++i)
+        this.checkPoint(
+          `checkpoint[${i}]`,
+          (route.checkpoints as RoutePoint[])[i]
+        );
     }
 
     return route;
@@ -61,7 +81,7 @@ type RoutePoint = {
 
 type TRoute = {
   start: RoutePoint;
-  checkpoints?: mongoose.Types.Array<RoutePoint>;
+  checkpoints?: RoutePoint[];
   end: RoutePoint;
   path: string;
 };
