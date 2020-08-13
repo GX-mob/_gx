@@ -6,8 +6,8 @@
  */
 
 export interface RegisterBodySchema {
-  cc?: string;
-  phone: string;
+  cc: string;
+  number: string;
   code: string;
   firstName: string;
   lastName: string;

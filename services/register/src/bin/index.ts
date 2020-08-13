@@ -24,6 +24,8 @@ if (!isProduction) {
 
 import { bootstrap } from "@gx-mob/http-service";
 
+import SignupController from "../controllers/signup.controller";
+
 export const start = async () => {
   try {
     if (!process.env.MONGO_URI && !isProduction) {
@@ -35,14 +37,14 @@ export const start = async () => {
     const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 
     const instance = bootstrap({
-      directory: resolve(__dirname, "../"),
+      controllers: [SignupController],
       redis,
     });
 
     await instance.ready();
 
     await instance.listen(
-      parseInt(process.env.PORT) || 8080,
+      Number(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 

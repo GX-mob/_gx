@@ -3,8 +3,8 @@
   "type": "object",
   "properties": {
     "cc": { "type": "string" },
-    "phone": { "type": "string" }
+    "number": { "type": "string" }
   },
   "additionalProperties": false,
-  "required": ["cc", "phone"]
+  "required": ["cc", "number"]
 }

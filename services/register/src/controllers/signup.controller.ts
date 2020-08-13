@@ -66,9 +66,9 @@ export default class StandardRegisterController {
     request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const { contact } = utils.parseContact(request.body);
+    const { contact: phone } = utils.parseContact(request.body);
 
-    const user = await this.data.users.get({ phones: contact });
+    const user = await this.data.users.get({ phones: phone });
 
     if (user) {
       throw new HttpError.UnprocessableEntity("phone-already-registred");
@@ -93,29 +93,6 @@ export default class StandardRegisterController {
     return reply.send();
   }
 
-  /**
-   * If pass contact like object makes full number and validate it,
-   * else validates contact like as email
-   * @param value
-   * @throws UnprocessableEntity: invalid-number
-   * @return {object} { contact: string, type: "email" | "phone" }
-   */
-  private phone(
-    value: { cc: string; phone: string } | string
-  ): { contact: string; type: "email" | "phone" } {
-    const type = typeof value === "string" ? "email" : "phone";
-
-    value = typeof value === "string" ? value : `${value.cc}${value.phone}`;
-
-    const regex = type === "phone" ? utils.mobileNumberRegex : utils.emailRegex;
-
-    if (!regex.test(value)) {
-      throw new HttpError.UnprocessableEntity("invalid-contact");
-    }
-
-    return { contact: value, type };
-  }
-
   async requestVerification(phone: string) {
     await this.verify.request(phone);
     await this.setCache(phone, { iat: Date.now() });
@@ -133,8 +110,8 @@ export default class StandardRegisterController {
     request: FastifyRequest<{ Body: IPhoneVerifySchema }>,
     reply: FastifyReply
   ) {
-    const { code } = request.body;
-    const phone = this.phone(request.body);
+    const { code, ...contact } = request.body;
+    const { contact: phone } = utils.parseContact(contact);
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
@@ -187,8 +164,16 @@ export default class StandardRegisterController {
     request: FastifyRequest<{ Body: IRegisterBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const { code, firstName, lastName, cpf, birth, terms } = request.body;
-    const phone = this.phone(request.body);
+    const {
+      code,
+      firstName,
+      lastName,
+      cpf,
+      birth,
+      terms,
+      ...contact
+    } = request.body;
+    const { contact: phone } = utils.parseContact(contact);
 
     /**
      * Terms acception

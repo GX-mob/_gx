@@ -6,8 +6,7 @@
  */
 
 export interface PhoneCheckVerificationBodySchema {
-  cc?: string;
-  phone: string;
+  cc: string;
+  number: string;
   code: string;
-  [k: string]: unknown;
 }

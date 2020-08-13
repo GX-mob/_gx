@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "cc": { "type": "string" },
-    "phone": { "type": "string" },
+    "number": { "type": "string" },
     "code": { "type": "string", "pattern": "^[0-9]{6}$" },
     "firstName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
     "lastName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
@@ -15,7 +15,7 @@
   "additionalProperties": false,
   "required": [
     "cc",
-    "phone",
+    "number",
     "code",
     "firstName",
     "lastName",

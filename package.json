@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "node ./scripts/start-development.js",
     "build:package:http-service": "rimraf ./packages/http-service/dist && tsc --sourceMap -p ./packages/http-service/",
+    "compile-schemas:service:register": "rimraf ./services/register/src/types/*  && json2ts -i ./services/register/src/schemas -o ./services/register/src/types",
+    "dev:service:register": "NODE_ENV=development nodemon --watch './services/register/src/**/*.ts' --ignore './services/register/src/**/*.spec.ts' --exec 'ts-node' --script-mode --files ./services/register/src/bin/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -45,6 +47,7 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
     "husky": "^4.2.5",
+    "ioredis": "^4.17.3",
     "ioredis-mock": "^4.21.2",
     "jest": "^26.2.2",
     "jest-runner-groups": "^2.0.1",
