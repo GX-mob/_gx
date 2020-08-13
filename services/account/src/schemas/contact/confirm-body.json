@@ -8,14 +8,16 @@
         {
           "type": "object",
           "properties": {
-            "cc": "string",
-            "number": "string"
-          }
+            "cc": { "type": "string" },
+            "number": { "type": "string" }
+          },
+          "additionalProperties": false,
+          "required": ["cc", "number"]
         }
       ]
     },
     "code": { "type": "string", "pattern": "^[0-9]{6}$" }
   },
   "additionalProperties": false,
-  "required": ["contact"]
+  "required": ["contact", "code"]
 }

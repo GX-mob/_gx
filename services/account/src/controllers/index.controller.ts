@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Inject, GET, POST, PUT, Hook } from "fastify-decorators";
+import { Controller, Inject, Hook, GET, PATCH } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { SessionService, DataService, GuardHook } from "@gx-mob/http-service";
 
@@ -82,7 +82,7 @@ export default class StandardAuthController {
     };
   }
 
-  @PUT("/", {
+  @PATCH("/", {
     schema: {
       body: UpdateProfileBodySchema,
     },
@@ -110,7 +110,7 @@ export default class StandardAuthController {
     return reply.send();
   }
 
-  @PUT("/avatar", {
+  @PATCH("/avatar", {
     schema: {
       description: "Update avatar",
       body: UpdateAvatarBodySchema,

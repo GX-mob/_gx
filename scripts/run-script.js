@@ -15,6 +15,7 @@
   You should have received a copy of the GNU Affero General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+// TODO better, run all scripts or selected in all packages
 const { spawn } = require("child_process");
 const { join } = require("path");
 const chalk = require("chalk");

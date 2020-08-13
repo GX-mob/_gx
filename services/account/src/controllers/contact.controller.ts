@@ -15,9 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, POST, PUT, DELETE } from "fastify-decorators";
+import { Controller, Inject, Hook, POST, PATCH } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ControllerAugment } from "@gx-mob/http-service";
+import {
+  SessionService,
+  DataService,
+  ContactVerificationService,
+  GuardHook,
+  utils,
+} from "@gx-mob/http-service";
 import HttpErrors from "http-errors";
 
 import AddBodySchema from "../schemas/contact/add-body.json";
@@ -28,10 +34,26 @@ import { AddContactBodySchema } from "../types/contact/add-body";
 import { ConfirmContactBodySchema } from "../types/contact/confirm-body";
 import { RemoveContactBodySchema } from "../types/contact/remove-body";
 
+type ContactFields = "emails" | "phones";
 @Controller("/contact")
-export default class StandardAuthController extends ControllerAugment {
-  public settings = {
-    protected: true,
+export default class StandardAuthController {
+  @Inject(SessionService)
+  private session!: SessionService;
+
+  @Inject(DataService)
+  private data!: DataService;
+
+  @Inject(ContactVerificationService)
+  private verify!: ContactVerificationService;
+
+  @Hook("onRequest")
+  async guard(request: FastifyRequest) {
+    await GuardHook(this.session, request);
+  }
+
+  private contactsFields: { email: "emails"; phone: "phones" } = {
+    email: "emails",
+    phone: "phones",
   };
 
   @POST("/", {
@@ -40,39 +62,39 @@ export default class StandardAuthController extends ControllerAugment {
       body: AddBodySchema,
     },
   })
-  private async request(
+  async requestVerification(
     request: FastifyRequest<{ Body: AddContactBodySchema }>,
     reply: FastifyReply
   ) {
-    const { value } = this.contact(request.body.contact);
+    const { contact } = this.contact(request.body.contact);
 
-    await this.verify.request(value);
+    await this.verify.request(contact);
 
     return reply.code(202).send();
   }
 
-  @PUT("/", {
+  @PATCH("/add", {
     schema: {
       description: "Confirm the verification to add",
       body: ConfirmBodySchema,
     },
   })
-  private async confirm(
+  async add(
     request: FastifyRequest<{ Body: ConfirmContactBodySchema }>,
     reply: FastifyReply
   ) {
     const { user } = request.session;
     const { code } = request.body;
-    const { value, type } = this.contact(request.body.contact);
+    const { field, contact } = this.contact(request.body.contact);
 
-    const valid = await this.verify.verify(value, code);
+    const valid = await this.verify.verify(contact, code);
 
     if (!valid) {
       throw new HttpErrors.UnprocessableEntity("wrong-code");
     }
 
     const update = {
-      [type]: [...user[type], value],
+      [field]: [...user[field], contact],
     };
 
     await this.data.users.update({ _id: user._id }, update);
@@ -80,43 +102,45 @@ export default class StandardAuthController extends ControllerAugment {
     return reply.code(201).send();
   }
 
-  @DELETE("/", {
+  @PATCH("/remove", {
     schema: {
       description: "Remove a contact",
       body: RemoveBodySchema,
     },
   })
-  private async remove(
+  async remove(
     request: FastifyRequest<{ Body: RemoveContactBodySchema }>,
     reply: FastifyReply
   ) {
     const { user } = request.session;
-    const { value, type } = this.contact(request.body.contact);
+    const { field, contact } = this.contact(request.body.contact);
 
     if (
       // Prevent removing the last contact
-      [...user.phones, ...(user.emails || [])].length === 1 ||
+      [...user.phones, ...user.emails].length === 1 ||
       // Prevent removing the second factor authentication
-      user["2fa"] === value
+      user["2fa"] === contact
     ) {
       throw new HttpErrors.UnprocessableEntity("not-allowed");
     }
 
-    const updated = [...user[type]];
-    const index = updated.indexOf(value);
+    const updated = [...user[field]];
+    const index = updated.indexOf(contact);
 
     updated.splice(index, 1);
 
-    await this.data.users.update({ _id: user._id }, { [type]: updated });
+    await this.data.users.update({ _id: user._id }, { [field]: updated });
 
     return reply.send();
   }
 
-  private contact(contact: AddContactBodySchema["contact"]) {
-    if (typeof contact === "string") {
-      return { value: contact, type: "emails" };
-    }
-
-    return { value: `${contact.cc}${contact.number}`, type: "phones" };
+  private contact(
+    value: AddContactBodySchema["contact"]
+  ): {
+    field: ContactFields;
+    contact: string;
+  } {
+    const { contact, type } = utils.parseContact(value);
+    return { field: this.contactsFields[type], contact };
   }
 }

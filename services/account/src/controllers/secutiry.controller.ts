@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Inject, PUT } from "fastify-decorators";
+import { Controller, Inject, PATCH, PUT } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { DataService } from "@gx-mob/http-service";
 import bcrypt from "bcrypt";
@@ -32,7 +32,7 @@ export default class StandardAuthController {
   @Inject(DataService)
   private data!: DataService;
 
-  @PUT("/password", {
+  @PATCH("/password", {
     schema: {
       description: "Update password",
       body: UpdateCredentialBodySchema,
@@ -91,7 +91,7 @@ export default class StandardAuthController {
     }
   }
 
-  @PUT("/2fa", {
+  @PATCH("/2fa", {
     schema: {
       description: "Update second factor authentication",
       body: Update2FABodySchema,

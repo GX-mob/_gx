@@ -9,8 +9,7 @@ export interface RemoveContactBodySchema {
   contact:
     | string
     | {
-        cc?: unknown;
-        number?: unknown;
-        [k: string]: unknown;
+        cc: string;
+        number: string;
       };
 }

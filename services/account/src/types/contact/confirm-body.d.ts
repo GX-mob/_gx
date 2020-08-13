@@ -9,9 +9,8 @@ export interface ConfirmContactBodySchema {
   contact:
     | string
     | {
-        cc?: unknown;
-        number?: unknown;
-        [k: string]: unknown;
+        cc: string;
+        number: string;
       };
-  code?: string;
+  code: string;
 }

@@ -16,13 +16,10 @@
   "license": "ISC",
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
-    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.24.tgz",
+    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.25.tgz",
     "bcrypt": "^5.0.0",
     "fastify": "^3.1.1",
-    "fastify-decorators": "^3.1.1",
-    "http-errors": "^1.8.0",
-    "reflect-metadata": "^0.1.13",
-    "source-map-support": "^0.5.19"
+    "fastify-decorators": "^3.1.1"
   },
   "devDependencies": {}
 }

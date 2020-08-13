@@ -28,7 +28,7 @@ export interface User {
   phones: string | string[];
   birth: Date;
   avatar?: string;
-  emails?: string | string[];
+  emails: string | string[];
   createdAt?: Date;
   updatedAt?: Date | null;
   groups?: number[];

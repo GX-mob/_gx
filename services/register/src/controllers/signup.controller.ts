@@ -208,8 +208,9 @@ export default class StandardRegisterController {
       throw new HttpError.UnprocessableEntity("cpf-already-registred");
     }
 
-    const userObject: any = {
+    const userObject = {
       phones: [phone],
+      emails: [],
       firstName,
       lastName,
       cpf,

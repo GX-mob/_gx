@@ -10,7 +10,9 @@
           "properties": {
             "cc": { "type": "string" },
             "number": { "type": "string" }
-          }
+          },
+          "additionalProperties": false,
+          "required": ["cc", "number"]
         }
       ]
     }

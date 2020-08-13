@@ -9,8 +9,7 @@ export interface AddContactBodySchema {
   contact:
     | string
     | {
-        cc?: string;
-        number?: string;
-        [k: string]: unknown;
+        cc: string;
+        number: string;
       };
 }
