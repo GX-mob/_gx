@@ -49,18 +49,22 @@ type CompressibleMIME = "image/png" | "image/jpg" | "image/jpeg";
 
 @Service()
 export class StorageService {
-  private client: Storage;
-  private compressibleMIME = ["image/png", "image/jpg", "image/jpeg"];
-  buckets: { [name: string]: AbstractionBucket } = {};
+  readonly client: Storage;
+  readonly buckets: { [name: string]: AbstractionBucket } = {};
   constructor() {
     /* istanbul ignore next */
     if (process.env.NODE_ENV === "production") {
       this.client = new Storage();
+      this.setDefaultsBuckets();
       return;
     }
 
     const StorageMock = require("./mock/gcp-storage").default; //eslint-disable-line
     this.client = new StorageMock();
+  }
+
+  setDefaultsBuckets() {
+    this.bucket("gx-mob-avatars");
   }
 
   /**
@@ -100,7 +104,7 @@ export class StorageService {
     options: UploadStreamOptions
   ) {
     const { bucket, getPublicUrl } = this.buckets[bucket_name];
-    const { filename, compress, errorHandler, acceptMIME } = options;
+    const { filename, compress = true, errorHandler, acceptMIME } = options;
 
     if (errorHandler) {
       readable.on("error", errorHandler);
@@ -116,7 +120,7 @@ export class StorageService {
       metadata: {
         contentType: mime,
       },
-      public: options.public,
+      public: typeof options.public === "undefined" ? true : options.public,
       gzip: true,
       resumable: false,
     });
@@ -189,5 +193,15 @@ export class StorageService {
     }
 
     return new PngQuant([192, "--quality", "75-85", "--nofs", "-"]);
+  }
+
+  /**
+   * Remove an item from storage
+   * @param bucket
+   * @param url
+   */
+  delete(bucket: string, url: string) {
+    const fileName = url.split("/").pop() as string;
+    return this.client.bucket(bucket).file(fileName).delete();
   }
 }

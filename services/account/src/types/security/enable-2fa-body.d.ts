@@ -5,6 +5,11 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface IdentifyBodySchema {
-  id: string;
+export interface Enable2FABodySchema {
+  target:
+    | string
+    | {
+        cc: string;
+        number: string;
+      };
 }

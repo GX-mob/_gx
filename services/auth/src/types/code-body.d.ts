@@ -6,6 +6,11 @@
  */
 
 export interface CodeBodySchema {
-  id: string;
+  id:
+    | string
+    | {
+        cc: string;
+        number: string;
+      };
   code: string;
 }

@@ -18,7 +18,7 @@
 import { Service, Inject } from "fastify-decorators";
 import Twilio from "twilio";
 import { ServiceContext } from "twilio/lib/rest/verify/v2/service";
-import { emailRegex, mobileNumberRegex } from "../../helpers/utils";
+import { emailRegex, internationalMobilePhoneRegex } from "../../helpers/utils";
 
 @Service()
 export class TwilioService {
@@ -62,7 +62,7 @@ export class ContactVerificationService {
   checkChannel(target: string): string {
     const emailVerify = emailRegex.test(target);
 
-    if (!emailVerify && !mobileNumberRegex.test(target)) {
+    if (!emailVerify && !internationalMobilePhoneRegex.test(target)) {
       throw new Error(
         "Verification target must be an email or mobile phone number"
       );

@@ -1,11 +1,11 @@
 {
   "name": "@gx-mob/http-service",
-  "version": "0.0.25",
+  "version": "0.0.32",
   "description": "Base modules of http services",
   "main": "./dist/index.js",
   "files": [
     "dist",
-    "src/types"
+    "types"
   ],
   "private": true,
   "repository": {

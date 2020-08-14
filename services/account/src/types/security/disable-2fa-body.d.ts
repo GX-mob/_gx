@@ -5,7 +5,6 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface Update2FABodySchema {
+export interface Disable2FABodySchema {
   password: string;
-  "2fa": string;
 }

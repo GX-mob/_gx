@@ -17,14 +17,14 @@
  */
 import { resolve } from "path";
 
-import "reflect-metadata";
-import { bootstrap } from "@gx-mob/http-service";
-
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isProduction) {
   require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
 }
+
+import { bootstrap } from "@gx-mob/http-service";
+import StandardController from "../controllers/standard.controller";
 
 export const start = async () => {
   try {
@@ -37,14 +37,14 @@ export const start = async () => {
     const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 
     const instance = bootstrap({
-      directory: resolve(__dirname, "../"),
+      controllers: [StandardController],
       redis,
     });
 
     await instance.ready();
 
     await instance.listen(
-      parseInt(process.env.PORT) || 8080,
+      parseInt(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 

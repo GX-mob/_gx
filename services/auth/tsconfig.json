@@ -1,10 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "declaration": true,
-    "paths": {
-      "*": ["src/*"]
-    },
     "allowJs": true,
     "sourceMap": true,
     "outDir": "./dist",

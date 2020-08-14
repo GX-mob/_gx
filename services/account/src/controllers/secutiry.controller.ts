@@ -15,17 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Inject, PATCH, PUT } from "fastify-decorators";
+import { Controller, Inject, PATCH } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { DataService } from "@gx-mob/http-service";
+import { DataService, HttpError, utils } from "@gx-mob/http-service";
 import bcrypt from "bcrypt";
-import HttpErrors from "http-errors";
 
 import UpdateCredentialBodySchema from "../schemas/security/credential-body.json";
-import Update2FABodySchema from "../schemas/security/2fa-body.json";
+import Enable2FABodySchema from "../schemas/security/enable-2fa-body.json";
+import Disable2FABodySchema from "../schemas/security/disable-2fa-body.json";
 
 import { UpdateCredentialBodySchema as IUpdateCredentialBodySchema } from "../types/security/credential-body";
-import { Update2FABodySchema as IUpdate2FABodySchema } from "../types/security/2fa-body";
+import { Enable2FABodySchema as IEnable2FABodySchema } from "../types/security/enable-2fa-body";
+import { Disable2FABodySchema as IDisable2FABodySchema } from "../types/security/disable-2fa-body";
 
 @Controller("/secutiry")
 export default class StandardAuthController {
@@ -46,7 +47,7 @@ export default class StandardAuthController {
     const { current, new: newPassword } = request.body;
 
     if (user.password) {
-      await this.assertPasswords(
+      await utils.assertPassword(
         {
           value: current,
           to: user.password,
@@ -55,7 +56,7 @@ export default class StandardAuthController {
         "wrong-credential"
       );
 
-      await this.assertPasswords(
+      await utils.assertPassword(
         {
           value: newPassword,
           to: user.password,
@@ -72,33 +73,66 @@ export default class StandardAuthController {
     return reply.send();
   }
 
-  async assertPasswords(
-    {
-      value,
-      to,
-      be,
-    }: {
-      value: string;
-      to: string;
-      be: boolean;
+  @PATCH("/2fa/enable", {
+    schema: {
+      description: "Enable second factor authentication",
+      body: Enable2FABodySchema,
     },
-    errorMsg: string
+  })
+  async enable2FA(
+    request: FastifyRequest<{ Body: IEnable2FABodySchema }>,
+    reply: FastifyReply
   ) {
-    const assert = await bcrypt.compare(value, to);
+    this.passwordRequired(request);
 
-    if ((be && !assert) || (!be && assert)) {
-      throw new HttpErrors.UnprocessableEntity(errorMsg);
+    const { value: contact } = utils.isValidContact(request.body.target);
+    const { user } = request.session;
+
+    this.hasContact(contact, user);
+
+    await this.data.users.update({ _id: user._id }, { "2fa": contact });
+
+    return reply.send();
+  }
+
+  @PATCH("/2fa/disable", {
+    schema: {
+      description: "Disable second factor authentication",
+      body: Disable2FABodySchema,
+    },
+  })
+  async disable2FA(
+    request: FastifyRequest<{ Body: IDisable2FABodySchema }>,
+    reply: FastifyReply
+  ) {
+    this.passwordRequired(request);
+    const { user } = request.session;
+
+    await utils.assertPassword(
+      {
+        value: request.body.password,
+        to: user.password as string,
+        be: true,
+      },
+      "wrong-password"
+    );
+
+    this.data.users.update({ _id: user._id }, { "2fa": "" });
+  }
+
+  /**
+   * Useful methods
+   */
+  /** */
+  private passwordRequired(request: FastifyRequest): void {
+    if (!request.session.user.password) {
+      throw new HttpError.UnprocessableEntity("password-required");
     }
   }
 
-  @PATCH("/2fa", {
-    schema: {
-      description: "Update second factor authentication",
-      body: Update2FABodySchema,
-    },
-  })
-  async update2FA(
-    request: FastifyRequest<{ Body: IUpdate2FABodySchema }>,
-    reply: FastifyReply
-  ) {}
+  private hasContact(contact: string, user: any) {
+    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
+      throw new HttpError.UnprocessableEntity("not-own-contact");
+    }
+  }
 }

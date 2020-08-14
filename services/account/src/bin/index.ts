@@ -15,23 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import * as sourceMapSupport from "source-map-support";
-sourceMapSupport.install();
 import { resolve } from "path";
-
-import "reflect-metadata";
-import { bootstrap } from "@gx-mob/http-service";
-import fastifySwagger from "fastify-swagger";
-
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isProduction) {
-  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
+  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") }); // eslint-disable-line
 }
+
+import { bootstrap } from "@gx-mob/http-service";
+
+// For typing support only
+import fastifyMultipart from "fastify-multipart";
+import fastifySwagger from "fastify-swagger";
+
+import IndexController from "../controllers/index.controller";
+import ContactController from "../controllers/contact.controller";
+import SecutiryController from "../controllers/secutiry.controller";
 
 export const start = async () => {
   try {
-    if (!process.env.MONGO_URI) {
+    if (!process.env.MONGO_URI && !isProduction) {
       const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
@@ -40,16 +43,14 @@ export const start = async () => {
     const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 
     const instance = bootstrap({
-      directory: resolve(__dirname, "../"),
+      controllers: [IndexController, ContactController, SecutiryController],
       redis,
     });
-
-    instance.register(fastifySwagger);
 
     await instance.ready();
 
     await instance.listen(
-      parseInt(process.env.PORT) || 8080,
+      Number(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 

@@ -15,23 +15,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Inject, Hook, GET, PATCH } from "fastify-decorators";
+import { FastifyInstance } from "fastify";
+import {
+  Controller,
+  Inject,
+  FastifyInstanceToken,
+  Hook,
+  GET,
+  PATCH,
+} from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { SessionService, DataService, GuardHook } from "@gx-mob/http-service";
+import {
+  SessionService,
+  DataService,
+  StorageService,
+  GuardHook,
+  HttpError,
+  utils,
+} from "@gx-mob/http-service";
 
 import UpdateProfileBodySchema from "../schemas/profile-body.json";
 import UpdateAvatarBodySchema from "../schemas/avatar-body.json";
 
 import { UpdateProfileBodySchema as IUpdateProfileBodySchema } from "../types/profile-body";
 import { UpdateAvatarBodySchema as IUpdateAvatarBodySchema } from "../types/avatar-body";
+import { Readable } from "stream";
 
 @Controller("/profile")
 export default class StandardAuthController {
+  @Inject(FastifyInstanceToken)
+  private instance!: FastifyInstance;
+
   @Inject(SessionService)
   private session!: SessionService;
 
   @Inject(DataService)
   private data!: DataService;
+
+  @Inject(StorageService)
+  private storage!: StorageService;
 
   @Hook("onRequest")
   async guard(request: FastifyRequest) {
@@ -40,7 +62,6 @@ export default class StandardAuthController {
 
   @GET("/", {
     schema: {
-      description: "Get user data",
       response: {
         "200": {
           id: { type: "string" },
@@ -56,7 +77,7 @@ export default class StandardAuthController {
       },
     },
   })
-  async getHandler(request: FastifyRequest, reply: FastifyReply) {
+  async getHandler(request: FastifyRequest) {
     const {
       _id,
       firstName,
@@ -112,12 +133,67 @@ export default class StandardAuthController {
 
   @PATCH("/avatar", {
     schema: {
-      description: "Update avatar",
       body: UpdateAvatarBodySchema,
+      response: {
+        "200": {
+          url: { type: "string" },
+        },
+      },
     },
   })
   async uploadAvatar(
     request: FastifyRequest<{ Body: IUpdateAvatarBodySchema }>,
     reply: FastifyReply
-  ) {}
+  ) {
+    if (!request.isMultipart()) {
+      throw new HttpError.BadRequest("must-be-multipart");
+    }
+
+    const { user } = request.session;
+
+    let handling = false;
+    let error: Error;
+    let url: string;
+
+    const handler = async (
+      _field: string,
+      readalbe: Readable,
+      filename: string
+    ) => {
+      if (handling) return;
+      handling = true;
+
+      try {
+        const fileExtension = filename.split(".").pop() as string;
+
+        url = (
+          await this.storage.uploadStream("gx-mob-avatars", readalbe, {
+            filename: `${user._id}.${Date.now()}.${fileExtension}`,
+            public: true,
+            compress: true,
+            acceptMIME: ["image/jpeg", "image/png"],
+            errorHandler: (err) => {
+              error = err;
+            },
+          })
+        ).publicUrl;
+      } catch (err) {
+        error = err;
+      }
+    };
+
+    request.multipart(handler, () => {
+      if (error) {
+        this.instance.log.error(error);
+        reply.send(HttpError(500));
+      }
+
+      if (user.avatar) {
+        const remove = this.storage.delete("gx-mob-avatars", user.avatar);
+        utils.handleRejectionByUnderHood(remove);
+      }
+
+      reply.send({ url });
+    });
+  }
 }

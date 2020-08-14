@@ -34,7 +34,6 @@ import { AddContactBodySchema } from "../types/contact/add-body";
 import { ConfirmContactBodySchema } from "../types/contact/confirm-body";
 import { RemoveContactBodySchema } from "../types/contact/remove-body";
 
-type ContactFields = "emails" | "phones";
 @Controller("/contact")
 export default class StandardAuthController {
   @Inject(SessionService)
@@ -51,11 +50,6 @@ export default class StandardAuthController {
     await GuardHook(this.session, request);
   }
 
-  private contactsFields: { email: "emails"; phone: "phones" } = {
-    email: "emails",
-    phone: "phones",
-  };
-
   @POST("/", {
     schema: {
       description: "Request a verification to add the contact",
@@ -66,9 +60,9 @@ export default class StandardAuthController {
     request: FastifyRequest<{ Body: AddContactBodySchema }>,
     reply: FastifyReply
   ) {
-    const { contact } = this.contact(request.body.contact);
+    const { value } = utils.isValidContact(request.body.contact);
 
-    await this.verify.request(contact);
+    await this.verify.request(value);
 
     return reply.code(202).send();
   }
@@ -84,10 +78,10 @@ export default class StandardAuthController {
     reply: FastifyReply
   ) {
     const { user } = request.session;
-    const { code } = request.body;
-    const { field, contact } = this.contact(request.body.contact);
+    const { contact, code } = request.body;
+    const { value, field } = utils.isValidContact(contact);
 
-    const valid = await this.verify.verify(contact, code);
+    const valid = await this.verify.verify(value, code);
 
     if (!valid) {
       throw new HttpErrors.UnprocessableEntity("wrong-code");
@@ -113,34 +107,26 @@ export default class StandardAuthController {
     reply: FastifyReply
   ) {
     const { user } = request.session;
-    const { field, contact } = this.contact(request.body.contact);
+    const { field, value } = utils.isValidContact(request.body.contact);
 
+    /**
+     * Prevent removing the last contact or
+     * the second factor authentication
+     */
     if (
-      // Prevent removing the last contact
       [...user.phones, ...user.emails].length === 1 ||
-      // Prevent removing the second factor authentication
-      user["2fa"] === contact
+      user["2fa"] === value
     ) {
       throw new HttpErrors.UnprocessableEntity("not-allowed");
     }
 
     const updated = [...user[field]];
-    const index = updated.indexOf(contact);
+    const index = updated.indexOf(value);
 
     updated.splice(index, 1);
 
     await this.data.users.update({ _id: user._id }, { [field]: updated });
 
     return reply.send();
-  }
-
-  private contact(
-    value: AddContactBodySchema["contact"]
-  ): {
-    field: ContactFields;
-    contact: string;
-  } {
-    const { contact, type } = utils.parseContact(value);
-    return { field: this.contactsFields[type], contact };
   }
 }

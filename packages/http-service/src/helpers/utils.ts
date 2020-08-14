@@ -17,9 +17,8 @@
  */
 import logger from "./logger";
 import HttpError from "http-errors";
+import bcrypt from "bcrypt";
 export { getClientIp } from "request-ip";
-
-const CC = process.env.COUNTRY_CODE_ISO3166 as string;
 
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {
@@ -38,19 +37,25 @@ const i18nRegex: RegexGlobalsObject = {
   },
 };
 
-/**
- * General regex
- */
-export const regexes = {
-  emailRegex: /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+\.([a-z]+)?$/i,
-  ...i18nRegex[CC],
+const IDD_CC_REFS: { [k: string]: string } = {
+  "+55": "BR",
 };
-export const emailRegex = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+\.([a-z]+)?$/i;
-export const mobileNumberRegex = i18nRegex[CC].mobilePhone;
 
-type ContactPhoneObject = {
+/**
+ * General regexes
+ */
+export const emailRegex = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+\.([a-z]+)?$/i;
+export const internationalMobilePhoneRegex = /\+(9[976]\d|8[987530]\d|6[987]\d|5[90]\d|42\d|3[875]\d|2[98654321]\d|9[8543210]|8[6421]|6[6543210]|5[87654321]|4[987654310]|3[9643210]|2[70]|7|1)\d{1,14}$/;
+export const passwordRegex = /^(?=.*\\d)(?=.*[a-z]).{5,}$/;
+
+export type PhoneContactObject = {
   cc: string;
   number: string;
+};
+
+type ContactResultObject = {
+  value: string;
+  field: "emails" | "phones";
 };
 
 /**
@@ -59,25 +64,77 @@ type ContactPhoneObject = {
  * If value is an object with `cc` and `number`
  * properties makes full number and validate it,
  * else validates contact like as email
- * @param value
+ * @param value Object or string to verify and parse
  * @throws UnprocessableEntity: invalid-number
  * @return {object} { contact: string, type: "email" | "phone" }
  */
 export function parseContact(
-  value: ContactPhoneObject | string
-): { contact: string; type: "email" | "phone" } {
-  const type = typeof value === "string" ? "email" : "phone";
+  value: PhoneContactObject | string
+): ContactResultObject | false {
+  if (typeof value === "string") {
+    if (!emailRegex.test(value)) {
+      return false;
+    }
 
-  const contact =
-    type === "email"
-      ? (value as string)
-      : `${(value as any).cc}${(value as any).number}`;
+    return { value, field: "emails" };
+  }
 
-  const regex = type === "phone" ? mobileNumberRegex : emailRegex;
+  const { cc, number } = value;
+  const CC_ISO3166 = IDD_CC_REFS[cc];
+  const { mobilePhone } = i18nRegex[CC_ISO3166];
 
-  if (!regex.test(contact)) {
+  value = `${cc}${number}`;
+
+  if (!mobilePhone.test(value)) {
+    return false;
+  }
+
+  return { value, field: "phones" };
+}
+
+/**
+ * Validates a contact
+ *
+ * @param {stirng | PhoneContactObject} value
+ * @throws HttpError.UnprocessableEntity: invalid-contact
+ * @return {object} { value: string, type: "email" | "phone" }
+ */
+export function isValidContact(
+  value: PhoneContactObject | string
+): ContactResultObject {
+  const check = parseContact(value);
+
+  if (!check) {
     throw new HttpError.UnprocessableEntity("invalid-contact");
   }
 
-  return { contact, type };
+  return check;
+}
+
+/**
+ * Compare password
+ *
+ * @param config.value Plain text value
+ * @param config.to Hash value
+ * @param config.be Result expected
+ * @param errorMsg Error message if expectation fail
+ * @throws Http.UnprocessableEntity: wrong-password
+ */
+export async function assertPassword(
+  {
+    value,
+    to,
+    be,
+  }: {
+    value: string;
+    to: string;
+    be: boolean;
+  },
+  errorMsg: string
+) {
+  const assert = await bcrypt.compare(value, to);
+
+  if ((be && !assert) || (!be && assert)) {
+    throw new HttpError.UnprocessableEntity(errorMsg);
+  }
 }

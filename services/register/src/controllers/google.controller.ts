@@ -21,10 +21,6 @@ import { HandleError } from "@gx-mob/http-service";
 
 @Controller("/google")
 export default class GoogleAuthRegistration {
-  public settings = {
-    protected: false,
-  };
-
   @ErrorHandler()
   private errorHandler(
     error: Error,

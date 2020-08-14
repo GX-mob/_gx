@@ -1,8 +1,8 @@
 {
-  "title": "Confirm Contact Body Schema",
+  "title": "Credentials Body Schema",
   "type": "object",
   "properties": {
-    "contact": {
+    "id": {
       "anyOf": [
         { "type": "string" },
         {
@@ -15,9 +15,8 @@
           "required": ["cc", "number"]
         }
       ]
-    },
-    "code": { "type": "string", "pattern": "^[0-9]{6}$" }
+    }
   },
   "additionalProperties": false,
-  "required": ["contact", "code"]
+  "required": ["id"]
 }

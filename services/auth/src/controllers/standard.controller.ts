@@ -24,12 +24,13 @@ import {
   utils,
 } from "@gx-mob/http-service";
 import HttpError from "http-errors";
-import bcrypt from "bcrypt";
 
+import IdentifyBodySchema from "../schemas/id-body.json";
 import CredentialsBodySchema from "../schemas/credentials-body.json";
 import CodeBodySchema from "../schemas/code-body.json";
 import { CredentialsBodySchema as ICredentialsBodySchema } from "../types/credentials-body";
 import { CodeBodySchema as ICodeBodySchema } from "../types/code-body";
+import { IdentifyBodySchema as IIdentifyBodySchema } from "../types/id-body";
 
 @Controller("/")
 export default class StandardAuthController {
@@ -42,30 +43,29 @@ export default class StandardAuthController {
   @Inject(ContactVerificationService)
   private verify!: ContactVerificationService;
 
-  @GET("/id/:id", {
+  @POST("/id", {
     schema: {
+      body: IdentifyBodySchema,
       response: {
         "200": {
           firstName: { type: "string" },
           avatar: { type: "string" },
-          next: { type: "string" },
         },
         "202": {
           firstName: { type: "string" },
           avatar: { type: "string" },
-          next: { type: "string" },
           last4: { type: "string" },
         },
       },
     },
   })
   async identifyHandler(
-    request: FastifyRequest<{ Params: { id: string } }>,
+    request: FastifyRequest<{ Body: IIdentifyBodySchema }>,
     reply: FastifyReply
   ) {
-    const { id } = request.params;
-
-    const { password, phones, firstName, avatar } = await this.getUser(id);
+    const { password, phones, firstName, avatar } = (
+      await this.getUser(request.body.id)
+    ).user;
 
     if (!password) {
       await this.requestVerify(phones[0]);
@@ -74,7 +74,6 @@ export default class StandardAuthController {
       return {
         firstName,
         avatar,
-        next: "code",
         last4: phones[0].slice(phones[0].length - 4),
       };
     }
@@ -82,39 +81,7 @@ export default class StandardAuthController {
     return {
       firstName,
       avatar,
-      next: "password",
     };
-  }
-
-  private async getUser(id: string) {
-    const query = this.userQuery(id);
-    const user = await this.data.users.get(query);
-
-    if (!user) {
-      throw new HttpError.UnprocessableEntity("user-not-found");
-    }
-
-    return user;
-  }
-
-  private userQuery(id: string): { phones: string } | { emails: string } {
-    if (utils.mobileNumberRegex.test(id)) {
-      return { phones: id };
-    }
-
-    if (utils.emailRegex.test(id)) {
-      return { emails: id };
-    }
-
-    throw new HttpError.UnprocessableEntity("invalid-id");
-  }
-
-  async requestVerify(id: string) {
-    if (process.env.NODE_ENV === "development") {
-      return Promise.resolve();
-    }
-
-    return this.verify.request(id);
   }
 
   @POST("/sign-in", {
@@ -125,8 +92,7 @@ export default class StandardAuthController {
           token: { type: "string" },
         },
         "202": {
-          next: { type: "string" },
-          last4: { type: "string" },
+          target: { type: "string" },
         },
       },
     },
@@ -136,21 +102,31 @@ export default class StandardAuthController {
     reply: FastifyReply
   ) {
     const { id, credential } = request.body;
-    const user = await this.getUser(id);
+    const { user } = await this.getUser(id);
 
-    const match = await bcrypt.compare(credential, user.password as string);
-
-    if (!match) {
-      throw new HttpError.UnprocessableEntity("wrong-password");
-    }
+    await utils.assertPassword(
+      {
+        value: credential,
+        to: user.password as string,
+        be: true,
+      },
+      "wrong-password"
+    );
 
     if (user["2fa"]) {
       await this.requestVerify(user["2fa"]);
 
       reply.code(202);
+
+      if (utils.emailRegex.test(user["2fa"])) {
+        const [name, domain] = user["2fa"].split("@");
+        return {
+          target: `${name.slice(0, 3).padEnd(name.length, "*")}@${domain}`,
+        };
+      }
+
       return {
-        next: "code",
-        last4: user["2fa"].slice(user["2fa"].length - 4),
+        target: user["2fa"].slice(user["2fa"].length - 4),
       };
     }
 
@@ -174,7 +150,7 @@ export default class StandardAuthController {
     reply: FastifyReply
   ) {
     const { id, code } = request.body;
-    const user = await this.getUser(id);
+    const { user, contact } = await this.getUser(id);
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
@@ -186,7 +162,7 @@ export default class StandardAuthController {
       throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
-    const valid = await this.verify.verify(id, code);
+    const valid = await this.verify.verify(contact, code);
 
     if (!valid) {
       throw new HttpError.UnprocessableEntity("wrong-code");
@@ -195,5 +171,28 @@ export default class StandardAuthController {
     const { token } = await this.session.create(user, request);
 
     return reply.code(201).send({ token });
+  }
+
+  /**
+   * Useful methods
+   */
+  /** */
+  private async getUser(id: string | IIdentifyBodySchema["id"]) {
+    const { value: contact, field } = utils.isValidContact(id);
+    const user = await this.data.users.get({ [field]: contact });
+
+    if (!user) {
+      throw new HttpError.UnprocessableEntity("user-not-found");
+    }
+
+    return { user, contact, field };
+  }
+
+  private async requestVerify(id: string) {
+    if (process.env.NODE_ENV === "development") {
+      return Promise.resolve();
+    }
+
+    return this.verify.request(id);
   }
 }

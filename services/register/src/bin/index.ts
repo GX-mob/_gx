@@ -19,7 +19,7 @@ import { resolve } from "path";
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isProduction) {
-  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
+  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") }); // eslint-disable-line
 }
 
 import { bootstrap } from "@gx-mob/http-service";

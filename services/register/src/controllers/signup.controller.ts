@@ -54,20 +54,17 @@ export default class StandardRegisterController {
     HandleError(error, reply);
   }
 
-  @POST({
-    url: "/phone/request",
-    options: {
-      schema: {
-        body: PhoneRequestBodySchema,
-      },
+  @POST("/phone/request", {
+    schema: {
+      body: PhoneRequestBodySchema,
     },
   })
   async requestHandler(
     request: FastifyRequest<{ Body: IPhoneRequestBodySchema }>,
     reply: FastifyReply
   ): Promise<any> {
-    const { contact: phone } = utils.parseContact(request.body);
-
+    console.log(request.body);
+    const phone = this.contact(request.body);
     const user = await this.data.users.get({ phones: phone });
 
     if (user) {
@@ -93,17 +90,24 @@ export default class StandardRegisterController {
     return reply.send();
   }
 
+  private contact(value: any): string {
+    const contact = utils.parseContact(value);
+
+    if (!contact) {
+      throw new HttpError.UnprocessableEntity("invalid-contact");
+    }
+
+    return contact.value;
+  }
+
   async requestVerification(phone: string) {
     await this.verify.request(phone);
     await this.setCache(phone, { iat: Date.now() });
   }
 
-  @POST({
-    url: "/phone/verify",
-    options: {
-      schema: {
-        body: PhoneVerifyBodySchema,
-      },
+  @POST("/phone/verify", {
+    schema: {
+      body: PhoneVerifyBodySchema,
     },
   })
   async verifyHandler(
@@ -111,7 +115,7 @@ export default class StandardRegisterController {
     reply: FastifyReply
   ) {
     const { code, ...contact } = request.body;
-    const { contact: phone } = utils.parseContact(contact);
+    const phone = this.contact(contact);
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
@@ -136,24 +140,21 @@ export default class StandardRegisterController {
     return reply.code(200).send();
   }
 
-  @POST({
-    url: "/sign-up",
-    options: {
-      schema: {
-        body: RegisterBodySchema,
-        response: {
-          "201": {
-            user: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-              },
+  @POST("/sign-up", {
+    schema: {
+      body: RegisterBodySchema,
+      response: {
+        "201": {
+          user: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
             },
-            session: {
-              type: "object",
-              properties: {
-                token: { type: "string" },
-              },
+          },
+          session: {
+            type: "object",
+            properties: {
+              token: { type: "string" },
             },
           },
         },
@@ -173,7 +174,7 @@ export default class StandardRegisterController {
       terms,
       ...contact
     } = request.body;
-    const { contact: phone } = utils.parseContact(contact);
+    const phone = this.contact(contact);
 
     /**
      * Terms acception
@@ -193,7 +194,7 @@ export default class StandardRegisterController {
 
     /**
      * Validate CPF
-     * * Only on the first ride, the CPF is consulted with the government api
+     * * Only on the first ride the CPF is consulted with the government api
      */
     if (!isValidCPF(cpf)) {
       throw new HttpError.UnprocessableEntity("invalid-cpf");
@@ -232,6 +233,10 @@ export default class StandardRegisterController {
     };
   }
 
+  /**
+   * Useful methods
+   */
+  /** */
   private setCache(key: string, value: any) {
     return this.data.cache.set("registryVerifications", key, value);
   }

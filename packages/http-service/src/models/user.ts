@@ -18,7 +18,7 @@
 import { Document, Schema, Types, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { emailRegex, mobileNumberRegex } from "../helpers/utils";
+import { emailRegex, internationalMobilePhoneRegex } from "../helpers/utils";
 
 export interface User {
   _id: any;
@@ -67,8 +67,8 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter((phone) => mobileNumberRegex.test(phone)).length ===
-          v.length,
+          v.filter((phone) => internationalMobilePhoneRegex.test(phone))
+            .length === v.length,
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,

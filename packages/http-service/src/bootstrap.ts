@@ -27,15 +27,6 @@ import { bootstrap } from "fastify-decorators";
 import { logger, DataBaseConnection } from "./helpers";
 import { Redis } from "ioredis";
 
-// fastify augmentation
-import { Session } from "./models/session";
-
-declare module "fastify" {
-  interface FastifyRequest {
-    session?: Session;
-  }
-}
-
 type Service = {
   controllers: any[];
   redis: string | Redis;
