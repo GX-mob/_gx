@@ -1,11 +1,12 @@
 {
   "name": "@gx-mob/socket.io-module",
   "version": "0.0.1",
-  "description": "Attach socket.io server to gx http service with some features.",
+  "description": "Attachs socket.io server to the http service with some plus features.",
   "main": "./dist/index.js",
+  "types": "index.d.ts",
   "files": [
     "dist",
-    "types"
+    "index.d.ts"
   ],
   "private": true,
   "repository": {
@@ -13,22 +14,29 @@
     "url": "https://github.com/GX-mob/http-service-template.git"
   },
   "scripts": {
-    "start": "node ./dist/bin/index.js",
+    "start": "ts-node ./test.ts",
     "test": "NODE_ENV=test jest --runInBand",
     "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
-    "build": "rimraf ./dist && tsc --sourceMap -p ./",
-    "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' --files ./src/bin/index.ts",
-    "compile-schemas": "json2ts -i ./src/schemas -o ./src/types"
+    "build": "rimraf ./dist && tsc --sourceMap -p ./"
   },
   "author": "ferco0",
   "license": "MIT",
   "dependencies": {
     "request-ip": "^2.1.3",
+    "shortid": "^2.2.15",
     "socket.io": "^2.3.0",
     "socket.io-redis": "^5.3.0"
   },
   "devDependencies": {
     "@types/socket.io": "^2.1.11",
-    "@types/socket.io-redis": "^1.0.26"
+    "@types/socket.io-redis": "^1.0.26",
+    "eslint": "^7.7.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "ioredis-mock": "^4.21.2",
+    "jest": "^26.4.0",
+    "jest-runner-groups": "^2.0.1",
+    "socket.io-client": "^2.3.0",
+    "ts-jest": "^26.2.0"
   }
 }

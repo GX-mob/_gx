@@ -25,9 +25,21 @@ if (!isProduction) {
 
 import { FastifyInstance } from "fastify";
 import { bootstrap } from "@gx-mob/http-service";
-import { createServer } from "@gx-mob/websocket-service";
+import { createServer } from "@gx-mob/socket.io-module";
 
-let instance: FastifyInstance;
+const redis = process.env.REDIS_URI as string;
+
+const instance: FastifyInstance = bootstrap({
+  controllers: [],
+  redis,
+});
+
+const io = createServer(instance.server, {
+  redis,
+  broadcastedEvents: ["position"],
+});
+
+instance.decorate("io", io);
 
 (async function start() {
   try {
@@ -36,17 +48,6 @@ let instance: FastifyInstance;
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
-
-    const redisURI = process.env.REDIS_URI;
-
-    instance = bootstrap({
-      redis: redisURI,
-    });
-
-    instance.io = createServer(instance.server, {
-      redisURI,
-      broadcastedEvents: ["position"],
-    });
 
     await instance.ready();
 
@@ -68,6 +69,7 @@ process.on("uncaughtException", (error) => {
   console.log(error);
   process.abort();
 });
+
 process.on("unhandledRejection", (error) => {
   console.log(error);
   process.abort();
