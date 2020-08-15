@@ -67,10 +67,10 @@ module.exports = instance.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);
-  process.abort();
+  process.exit();
 });
 
 process.on("unhandledRejection", (error) => {
   console.log(error);
-  process.abort();
+  process.exit();
 });
