@@ -20,7 +20,7 @@ declare module "schemapack" {
     | "buffer";
 
   export interface SchemaObject {
-    [k: string]: Types | Types[] | SchemaObject;
+    [k: string]: Types | Types[] | SchemaObject | SchemaObject[];
   }
 
   function build<T = any>(schema: SchemaObject): Parser<T>;
