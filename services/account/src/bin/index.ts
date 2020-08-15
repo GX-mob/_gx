@@ -25,12 +25,19 @@ if (!isProduction) {
 import { bootstrap } from "@gx-mob/http-service";
 
 // For typing support only
-import fastifyMultipart from "fastify-multipart";
-import fastifySwagger from "fastify-swagger";
+import "fastify-multipart";
+import "fastify-swagger";
 
 import IndexController from "../controllers/index.controller";
 import ContactController from "../controllers/contact.controller";
 import SecutiryController from "../controllers/secutiry.controller";
+
+const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
+
+const instance = bootstrap({
+  controllers: [IndexController, ContactController, SecutiryController],
+  redis,
+});
 
 export const start = async () => {
   try {
@@ -39,13 +46,6 @@ export const start = async () => {
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
-
-    const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
-
-    const instance = bootstrap({
-      controllers: [IndexController, ContactController, SecutiryController],
-      redis,
-    });
 
     await instance.ready();
 
@@ -61,7 +61,7 @@ export const start = async () => {
   }
 };
 
-start();
+module.exports = instance.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);

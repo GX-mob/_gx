@@ -26,20 +26,20 @@ if (!isProduction) {
 import { bootstrap } from "@gx-mob/http-service";
 import StandardController from "../controllers/standard.controller";
 
-export const start = async () => {
+const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
+
+const instance = bootstrap({
+  controllers: [StandardController],
+  redis,
+});
+
+(async function start() {
   try {
     if (!process.env.MONGO_URI) {
       const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
-
-    const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
-
-    const instance = bootstrap({
-      controllers: [StandardController],
-      redis,
-    });
 
     await instance.ready();
 
@@ -53,9 +53,9 @@ export const start = async () => {
     console.log(err);
     process.exit(1);
   }
-};
+})();
 
-start();
+module.exports = instance.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);

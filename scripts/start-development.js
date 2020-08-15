@@ -125,17 +125,28 @@ function start([directory, app]) {
     chalk`{bold {inverse  ${title} }{bgBlack  ${chalk[color](appTitle)} }}:`
   );
 
+  const error = log(false)(
+    chalk`{bold {inverse  ${title} }{bgRed {white  ${appTitle}} }}:`
+  );
+
   print(chalk`{bold Starting} `);
 
-  const child = spawn(`npm run dev`, [], {
+  const cwd = join(directory, app);
+
+  const cmd = `NODE_ENV=development nodemon --watch './${directory}/${app}/src/**/*.ts' --ignore './${directory}/${app}/src/**/*.spec.ts' --exec 'ts-node-script' --files ./${directory}/${app}/src/bin/index.ts`;
+
+  const child = spawn(cmd, [], {
     shell: true,
-    cwd: join(directory, app),
   });
 
   process.stdin.pipe(child.stdin);
 
   child.stdout.on("data", (data) => {
     print(chalk`${data.slice(0, -1)}`);
+  });
+
+  child.stderr.on("data", (data) => {
+    error(chalk`${data.slice(0, -1)}`);
   });
 
   ++colorIdx;
