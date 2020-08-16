@@ -12,6 +12,8 @@ export default class InitNode {
   private session!: SessionService;
 
   constructor(io: Server) {
+    io.state = new State(io);
+
     auth.server(io, async ({ socket, data: { access, token } }) => {
       socket.session = await this.session.verify(
         token,
