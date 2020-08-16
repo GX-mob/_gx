@@ -1,10 +1,13 @@
-import latLng, { latLngType } from "../common/lat-lng";
+import latLng, { LatLng } from "../common/lat-lng";
 
-export type PositionEvent = {
+/**
+ * Position event schema
+ */
+export type Position = {
   /**
    * Latitude & longitude
    */
-  latLng: latLngType;
+  latLng: LatLng;
   /**
    * Geolocation heading
    */
@@ -17,11 +20,9 @@ export type PositionEvent = {
    * Ignored watchers that already receive the event by the P2P connection
    */
   ignored: string[];
+  id?: string;
 };
 
-/**
- * Position event schema
- */
 export default {
   id: 1,
   schema: {
@@ -29,5 +30,6 @@ export default {
     heading: "uint",
     kmh: "int16",
     ignore: ["string"],
+    id: "string",
   },
 };

@@ -1,2 +1,2 @@
-export type latLngType = number[];
+export type LatLng = number[];
 export default ["float64"];

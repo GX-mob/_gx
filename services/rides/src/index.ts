@@ -27,6 +27,7 @@ export default class InitNode {
       }
 
       socket.access = access;
+      socket.observers = [];
 
       return true;
     });
@@ -34,9 +35,9 @@ export default class InitNode {
     io.on("connection", (socket) => {
       switch (socket.access) {
         case NAMESPACES.VOYAGER:
-          new Voyager(socket);
+          new Voyager(io, socket);
         case NAMESPACES.RIDER:
-          new Rider(socket);
+          new Rider(io, socket);
       }
     });
   }
