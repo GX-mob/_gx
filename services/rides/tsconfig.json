@@ -9,7 +9,7 @@
     "resolveJsonModule": true
   },
   "extends": "@tsconfig/node12/tsconfig.json",
-  "include": ["./src/**/*.ts"],
+  "include": ["./src/**/*.ts", "index.d.ts"],
   "exclude": [
     "node_modules",
     "./src/**/__tests__/*.ts",

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
+  "types": "index.d.ts",
   "scripts": {
     "start": "NODE_ENV=production node ./dist/bin/index.js",
     "test": "NODE_ENV=test jest --runInBand",
@@ -14,6 +15,7 @@
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
     "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.31.tgz",
     "@gx-mob/socket.io-module": "file:../../packages/gx-mob-socket.io-module-0.0.1.tgz",
+    "extensor": "^1.0.6",
     "fastify": "^3.1.1",
     "fastify-decorators": "^3.1.1"
   },

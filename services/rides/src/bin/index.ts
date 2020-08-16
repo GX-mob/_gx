@@ -26,6 +26,8 @@ if (!isProduction) {
 import { FastifyInstance } from "fastify";
 import { bootstrap } from "@gx-mob/http-service";
 import { createServer } from "@gx-mob/socket.io-module";
+import { parsers } from "extensor";
+import { schemas } from "../schemas";
 
 const redis = process.env.REDIS_URI as string;
 
@@ -37,6 +39,9 @@ const instance: FastifyInstance = bootstrap({
 const io = createServer(instance.server, {
   redis,
   broadcastedEvents: ["position"],
+  options: {
+    parser: parsers.schemapack(schemas),
+  },
 });
 
 instance.decorate("io", io);
