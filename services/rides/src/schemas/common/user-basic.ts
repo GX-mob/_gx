@@ -4,13 +4,13 @@ export type UserBasic = {
   lastName: string;
   /**
    * Voyager:
-   * * 1 = Offering
+   * * 1 = Idle
    * * 2 = Waiting
    * * 3 = Running
    *
    * Driver:
-   * * 1 = Searching
-   * * 2 = Catching
+   * * 1 = Idle
+   * * 2 = Searching
    * * 3 = Running
    */
   state: 1 | 2 | 3;

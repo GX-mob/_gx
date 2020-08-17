@@ -5,8 +5,14 @@ export class Rider extends Common {
   constructor(public io: Server, public socket: Socket) {
     super(io, socket);
 
+    io.state.riders.setSocketIdPidRef(socket.id, this.self);
+
     this.on("position", (position) => {
       io.state.riders.setPosition(this.self.pid as string, position);
+    });
+
+    socket.on("configuration", (configuration) => {
+      io.state.riders.setConfiguration(this.self.pid as string, configuration);
     });
 
     socket.on("offerReponse", (response) =>

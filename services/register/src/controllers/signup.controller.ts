@@ -210,8 +210,8 @@ export default class StandardRegisterController {
     }
 
     const userObject = {
+      _id: "asd",
       phones: [phone],
-      emails: [],
       firstName,
       lastName,
       cpf,

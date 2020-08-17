@@ -4,7 +4,7 @@ import rideTypes, { RideTypes } from "../common/ride-types";
 /**
  * Position event schema
  */
-export type Offer = {
+export type OfferRequest = {
   id: string;
   voyagerPID: string;
   /**
@@ -42,12 +42,13 @@ export type ServerProps = {
   /**
    * To improve performance of the riders iteration.
    *
-   * Riders that are too away or aren't eligible are added
-   * to this list and jumped in the next iteration
+   * Drivers that are too distante, not eligible, that hit the
+   * response timeout or refuse the offer are added to this list
+   * and skipped in the next iteration.
    */
   ignoreds: string[];
   /**
-   * Riders that recused the ride
+   * Drivers that recused the ride
    */
   recused: string[];
   /**
@@ -74,7 +75,7 @@ export type ServerProps = {
   trys: number;
 };
 
-export type OfferServer = Offer & ServerProps;
+export type OfferServer = OfferRequest & ServerProps;
 
 const offer = {
   id: "string",

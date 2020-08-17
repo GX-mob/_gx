@@ -15,7 +15,7 @@ declare module "socket.io" {
     /**
      * Sockets that observe some events of this socket
      */
-    observers: string[];
+    observers: { socketId: string; p2p: boolean }[];
   }
 
   interface ServerOptions {

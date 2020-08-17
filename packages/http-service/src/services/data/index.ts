@@ -33,7 +33,7 @@ interface Settings<Model> {
 /**
  * Abstraction to manipulate the cached and persistent data of a single record, respectively.
  */
-export class Handler<Model> {
+export class Handler<Model, Create> {
   constructor(
     private cache: CacheService,
     public model: mongoose.Model<any>,
@@ -114,10 +114,10 @@ export class Handler<Model> {
    * @returns Lean document
    */
   async create(
-    data: Omit<Model, "_id">,
+    data: Omit<Create, "_id">,
     options = { cache: true }
   ): Promise<Model> {
-    let modelResult = await this.model.create(data as Model);
+    let modelResult = await this.model.create((data as unknown) as Model);
 
     if (this.settings.autoPopulate) {
       modelResult = await (this.populateObject(
@@ -197,7 +197,7 @@ export class DataService {
   @Inject(CacheService)
   public cache!: CacheService;
 
-  public users = this.create<User>(UserModel, {
+  public users = this.create<User, Omit<User, "pid">>(UserModel, {
     namespace: "users",
     linkingKeys: ["phones", "emails", "cpf"],
   });
@@ -215,10 +215,10 @@ export class DataService {
    * @returns
    * @constructs {Handler}
    */
-  create<Model>(
+  create<Model, Create = Model>(
     model: mongoose.Model<any>,
     settings: Settings<Model>
-  ): Handler<Model> {
-    return new Handler<Model>(this.cache, model, settings);
+  ) {
+    return new Handler<Model, Create>(this.cache, model, settings);
   }
 }
