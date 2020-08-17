@@ -1,7 +1,7 @@
 /**
  * User state event schema
  */
-export type StateEvent = {
+export type State = {
   /**
    * State:
    * * 1 = Online
@@ -11,7 +11,7 @@ export type StateEvent = {
   /**
    * User id
    */
-  id?: string;
+  id: string;
 };
 
 export default {

@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { Common } from "../common";
-import { OfferRide } from "../../schemas/events/offer-ride";
+import { Offer } from "../../schemas/events/offer";
 
 export class Voyager extends Common {
   constructor(public io: Server, public socket: Socket) {
@@ -9,7 +9,7 @@ export class Voyager extends Common {
     socket.on("offerRide", (data) => this.offerRideEvent(data));
   }
 
-  offerRideEvent(offer: OfferRide) {
-    this.io.state.Riders.offer(offer);
+  offerRideEvent(offer: Offer) {
+    this.io.state.offers.offer(offer, this.socket.id);
   }
 }

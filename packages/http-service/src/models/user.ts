@@ -19,18 +19,23 @@ import { Document, Schema, Types, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import { emailRegex, internationalMobilePhoneRegex } from "../helpers/utils";
+import shortid from "shortid";
 
 export interface User {
   _id: any;
+  /**
+   * Public ID
+   */
+  pid?: string;
   firstName: string;
   lastName: string;
   cpf: string;
   phones: string | string[];
   birth: Date;
   avatar?: string;
-  emails: string | string[];
+  emails?: string | string[];
   createdAt?: Date;
-  updatedAt?: Date | null;
+  updatedAt?: Date;
   groups?: number[];
   password?: string;
   ["2fa"]?: string;
@@ -44,6 +49,7 @@ export interface UserModel extends UserDocument {
 
 export const UserSchema: Schema = new Schema(
   {
+    pid: { type: String, default: shortid.generate },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     cpf: {
@@ -82,9 +88,11 @@ export const UserSchema: Schema = new Schema(
          * Validate all emails in the list
          */
         validator: (v: string[]) =>
+          v.length === 0 || // empty
           v.filter((email) => emailRegex.test(email)).length === v.length,
         message: (props) => `${props.value} has an invalid email`,
       },
+      default: [],
     },
     avatar: String,
     createdAt: { type: Date, default: Date.now },
@@ -100,9 +108,5 @@ export const UserSchema: Schema = new Schema(
 UserSchema.pre<UserDocument>("updateOne", async function () {
   this.set({ updatedAt: new Date() });
 });
-
-UserSchema.methods.compareCredential = function (plain: string) {
-  return bcrypt.compare(plain, this.credential);
-};
 
 export const UserModel = model<UserModel>("User", UserSchema);

@@ -5,14 +5,18 @@ import { auth } from "extensor";
 import { NAMESPACES } from "./constants";
 import { Voyager } from "./handlers/voyager";
 import { Rider } from "./handlers/rider";
-import { State } from "./state";
+import { Offers, Riders } from "./state";
+import { ParsersList } from "extensor/dist/types";
 
 export default class InitNode {
   @Inject(SessionService)
   private session!: SessionService;
 
-  constructor(io: Server) {
-    io.state = new State(io);
+  constructor(io: Server, parser: ParsersList) {
+    io.state = {
+      riders: new Riders(io, parser),
+      offers: new Offers(io, parser),
+    };
 
     auth.server(io, async ({ socket, data: { access, token } }) => {
       socket.session = await this.session.verify(

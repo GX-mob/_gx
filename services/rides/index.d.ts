@@ -1,10 +1,13 @@
 import { Session } from "@gx-mob/http-service/dist/models";
-import { State } from "./src/state";
+import { Riders, Offers } from "./src/state";
 import { EventEmitter } from "events";
 
 declare module "socket.io" {
   interface Server {
-    state: State;
+    state: {
+      riders: Riders;
+      offers: Offers;
+    };
   }
   interface Socket {
     access: number;

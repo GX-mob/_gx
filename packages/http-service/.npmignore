@@ -1,4 +1,0 @@
-.env.test
-.eslintrc.json
-jest.*
-tsconfig.json

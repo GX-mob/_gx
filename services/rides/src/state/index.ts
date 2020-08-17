@@ -1,11 +1,11 @@
-import { Server } from "socket.io";
-import { Riders } from "./riders";
-import { Invites } from "./invites";
-import { Rides } from "./rides";
+//import { Server } from "socket.io";
+export { Riders } from "./riders";
+export { Offers } from "./offers";
 
+/*
 export class State {
   public Riders = new Riders(this.io);
-  public Invites = new Invites(this.io);
+  public Offers = new Offers(this.io);
   public Rides = new Rides(this.io);
 
   constructor(public io: Server) {
@@ -19,6 +19,7 @@ export class State {
       this.Invites.warmup(invites);
       this.Riders.warmup(rides);
     })
-    */
+    
   }
 }
+*/

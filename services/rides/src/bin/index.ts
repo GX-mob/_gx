@@ -28,6 +28,7 @@ import { bootstrap } from "@gx-mob/http-service";
 import { createServer } from "@gx-mob/socket.io-module";
 import { parsers } from "extensor";
 import { schemas } from "../schemas";
+import Node from "../";
 
 const redis = process.env.REDIS_URI as string;
 
@@ -36,11 +37,13 @@ const instance: FastifyInstance = bootstrap({
   redis,
 });
 
+const parser = parsers.schemapack(schemas);
+
 const io = createServer(instance.server, {
   redis,
-  broadcastedEvents: ["position"],
+  broadcastedEvents: ["position", "offerResponse"],
   options: {
-    parser: parsers.schemapack(schemas),
+    parser,
   },
 });
 
@@ -53,6 +56,8 @@ instance.decorate("io", io);
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
+
+    new Node(instance.io, parser.schemas);
 
     await instance.ready();
 
