@@ -9,6 +9,7 @@
     "build:service:rides": "rimraf ./services/ride/dist && tsc --sourceMap -p ./services/rides/",
     "build:package:http-service": "rimraf ./packages/http-service/dist && tsc --sourceMap -p ./packages/http-service/",
     "build:package:websocket-module": "rimraf ./packages/websocket-module/dist && tsc --sourceMap -p ./packages/websocket-module/",
+    "build:package:geo-helper": "rimraf ./packages/geo-helper/dist && tsc --sourceMap -p ./packages/geo-helper/",
     "service:account:compile-schemas": "rimraf ./services/account/src/types/*  && json2ts -i ./services/account/src/schemas -o ./services/account/src/types",
     "service:auth:compile-schemas": "rimraf ./services/auth/src/types/*  && json2ts -i ./services/auth/src/schemas -o ./services/auth/src/types",
     "service:register:compile-schemas": "rimraf ./services/register/src/types/*  && json2ts -i ./services/register/src/schemas -o ./services/register/src/types"

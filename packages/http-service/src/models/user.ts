@@ -26,7 +26,7 @@ export interface User {
   /**
    * Public ID
    */
-  pid?: string;
+  pid: string;
   firstName: string;
   lastName: string;
   cpf: string;
