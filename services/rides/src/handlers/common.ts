@@ -34,7 +34,7 @@ export class Common extends EventEmitter {
         "state",
         {
           state: 0,
-          pid: this.self.pid as string,
+          pid: this.self.pid,
         },
         false
       );

@@ -14,8 +14,9 @@ import { UserBasic } from "src/schemas/common/user-basic";
 type DriversList = { [id: string]: Driver };
 
 export class Riders {
-  public searchingList: DriversList = {};
-  public runningList: DriversList = {};
+  /**
+   * Drivers position list
+   */
   public list: DriversList = {};
   /**
    * SocketId to PID reference list
@@ -41,16 +42,16 @@ export class Riders {
 
   /**
    * Set SocketId PID reference
-   * @param socketId
-   * @param pid
+   * @param {string} socketId
+   * @param {string} pid
    */
-  public setSocketIdPidRef(socketId: string, user: UserBasic) {
-    this.socketIdPidRef[socketId] = user.pid;
+  public setSocketIdPidRef(socketId: string, pid: string) {
+    this.socketIdPidRef[socketId] = pid;
   }
 
   /**
    * Set driver position
-   * @param socketId
+   * @param {string} socketId
    * @param {Position} position
    */
   setPosition(socketId: string, position: Position) {
@@ -63,7 +64,8 @@ export class Riders {
    * @param {string} pid
    * @param {Configuration} config
    */
-  setConfiguration(pid: string, config: Configuration) {
+  setConfiguration(socketId: string, config: Configuration) {
+    const pid = this.socketIdPidRef[socketId];
     this.list[pid].config = config;
   }
 
@@ -123,6 +125,7 @@ export class Riders {
 
     for (let i = 0; i < keys.length; ++i) {
       const driver = list[keys[i]];
+      const { pid, state, config, rate } = driver;
 
       /**
        * Skip if:
@@ -131,7 +134,14 @@ export class Riders {
        * * Not searching ride
        * * No match ride options
        */
-      if (offer.ignoreds.includes(driver.pid) || driver.state !== 1) {
+      if (offer.ignoreds.includes(pid) || driver.state === 3) {
+        continue;
+      }
+
+      if (
+        driver.config.drops[0] !== "any" &&
+        driver.config.drops.includes(offer.end.district)
+      ) {
         continue;
       }
     }
