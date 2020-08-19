@@ -31,15 +31,24 @@ class Route extends mongoose.SchemaType {
 
   cast(route: TRoute) {
     if (!(route instanceof Object) || Object.keys(route).length < 3) {
-      throw new Error('Route must be an object with "start", "path" and "end"');
+      throw new Error(
+        'Route must be an object with "start", "path", "end" and "distance"'
+      );
     }
 
     if (
       !hasProp(route, "start") ||
       !hasProp(route, "path") ||
+      !hasProp(route, "distance") ||
       !hasProp(route, "end")
     ) {
-      throw new Error('Route object must have "start", "path" and "end" props');
+      throw new Error(
+        'Route object must have "start", "path", "end" and "distance" props'
+      );
+    }
+
+    if (typeof route.distance !== "number") {
+      throw new Error("Distance must be a number");
     }
 
     if (typeof route.path !== "string") {
@@ -86,12 +95,19 @@ type TRoute = {
   waypoints?: RoutePoint[];
   end: RoutePoint;
   path: string;
+  distance: number;
 };
 
 export interface Ride {
   pid: string;
   voyager: User["_id"][];
   route: TRoute;
+  /**
+   * Ride types
+   * * 1 = Normal
+   * * 2 = VIG - Very important gx
+   */
+  type: 1 | 2;
   driver?: User["_id"];
   pendencies?: Pendencie[];
 }
@@ -100,13 +116,14 @@ export interface RideDocument extends Ride, Document {}
 
 export const RideSchema: Schema = new Schema(
   {
-    pid: { Type: String, default: shortid.generate },
+    pid: { Type: String, default: shortid.generate, unique: true },
     voyagers: {
       type: Array,
       of: Schema.Types.ObjectId,
       required: true,
       ref: "User",
     },
+    type: { type: Number, enum: [1, 2], required: true },
     route: { type: Route, required: true },
     options: Object,
     driver: { type: Schema.Types.ObjectId, ref: "User" },

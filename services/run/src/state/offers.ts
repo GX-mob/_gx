@@ -1,12 +1,15 @@
 import { Server } from "socket.io";
 import { Inject } from "fastify-decorators";
-import { CacheService } from "@gx-mob/http-service";
+import { DataService, CacheService } from "@gx-mob/http-service";
 import { OfferRequest, OfferServer } from "../schemas/events/offer";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
 import Node from "../";
 
 export class Offers {
+  @Inject(DataService)
+  public data!: DataService;
+
   @Inject(CacheService)
   public cache!: CacheService;
 
@@ -18,28 +21,27 @@ export class Offers {
     public parser: ParsersList
   ) {}
 
-  async offer(offer: OfferRequest, socketId: string) {
-    const route = await this.cache.get("routes", offer.routeID);
+  async offer(offer: OfferRequest, socketId: string): Promise<string> {
+    const ride = await this.data.rides.get({ pid: offer.rideID });
 
-    const id = shortid.generate();
+    if (!ride) {
+      return "ride-not-found";
+    }
 
-    this.offers[id] = {
-      ...offer,
-      id,
+    this.offers[offer.rideID] = {
+      ride,
       requesterSocketId: socketId,
       ignoreds: [],
-      sendBuff: this.parser.offer.encode(offer),
+      //sendBuff: this.parser.offer.encode(offer),
       trys: 0,
       offeredTo: null,
       offerResponseTimeout: null,
     };
 
-    await this.save(this.offers[id]);
+    // await this.save(this.offers[id]);
 
-    this.io.state.riders.offer(this.offers[id]);
-  }
+    this.io.state.riders.offer(this.offers[offer.rideID]);
 
-  save(offer: OfferServer) {
-    return this.cache.set("rides:offer", offer.id, offer);
+    return "offering";
   }
 }

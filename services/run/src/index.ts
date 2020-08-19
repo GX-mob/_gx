@@ -1,4 +1,5 @@
-import { Inject } from "fastify-decorators";
+import { FastifyInstance } from "fastify";
+import { FastifyInstanceToken, Inject } from "fastify-decorators";
 import { Server } from "socket.io";
 import { SessionService, CacheService } from "@gx-mob/http-service";
 import { auth } from "extensor";
@@ -10,11 +11,14 @@ import { Connection } from "./schemas/common/connection";
 import { ParsersList } from "extensor/dist/types";
 
 export default class Node {
+  @Inject(FastifyInstanceToken)
+  public instance!: FastifyInstance;
+
   @Inject(SessionService)
-  private session!: SessionService;
+  public session!: SessionService;
 
   @Inject(CacheService)
-  private cache!: CacheService;
+  public cache!: CacheService;
 
   constructor(io: Server, parser: ParsersList) {
     io.state = {

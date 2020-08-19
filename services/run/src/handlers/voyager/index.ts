@@ -7,10 +7,19 @@ export class Voyager extends Common {
   constructor(public node: Node, public io: Server, public socket: Socket) {
     super(node, io, socket);
 
-    socket.on("offer", (data) => this.offerRideEvent(data));
+    socket.on("offer", async (data, ack) => {
+      const result = await this.offerRideEvent(data);
+
+      ack(result);
+    });
   }
 
   offerRideEvent(offer: OfferRequest) {
-    this.io.state.offers.offer(offer, this.socket.id);
+    try {
+      return this.io.state.offers.offer(offer, this.socket.id);
+    } catch (error) {
+      this.node.instance.log.error(error);
+      return "internal";
+    }
   }
 }

@@ -50,7 +50,7 @@ export interface UserModel extends UserDocument {
 
 export const UserSchema: Schema = new Schema(
   {
-    pid: { type: String, default: shortid.generate },
+    pid: { type: String, default: shortid.generate, unique: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     cpf: {

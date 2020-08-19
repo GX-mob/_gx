@@ -1,7 +1,7 @@
 {
   "name": "gx-run-service",
   "version": "1.0.0",
-  "description": "",
+  "description": "Service that connects voyagers to drivers",
   "private": true,
   "types": "index.d.ts",
   "scripts": {

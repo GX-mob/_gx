@@ -23,6 +23,7 @@ import { handleRejectionByUnderHood } from "../../helpers/utils";
 // Standard handlers
 import { User, UserModel } from "../../models/user";
 import { Session, SessionModel } from "../../models/session";
+import { Ride, RideModel } from "../../models/ride";
 
 interface Settings<Model> {
   namespace: string;
@@ -207,6 +208,10 @@ export class DataService {
   public sessions = this.create<Session>(SessionModel, {
     namespace: "sessions",
     autoPopulate: ["user"],
+  });
+  public rides = this.create<Ride, Omit<User, "pid">>(RideModel, {
+    namespace: "rides",
+    autoPopulate: ["pendencies"],
   });
   /**
    *
