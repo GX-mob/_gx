@@ -1,6 +1,7 @@
 import { Session } from "@gx-mob/http-service/dist/models";
 import { Riders, Offers } from "./src/state";
 import { EventEmitter } from "events";
+import { Observer } from "./src/schemas/common/observer";
 
 declare module "socket.io" {
   interface Server {
@@ -15,7 +16,7 @@ declare module "socket.io" {
     /**
      * Sockets that observe some events of this socket
      */
-    observers: { socketId: string; p2p: boolean }[];
+    observers: Observer[];
   }
 
   interface ServerOptions {

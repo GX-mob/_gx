@@ -19,6 +19,8 @@ export class Offers {
   ) {}
 
   async offer(offer: OfferRequest, socketId: string) {
+    const route = await this.cache.get("routes", offer.routeID);
+
     const id = shortid.generate();
 
     this.offers[id] = {
@@ -26,10 +28,10 @@ export class Offers {
       id,
       requesterSocketId: socketId,
       ignoreds: [],
-      accepted: false,
-      routeSent: false,
       sendBuff: this.parser.offer.encode(offer),
       trys: 0,
+      offeredTo: null,
+      offerResponseTimeout: null,
     };
 
     await this.save(this.offers[id]);

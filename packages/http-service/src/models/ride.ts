@@ -16,7 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import mongoose, { Document, Schema, model } from "mongoose";
+import shortid from "shortid";
 import { User } from "./user";
+import { Pendencie } from "./pendencie";
 
 function hasProp(obj: any, prop: string) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
@@ -48,10 +50,10 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("end", route.end);
 
     if (hasProp(route, "checkpoints")) {
-      for (let i = 0; i < (route.checkpoints as RoutePoint[]).length; ++i)
+      for (let i = 0; i < (route.waypoints as RoutePoint[]).length; ++i)
         this.checkPoint(
           `checkpoint[${i}]`,
-          (route.checkpoints as RoutePoint[])[i]
+          (route.waypoints as RoutePoint[])[i]
         );
     }
 
@@ -81,25 +83,24 @@ type RoutePoint = {
 
 type TRoute = {
   start: RoutePoint;
-  checkpoints?: RoutePoint[];
+  waypoints?: RoutePoint[];
   end: RoutePoint;
   path: string;
 };
 
 export interface Ride {
+  pid: string;
   voyager: User["_id"][];
   route: TRoute;
-  options: {
-    hitBack?: boolean;
-    trunk?: boolean;
-  };
   driver?: User["_id"];
+  pendencies?: Pendencie[];
 }
 
 export interface RideDocument extends Ride, Document {}
 
 export const RideSchema: Schema = new Schema(
   {
+    pid: { Type: String, default: shortid.generate },
     voyagers: {
       type: Array,
       of: Schema.Types.ObjectId,
@@ -109,6 +110,11 @@ export const RideSchema: Schema = new Schema(
     route: { type: Route, required: true },
     options: Object,
     driver: { type: Schema.Types.ObjectId, ref: "User" },
+    pendencies: {
+      type: Array,
+      of: Schema.Types.ObjectId,
+      ref: "Pendencies",
+    },
   },
   { collection: "rides" }
 );

@@ -37,6 +37,7 @@ export default class Node {
       }
 
       socket.access = access;
+
       const {
         pid,
         firstName,
@@ -73,7 +74,7 @@ export default class Node {
 
   /**
    * Get connection data
-   * @param id SocketId or User public ID
+   * @param id Socket ID or User public ID
    */
   public getConnection(id: string): Promise<Connection> {
     return this.cache.get("rides:connections", id);

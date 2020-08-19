@@ -5,5 +5,6 @@ import { Driver } from "./driver";
 export type Connection = UserBasic & {
   observers: { socketId: string; p2p: boolean }[];
   config?: Configuration;
+  ride?: [];
   state?: Driver["state"];
 };

@@ -9,7 +9,7 @@ import { OfferResponse } from "../schemas/events/offer-response";
 import { ParsersList } from "extensor/dist/types";
 import Node from "../";
 import {
-  OFFER_DRIVER_OFFER_RESPONSE_TIMEOUT,
+  OFFER_DRIVER_RESPONSE_TIMEOUT,
   OFFER_ADDITIONAL_METERS_OVER_TRY,
   OFFER_INITIAL_DISTANCE_LIMIT,
   OFFER_DISTANCE_LIMIT,
@@ -107,14 +107,14 @@ export class Riders {
    * @param {string} requesterSocketId SocketId of requester
    */
   async offer(offer: OfferServer): Promise<void> {
-    const rider = await this.match(offer);
+    const driver = await this.match(offer);
 
     offer.trys++;
 
     /**
-     * If don't have a match, infor to user the break time
+     * If don't have a match, inform to user the break time
      */
-    if (!rider) {
+    if (!driver) {
       // TODO Try limit reached, require to user a break ~ 100
       return this.offer(offer);
     }
@@ -122,28 +122,33 @@ export class Riders {
     /**
      * Set the current driver that receive the offer
      */
-    offer.offeredTo = rider.pid;
+    offer.offeredTo = driver.pid;
 
     /**
      * Emit to driver the offer
      */
-    this.emit(rider.socketId, "offer", offer);
+    this.emit(driver.socketId, "offer", offer);
 
     /**
      * Inform the user that we have a compatible driver and we awaiting the driver response
      */
-    this.emit(offer.requesterSocketId, "offerSent", rider);
+    this.emit(offer.requesterSocketId, "offerSent", driver);
 
     /**
      * Define a timeout to driver response
      */
-    offer.offerResponseTimeout = setTimeout(() => {
-      offer.ignoreds.push(rider.pid);
-      this.offer(offer);
-    }, OFFER_DRIVER_OFFER_RESPONSE_TIMEOUT);
+    offer.offerResponseTimeout = setTimeout(
+      (rider, offer) => {
+        offer.ignoreds.push(rider.pid);
+        offer.offeredTo = null;
+        this.offer(offer);
+      },
+      OFFER_DRIVER_RESPONSE_TIMEOUT,
+      driver,
+      offer
+    );
   }
 
-  // TODO algorithm description
   /**
    * Match driver algorithm
    *
@@ -196,7 +201,7 @@ export class Riders {
        * Soft skip conditions
        *
        * Conditions that can be changed in next execution by the
-       * driver configurationupdate action, finished ride event
+       * driver configuration update action, finished ride event
        * or got enter in max distance area.
        */
       if (
@@ -303,15 +308,34 @@ export class Riders {
      * To avoid any bug in a delayed response and other driver already received the offer
      */
     if (offer.offeredTo !== pid) {
-      return this.io.nodes.emit("delayedOfferReponse", socketId, 1);
+      return this.io.nodes.emit("delayedOfferReponse", socketId, true);
     }
 
+    /**
+     * Clear timeout response
+     */
+    clearTimeout(offer.offerResponseTimeout as NodeJS.Timeout);
+
+    /**
+     * If negative response, adds to ignore list and resume the offer
+     */
     if (!data.response) {
       offer.ignoreds.push(pid);
 
       return this.offer(offer);
     }
 
-    return this.io.nodes.emit("allRight", socketId, 1);
+    /**
+     * Emits a success response to driver to pickup the voyager
+     * Don't saves the ride, both side can cancel the ride yet,
+     * only saves when the driver emit event ride start.
+     */
+    // Driver
+    this.io.nodes.emit("driver_offerAccepted", socketId, true);
+    // Voyager
+    this.io.nodes.emit("voyager_offerAccepted", offer.requesterSocketId, {
+      offerID: offer.id,
+      driverPID: driver.pid,
+    });
   }
 }

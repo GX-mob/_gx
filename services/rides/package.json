@@ -1,7 +1,7 @@
 {
-  "name": "gx-rides-service",
+  "name": "gx-routes-service",
   "version": "1.0.0",
-  "description": "",
+  "description": "Creates voyager ride routes",
   "private": true,
   "types": "index.d.ts",
   "scripts": {
@@ -13,7 +13,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
-    "@gx-mob/geo-helper": "file:../../packages/gx-mob-geo-helper-0.0.1.tgz",
+    "@gx-mob/http-service": "file:../../packages/gx-mob-http-service-0.0.38.tgz",
     "@gx-mob/socket.io-module": "file:../../packages/gx-mob-socket.io-module-0.0.1.tgz",
     "extensor": "^1.0.6",
     "fastify": "^3.1.1",

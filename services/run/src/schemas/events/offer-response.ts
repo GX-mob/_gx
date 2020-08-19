@@ -6,7 +6,7 @@ export type OfferResponse = {
   response: boolean;
 };
 
-export const schema = { offerID: "string", response: "boolean" };
+export const schema = { id: "string", response: "boolean" };
 
 export default {
   id: 0,
