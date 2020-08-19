@@ -4,6 +4,7 @@ import { CacheService } from "@gx-mob/http-service";
 import { OfferRequest, OfferServer } from "../schemas/events/offer";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
+import Node from "../";
 
 export class Offers {
   @Inject(CacheService)
@@ -11,7 +12,11 @@ export class Offers {
 
   public offers: { [id: string]: OfferServer } = {};
 
-  constructor(public io: Server, public parser: ParsersList) {}
+  constructor(
+    public node: Node,
+    public io: Server,
+    public parser: ParsersList
+  ) {}
 
   async offer(offer: OfferRequest, socketId: string) {
     const id = shortid.generate();
@@ -19,8 +24,8 @@ export class Offers {
     this.offers[id] = {
       ...offer,
       id,
+      requesterSocketId: socketId,
       ignoreds: [],
-      recused: [],
       accepted: false,
       routeSent: false,
       sendBuff: this.parser.offer.encode(offer),
@@ -29,7 +34,7 @@ export class Offers {
 
     await this.save(this.offers[id]);
 
-    this.io.state.riders.offer(this.offers[id], socketId);
+    this.io.state.riders.offer(this.offers[id]);
   }
 
   save(offer: OfferServer) {

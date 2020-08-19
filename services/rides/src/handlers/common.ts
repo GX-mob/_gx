@@ -4,6 +4,7 @@ import { DataService, CacheService } from "@gx-mob/http-service";
 import { Position, State } from "../schemas/events";
 import { EventEmitter } from "eventemitter3";
 import { User } from "@gx-mob/http-service/dist/models";
+import Node from "../";
 
 export class Common extends EventEmitter {
   @Inject(DataService)
@@ -18,7 +19,7 @@ export class Common extends EventEmitter {
   public self: User;
   public connectionState: State["state"] = 1;
 
-  constructor(public io: Server, public socket: Socket) {
+  constructor(public node: Node, public io: Server, public socket: Socket) {
     super();
 
     this.self = socket.session.user;

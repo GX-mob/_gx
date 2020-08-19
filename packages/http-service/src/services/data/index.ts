@@ -197,10 +197,13 @@ export class DataService {
   @Inject(CacheService)
   public cache!: CacheService;
 
-  public users = this.create<User, Omit<User, "pid">>(UserModel, {
-    namespace: "users",
-    linkingKeys: ["phones", "emails", "cpf"],
-  });
+  public users = this.create<User, Omit<User, "pid" | "averageEvaluation">>(
+    UserModel,
+    {
+      namespace: "users",
+      linkingKeys: ["phones", "emails", "cpf"],
+    }
+  );
   public sessions = this.create<Session>(SessionModel, {
     namespace: "sessions",
     autoPopulate: ["user"],

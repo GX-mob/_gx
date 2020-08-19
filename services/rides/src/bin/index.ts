@@ -41,7 +41,7 @@ const parser = parsers.schemapack(schemas);
 
 const io = createServer(instance.server, {
   redis,
-  broadcastedEvents: ["position", "offerResponse"],
+  broadcastedEvents: ["setup", "position", "offerResponse", "configuration"],
   options: {
     parser,
   },

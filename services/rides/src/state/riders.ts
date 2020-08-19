@@ -1,12 +1,13 @@
 import { Server } from "socket.io";
 import { distance as Distance } from "@gx-mob/geo-helper";
-import { UserBasic } from "../schemas/common/user-basic";
 import { Driver } from "../schemas/common/driver";
+import { Setup } from "../schemas/events/setup";
 import { Configuration } from "../schemas/events/configuration";
 import { Position } from "../schemas/events/position";
 import { OfferServer } from "../schemas/events/offer";
 import { OfferResponse } from "../schemas/events/offer-response";
 import { ParsersList } from "extensor/dist/types";
+import Node from "../";
 import {
   OFFER_DRIVER_OFFER_RESPONSE_TIMEOUT,
   OFFER_ADDITIONAL_METERS_OVER_TRY,
@@ -15,7 +16,6 @@ import {
   MATCH_MAX_EXECUTION,
   MATCH_EXECUTION_INTERVAL,
 } from "../constants";
-import { User } from "@gx-mob/http-service/dist/models";
 
 type DriversList = {
   [id: string]: Driver;
@@ -34,36 +34,55 @@ export class Riders {
   /**
    * Set listeners of another server nodes
    */
-  constructor(public io: Server, public parser: ParsersList) {
+  constructor(
+    public node: Node,
+    public io: Server,
+    public parser: ParsersList
+  ) {
+    io.nodes.on("setup", async ({ socketId, data }) => {
+      this.setupDriver(socketId, data);
+    });
+
+    io.nodes.on("position", async ({ socketId, data }) => {
+      this.setPosition(socketId, data);
+    });
+
     io.nodes.on("offerResponse", ({ socketId, data }) => {
-      if (socketId in io.sockets) {
+      if (data.id in io.state.offers.offers) {
         this.offerResponse(socketId, data);
       }
     });
 
     io.nodes.on("configuration", ({ socketId, data }) => {
-      if (socketId in io.sockets) {
-        this.setConfiguration(socketId, data);
-      }
+      this.setConfiguration(socketId, data);
     });
   }
 
-  public setupDriver(driver: Driver) {
-    this.socketIdPidRef[driver.socketId] = driver.pid;
-    this.list[driver.pid] = driver;
-  }
-
   /**
-   * Set SocketId PID reference
+   * Setup driver initial information
    * @param {string} socketId
    * @param {string} pid
    */
-  public setSocketIdPidRef(socketId: string, pid: string) {
-    this.socketIdPidRef[socketId] = pid;
+  public async setupDriver(socketId: string, setup: Setup) {
+    const connection = await this.node.getConnection(socketId);
+
+    this.socketIdPidRef[socketId] = connection.pid;
+
+    this.list[connection.pid] = {
+      socketId,
+      firstName: connection.firstName,
+      lastName: connection.lastName,
+      pid: connection.pid,
+      rate: connection.rate,
+      p2p: false,
+      position: setup.position,
+      config: setup.configuration,
+      state: connection.state || 1,
+    };
   }
 
   /**
-   * Set driver position
+   * Update driver position
    * @param {string} socketId
    * @param {Position} position
    */
@@ -87,7 +106,7 @@ export class Riders {
    * @param {OfferServer} offer
    * @param {string} requesterSocketId SocketId of requester
    */
-  async offer(offer: OfferServer, requesterSocketId: string): Promise<void> {
+  async offer(offer: OfferServer): Promise<void> {
     const rider = await this.match(offer);
 
     offer.trys++;
@@ -96,9 +115,14 @@ export class Riders {
      * If don't have a match, infor to user the break time
      */
     if (!rider) {
-      // TODO Try limit reached, requests a break ~ 100
-      return this.offer(offer, requesterSocketId);
+      // TODO Try limit reached, require to user a break ~ 100
+      return this.offer(offer);
     }
+
+    /**
+     * Set the current driver that receive the offer
+     */
+    offer.offeredTo = rider.pid;
 
     /**
      * Emit to driver the offer
@@ -108,14 +132,14 @@ export class Riders {
     /**
      * Inform the user that we have a compatible driver and we awaiting the driver response
      */
-    this.emit(requesterSocketId, "offerSent", rider);
+    this.emit(offer.requesterSocketId, "offerSent", rider);
 
     /**
      * Define a timeout to driver response
      */
     offer.offerResponseTimeout = setTimeout(() => {
       offer.ignoreds.push(rider.pid);
-      this.offer(offer, requesterSocketId);
+      this.offer(offer);
     }, OFFER_DRIVER_OFFER_RESPONSE_TIMEOUT);
   }
 
@@ -270,5 +294,24 @@ export class Riders {
   /**
    * Handle driver offer response
    */
-  offerResponse(socketId: string, response: OfferResponse) {}
+  offerResponse(socketId: string, data: OfferResponse) {
+    const pid = this.socketIdPidRef[socketId];
+    const driver = this.list[pid];
+    const offer = this.io.state.offers.offers[data.id];
+
+    /**
+     * To avoid any bug in a delayed response and other driver already received the offer
+     */
+    if (offer.offeredTo !== pid) {
+      return this.io.nodes.emit("delayedOfferReponse", socketId, 1);
+    }
+
+    if (!data.response) {
+      offer.ignoreds.push(pid);
+
+      return this.offer(offer);
+    }
+
+    return this.io.nodes.emit("allRight", socketId, 1);
+  }
 }

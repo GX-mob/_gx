@@ -32,7 +32,7 @@ export interface User {
   cpf: string;
   phones: string | string[];
   birth: Date;
-  averageEvaluation?: number;
+  averageEvaluation: number;
   avatar?: string;
   emails?: string | string[];
   createdAt?: Date;

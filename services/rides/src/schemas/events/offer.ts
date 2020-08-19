@@ -40,6 +40,10 @@ export type OfferRequest = {
 
 export type ServerProps = {
   /**
+   * Requester socket id
+   */
+  requesterSocketId: string;
+  /**
    * To improve performance of the riders iteration.
    *
    * Drivers that are too distante, not eligible, that hit the
@@ -47,10 +51,6 @@ export type ServerProps = {
    * and skipped in the next iteration.
    */
   ignoreds: string[];
-  /**
-   * Drivers that recused the ride
-   */
-  recused: string[];
   /**
    * Used to prevent the re-send an accepted ride
    */
@@ -65,10 +65,16 @@ export type ServerProps = {
   offerResponseTimeout?: NodeJS.Timeout;
   /**
    * Send buffer, encoded offer object
+   *
    * Perfomance improvement, to don't encode the object in each event emission
    */
   sendBuff: Buffer;
-
+  /**
+   * Offered
+   *
+   * Current offered driver
+   */
+  offeredTo?: string;
   /**
    * Used to increase the distance ratio of match algorithm
    */
@@ -91,7 +97,6 @@ const offer = {
 export const offerServer = {
   ...offer,
   ignoreds: ["string"],
-  recused: ["string"],
   accepted: "boolean",
   routeSent: "boolean",
 };

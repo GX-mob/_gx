@@ -1,6 +1,12 @@
-export type OfferResponse = 0 | 1;
+export type OfferResponse = {
+  /**
+   * Offer id
+   */
+  id: "string";
+  response: boolean;
+};
 
-export const schema = "uin8";
+export const schema = { offerID: "string", response: "boolean" };
 
 export default {
   id: 0,

@@ -6,7 +6,6 @@
   "main": "index.js",
   "scripts": {
     "dev": "node ./scripts/start-development.js",
-    "build:service:rides": "rimraf ./services/ride/dist && tsc --sourceMap -p ./services/rides/",
     "build:package:http-service": "rimraf ./packages/http-service/dist && tsc --sourceMap -p ./packages/http-service/",
     "build:package:websocket-module": "rimraf ./packages/websocket-module/dist && tsc --sourceMap -p ./packages/websocket-module/",
     "build:package:geo-helper": "rimraf ./packages/geo-helper/dist && tsc --sourceMap -p ./packages/geo-helper/",
