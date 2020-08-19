@@ -32,6 +32,7 @@ export interface User {
   cpf: string;
   phones: string | string[];
   birth: Date;
+  averageEvaluation?: number;
   avatar?: string;
   emails?: string | string[];
   createdAt?: Date;
@@ -95,6 +96,7 @@ export const UserSchema: Schema = new Schema(
       default: [],
     },
     avatar: String,
+    averageEvaluation: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
     updatedAt: Date,
     birth: { type: Date, required: true },

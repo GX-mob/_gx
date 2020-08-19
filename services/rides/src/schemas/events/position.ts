@@ -23,13 +23,15 @@ export type Position = {
   id: string;
 };
 
+export const schema = {
+  latLng,
+  heading: "uint",
+  kmh: "int16",
+  ignore: ["string"],
+  id: "string",
+};
+
 export default {
   id: 1,
-  schema: {
-    latLng,
-    heading: "uint",
-    kmh: "int16",
-    ignore: ["string"],
-    id: "string",
-  },
+  schema,
 };

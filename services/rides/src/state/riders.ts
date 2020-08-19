@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import { distance as Distance } from "@gx-mob/geo-helper";
-import { Driver, Configuration } from "../schemas/common/driver";
+import { UserBasic } from "../schemas/common/user-basic";
+import { Driver } from "../schemas/common/driver";
+import { Configuration } from "../schemas/events/configuration";
 import { Position } from "../schemas/events/position";
 import { OfferServer } from "../schemas/events/offer";
 import { OfferResponse } from "../schemas/events/offer-response";
@@ -13,6 +15,7 @@ import {
   MATCH_MAX_EXECUTION,
   MATCH_EXECUTION_INTERVAL,
 } from "../constants";
+import { User } from "@gx-mob/http-service/dist/models";
 
 type DriversList = {
   [id: string]: Driver;
@@ -43,6 +46,11 @@ export class Riders {
         this.setConfiguration(socketId, data);
       }
     });
+  }
+
+  public setupDriver(driver: Driver) {
+    this.socketIdPidRef[driver.socketId] = driver.pid;
+    this.list[driver.pid] = driver;
   }
 
   /**
@@ -77,55 +85,53 @@ export class Riders {
   /**
    * Offer a ride to drivers
    * @param {OfferServer} offer
-   * @param {string} socketId SocketId of requester
+   * @param {string} requesterSocketId SocketId of requester
    */
-  async offer(offer: OfferServer, socketId: string): Promise<void> {
-    const result = await this.match(offer, socketId);
+  async offer(offer: OfferServer, requesterSocketId: string): Promise<void> {
+    const rider = await this.match(offer);
 
     offer.trys++;
 
     /**
-     * If don't have a match, rerun match algorithm
+     * If don't have a match, infor to user the break time
      */
-    if (!result) {
+    if (!rider) {
       // TODO Try limit reached, requests a break ~ 100
-      return this.offer(offer, socketId);
+      return this.offer(offer, requesterSocketId);
     }
-
-    const { rider, socketId: riderSocketId } = result;
 
     /**
      * Emit to driver the offer
      */
-    this.emit(riderSocketId, "offer", offer);
+    this.emit(rider.socketId, "offer", offer);
 
     /**
      * Inform the user that we have a compatible driver and we awaiting the driver response
      */
-    this.emit(socketId, "offerSent", rider);
+    this.emit(requesterSocketId, "offerSent", rider);
 
     /**
      * Define a timeout to driver response
      */
     offer.offerResponseTimeout = setTimeout(() => {
       offer.ignoreds.push(rider.pid);
-      this.offer(offer, socketId);
+      this.offer(offer, requesterSocketId);
     }, OFFER_DRIVER_OFFER_RESPONSE_TIMEOUT);
   }
 
   // TODO algorithm description
   /**
    * Match driver algorithm
+   *
    * @param offer
    * @param {string} socketId SocketId of requester
    * @param list Next iteration list
    */
   async match(
     offer: OfferServer,
-    socketId: string,
     list: DriversList = this.list,
     runTimes = 0
-  ): Promise<{ rider: Driver; socketId: string } | null> {
+  ): Promise<Driver | null> {
     ++runTimes;
 
     const nextList: DriversList = {};
@@ -136,21 +142,40 @@ export class Riders {
 
     for (let i = 0; i < keys.length; ++i) {
       const driver = list[keys[i]];
-      const { pid, state, config, rate } = driver;
+      const { pid, rate } = driver;
 
       const distance = Distance.calculate(
         driver.position.latLng,
         offer.start.latLng
       );
-
       /**
-       * Skip conditions
+       * Hard skip conditions
+       *
+       * Conditions that probably not change in next execution.
        */
       if (
         /**
          * Is ignored driver
          */
         offer.ignoreds.includes(pid) ||
+        /**
+         * Removes drivers that are too away
+         */
+        distance > 3000
+      ) {
+        continue;
+      }
+
+      nextList[pid] = driver;
+
+      /**
+       * Soft skip conditions
+       *
+       * Conditions that can be changed in next execution by the
+       * driver configurationupdate action, finished ride event
+       * or got enter in max distance area.
+       */
+      if (
         /**
          * Not searching ride
          */
@@ -170,20 +195,10 @@ export class Riders {
          */
         driver.config.types.includes(offer.type) ||
         /**
-         * To improve performance in case of a next iteration,
-         * removes drivers that are too away
+         * Not eligible, for now, but can be in future
          */
-        distance > 3000
+        distance > maxDistance
       ) {
-        continue;
-      }
-
-      nextList[pid] = driver;
-
-      /**
-       * Not eligible, for now, but can be in future
-       */
-      if (distance > maxDistance) {
         continue;
       }
 
@@ -197,7 +212,7 @@ export class Riders {
       }
 
       /**
-       * This driver is 20% more closer of the offer start point than last choiced driver
+       * This driver is 20% more closer to the offer start point than last choiced driver
        */
       if (distance < lastDistance * 1.2) {
         choiced = driver;
@@ -224,10 +239,10 @@ export class Riders {
       await new Promise((resolve) =>
         setTimeout(resolve, MATCH_EXECUTION_INTERVAL)
       );
-      return await this.match(offer, socketId, nextList, runTimes);
+      return await this.match(offer, nextList, runTimes);
     }
 
-    return { rider: choiced, socketId };
+    return choiced;
   }
 
   // TODO Algorithm that defines this dynamically based on region(with a database configuration services provider) and route distance

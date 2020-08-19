@@ -1,32 +1,17 @@
 import { UserBasic } from "./user-basic";
 import { Position } from "../events/position";
-import { OfferRequest } from "../events/offer";
+import { Configuration } from "../events/configuration";
 
-export type Configuration = {
+export type Driver = UserBasic & {
   /**
-   * Pay method accepts list
-   *
-   * A list of accepted pay method that drivers choose
-   * as their to receive only offers that match
+   * Driver state list:
+   * * 1 = Idle
+   * * 2 = Searching
+   * * 3 = Running
    */
-  payMethods: OfferRequest["payMethod"][];
-  /**
-   * Ride types list
-   *
-   * A list of rides types that drivers choose as their
-   * to receive only offers that match
-   */
-  types: OfferRequest["type"][];
-  /**
-   * End drop districts
-   *
-   * A list of districts that drivers choose as their
-   * destination to receive only offers that match
-   */
-  drops: string[];
-};
-
-export type Driver = UserBasic & { position: Position } & {
+  state: 1 | 2 | 3;
+  position: Position;
+} & {
   /**
    * Driver ride match configuration
    */

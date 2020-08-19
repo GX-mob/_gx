@@ -2,7 +2,6 @@ import { Server, Socket } from "socket.io";
 import { Inject } from "fastify-decorators";
 import { DataService, CacheService } from "@gx-mob/http-service";
 import { Position, State } from "../schemas/events";
-import { UserBasic } from "../schemas/common/user-basic";
 import { EventEmitter } from "eventemitter3";
 import { User } from "@gx-mob/http-service/dist/models";
 
@@ -18,8 +17,6 @@ export class Common extends EventEmitter {
    */
   public self: User;
   public connectionState: State["state"] = 1;
-  public position: Position | undefined;
-  public rideState: UserBasic["state"] = 1;
 
   constructor(public io: Server, public socket: Socket) {
     super();
@@ -39,18 +36,24 @@ export class Common extends EventEmitter {
         false
       );
     });
-
-    this.warmup();
   }
 
-  async warmup() {
-    const state = await this.cache.get("rides:userState", this.self.pid);
-    this.rideState = state;
+  /**
+   * Get information of connection in memory database
+   */
+  get() {
+    return this.cache.get("rides:connections", this.self.pid);
+  }
+  /**
+   * Set information of connection in memory database
+   */
+  set(data: any) {
+    return this.cache.set("rides:connections", this.self.pid, data, {
+      ex: 1000 * 60 * 60, // keep by 1 hour
+    });
   }
 
   positionEvent(position: Position) {
-    this.position = position;
-
     this.emit("position", position);
     this.dispachToObervers("position", this.signObservableEvent(position));
   }
