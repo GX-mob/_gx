@@ -6,7 +6,7 @@
 import { RideModel } from "./ride";
 
 describe("Model: Ride", () => {
-  let base;
+  let base: any;
 
   const mockRoutePoint = {
     coord: [1.23432, 2.31451],
@@ -18,41 +18,23 @@ describe("Model: Ride", () => {
     start: mockRoutePoint,
     path: "...",
     end: mockRoutePoint,
+    distance: 3400,
   };
 
   it("should throw error due to empty required fields", (done) => {
     const ride = new RideModel();
 
     ride.validate((err) => {
-      expect(Object.keys(err.errors).length).toBe(1);
+      expect(Object.keys(err.errors).length).toBe(3);
       //expect(Object.keys(err.errors).length).toBe(6);
       done();
     });
   });
 
-  it("should throw error due to invalid user id", () => {
-    const rideEmptyVoyagerID = new RideModel({
-      voyagers: [],
-      route: mockRoute,
-    });
-    const rideInvalidVoyagerID = new RideModel({
-      voyagers: ["123"],
-      route: mockRoute,
-    });
-
-    const { errors: emptyIdErrors } = rideEmptyVoyagerID.validateSync();
-    const { errors: InvalidIdErrors } = rideInvalidVoyagerID.validateSync();
-
-    const error = "has not a valid user ID";
-
-    expect(emptyIdErrors.voyagers.message).toBe(error);
-    expect(InvalidIdErrors.voyagers.message).toBe(error);
-  });
-
   it("should throw error due to empty route property", () => {
     const ride = new RideModel(base);
 
-    const { errors } = ride.validateSync();
+    const { errors } = ride.validateSync() as any;
 
     expect(errors.route.message).toBe("Path `route` is required.");
   });
@@ -60,20 +42,20 @@ describe("Model: Ride", () => {
   it("should throw error due to a non-object-type of route", () => {
     const ride = new RideModel({ ...base, route: [] });
 
-    const { errors } = ride.validateSync();
+    const { errors } = ride.validateSync() as any;
 
     expect(errors.route.reason.message).toBe(
-      'Route must be an object with "start", "path" and "end"'
+      'Route must be an object with "start", "path", "end" and "distance" props'
     );
   });
 
   it("should throw error due to an empty object of route", () => {
     const ride = new RideModel({ ...base, route: {} });
 
-    const { errors } = ride.validateSync();
+    const { errors } = ride.validateSync() as any;
 
     expect(errors.route.reason.message).toBe(
-      'Route must be an object with "start", "path" and "end"'
+      'Route must be an object with "start", "path", "end" and "distance" props'
     );
   });
 
@@ -83,20 +65,20 @@ describe("Model: Ride", () => {
       route: { _: "", __: "", ___: "" },
     });
 
-    const { errors } = ride.validateSync();
+    const { errors } = ride.validateSync() as any;
 
     expect(errors.route.reason.message).toBe(
-      'Route object must have "start", "path" and "end" props'
+      'Route object must have "start", "path", "end" and "distance" props'
     );
   });
 
   it("should throw error due to an invalid path", () => {
     const ride = new RideModel({
       ...base,
-      route: { start: "", path: 123, end: "" },
+      route: { start: "", path: 123, end: "", distance: 3400 },
     });
 
-    const { errors } = ride.validateSync();
+    const { errors } = ride.validateSync() as any;
 
     expect(errors.route.reason.message).toBe(
       "Path must be an encoded polyline, like as string."
@@ -106,13 +88,18 @@ describe("Model: Ride", () => {
   it("should throw error due to an invalid route points", () => {
     const start = new RideModel({
       ...base,
-      route: { start: "", path: "", end: "" },
-    });
+      route: { start: "", path: "", end: "", distance: 3400 },
+    }) as any;
 
     const end = new RideModel({
       ...base,
-      route: { start: mockRoutePoint, path: "", end: "" },
-    });
+      route: { start: mockRoutePoint, path: "", end: "", distance: 3400 },
+    }) as any;
+
+    const distance = new RideModel({
+      ...base,
+      route: { start: "", path: "", end: "", distance: "" },
+    }) as any;
 
     const checkpoint = new RideModel({
       ...base,
@@ -120,9 +107,10 @@ describe("Model: Ride", () => {
         start: mockRoutePoint,
         path: "",
         end: mockRoutePoint,
-        checkpoints: [{}],
+        distance: 3400,
+        waypoints: [{}],
       },
-    });
+    }) as any;
 
     expect(start.validateSync().errors.route.reason.message).toBe(
       '"start" object must have "coord", "primary" and "secondary" props'
@@ -133,7 +121,11 @@ describe("Model: Ride", () => {
     );
 
     expect(checkpoint.validateSync().errors.route.reason.message).toBe(
-      '"checkpoint[0]" object must have "coord", "primary" and "secondary" props'
+      '"waypoints[0]" object must have "coord", "primary" and "secondary" props'
+    );
+
+    expect(distance.validateSync().errors.route.reason.message).toBe(
+      "Distance must be a number"
     );
   });
 });

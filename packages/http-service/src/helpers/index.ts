@@ -18,4 +18,4 @@
 export { default as logger } from "./logger";
 export { default as DataBaseConnection } from "./database";
 export * from "./hooks";
-export * as utils from "./utils";
+export * as util from "./util";

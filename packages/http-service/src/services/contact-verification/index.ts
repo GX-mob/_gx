@@ -18,7 +18,7 @@
 import { Service, Inject } from "fastify-decorators";
 import Twilio from "twilio";
 import { ServiceContext } from "twilio/lib/rest/verify/v2/service";
-import { emailRegex, internationalMobilePhoneRegex } from "../../helpers/utils";
+import { emailRegex, internationalMobilePhoneRegex } from "../../helpers/util";
 
 @Service()
 export class TwilioService {

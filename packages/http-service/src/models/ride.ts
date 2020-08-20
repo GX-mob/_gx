@@ -32,7 +32,7 @@ class Route extends mongoose.SchemaType {
   cast(route: TRoute) {
     if (!(route instanceof Object) || Object.keys(route).length < 3) {
       throw new Error(
-        'Route must be an object with "start", "path", "end" and "distance"'
+        'Route must be an object with "start", "path", "end" and "distance" props'
       );
     }
 
@@ -58,15 +58,15 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("start", route.start);
     this.checkPoint("end", route.end);
 
-    if (hasProp(route, "checkpoints")) {
+    if (hasProp(route, "waypoints")) {
       for (let i = 0; i < (route.waypoints as RoutePoint[]).length; ++i)
         this.checkPoint(
-          `checkpoint[${i}]`,
+          `waypoints[${i}]`,
           (route.waypoints as RoutePoint[])[i]
         );
     }
 
-    return route;
+    // return route;
   }
 
   checkPoint(name: string, point: RoutePoint) {
@@ -121,7 +121,7 @@ export interface RideDocument extends Ride, Document {}
 
 export const RideSchema: Schema = new Schema(
   {
-    pid: { Type: String, default: shortid.generate, unique: true },
+    pid: { type: String, default: shortid.generate, unique: true },
     voyager: {
       type: Schema.Types.ObjectId,
       required: true,

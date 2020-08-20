@@ -59,7 +59,7 @@ export class StorageService {
       return;
     }
 
-    const StorageMock = require("./mock/gcp-storage").default; //eslint-disable-line
+    const StorageMock = require("./mock/gcp-storage.mock").default; //eslint-disable-line
     this.client = new StorageMock();
   }
 

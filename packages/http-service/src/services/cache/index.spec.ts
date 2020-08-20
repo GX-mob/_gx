@@ -6,7 +6,7 @@
 import { FastifyInstanceToken } from "fastify-decorators";
 import { configureServiceTest } from "fastify-decorators/testing";
 import { CacheService } from ".";
-import IORedisMock from "ioredis-mock";
+const IORedisMock = require("ioredis-mock");
 
 describe("Service: Cache", () => {
   let service: CacheService;
@@ -87,7 +87,7 @@ describe("Service: Cache", () => {
     }).toThrow(throwExpect);
   });
 
-  async function work(ns) {
+  async function work(ns: string) {
     const save = await service.set(ns, "foo", mockObject);
     expect(save).toBe("OK");
 

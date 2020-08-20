@@ -6,16 +6,19 @@
 import { configureServiceTest } from "fastify-decorators/testing";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { UserModel } from "../../models/user";
+import { UserModel, User } from "../../models/user";
 import { DataService } from ".";
-import IORedisMock from "ioredis-mock";
 import { FastifyInstanceToken } from "fastify-decorators";
+import { generate } from "shortid";
+import { Session } from "../../models";
+
+const IORedisMock = require("ioredis-mock");
 
 const mockUser = {
   firstName: "First",
   lastName: "Last",
   cpf: "123.456.789-09",
-  phones: ["82988888888", "82988444445"],
+  phones: ["+5582988888888", "+5582988444445"],
   birth: new Date("06/13/1994"),
   groups: [1],
 };
@@ -29,10 +32,10 @@ const mockSession = {
 describe("Service: Data", () => {
   let handler: DataService;
 
-  let cached;
-  let session;
-  let nonCached;
-  let mongoServer;
+  let cached: any;
+  let session: any;
+  let nonCached: any;
+  let mongoServer: any;
 
   beforeAll(async () => {
     handler = configureServiceTest({
@@ -58,9 +61,10 @@ describe("Service: Data", () => {
 
     nonCached = await UserModel.create({
       ...mockUser,
-      phones: ["82988444444"],
+      phones: ["+5582988444444"],
       cpf: "649.688.734-92",
-      credential: "asd",
+      pid: generate(),
+      averageEvaluation: 4.5,
     });
   });
 
@@ -76,8 +80,10 @@ describe("Service: Data", () => {
 
     expect(cached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
 
-    const persistent = await handler.users.get({ _id: cached._id });
-    const fromCache = await handler.cache.get("users", { _id: cached._id });
+    const persistent = (await handler.users.get({ _id: cached._id })) as User;
+    const fromCache = (await handler.cache.get("users", {
+      _id: cached._id,
+    })) as User;
 
     expect(persistent.firstName).toBe(cached.firstName);
     expect(fromCache.firstName).toBe(cached.firstName);
@@ -101,24 +107,28 @@ describe("Service: Data", () => {
   });
 
   it("should get cached record", async () => {
-    const user = await handler.users.get({ _id: cached._id });
+    const user = (await handler.users.get({ _id: cached._id })) as User;
 
     expect(user.cpf).toBe(cached.cpf);
   });
 
   it("should get non-cached record", async () => {
-    const user = await handler.users.get({ _id: nonCached._id });
+    const user = (await handler.users.get({ _id: nonCached._id })) as User;
 
     expect(user.cpf).toBe(nonCached.cpf);
 
-    const fromCache = await handler.cache.get("users", { _id: nonCached._id });
+    const fromCache = (await handler.cache.get("users", {
+      _id: nonCached._id,
+    })) as User;
 
     expect(user.firstName).toBe(fromCache.firstName);
   });
 
   it("get by a linking key", async () => {
     //const user = await handler.users.get({ phones: mockUser.phones });
-    const user2 = await handler.users.get({ phones: mockUser.phones[0] });
+    const user2 = (await handler.users.get({
+      phones: mockUser.phones[0],
+    })) as User;
 
     //expect(user.firstName).toBe(mockUser.firstName);
     //expect(user.cpf).toBe(mockUser.cpf);
@@ -132,7 +142,7 @@ describe("Service: Data", () => {
 
     await handler.users.update(query, { firstName: "Second" });
 
-    const persistent = await UserModel.findOne(query);
+    const persistent = (await UserModel.findOne(query)) as User;
     const fromCache = await handler.cache.get("users", query);
 
     expect(persistent.firstName).toBe("Second");
@@ -140,7 +150,9 @@ describe("Service: Data", () => {
   });
 
   it("should do auto populate", async () => {
-    const sessionPopulated = await handler.sessions.get({ _id: session._id });
+    const sessionPopulated = (await handler.sessions.get({
+      _id: session._id,
+    })) as Session;
 
     expect(sessionPopulated.user._id.toString()).toBe(cached._id.toString());
   });
@@ -150,7 +162,7 @@ describe("Service: Data", () => {
 
     await handler.users.remove(query);
 
-    const user = await handler.users.get(query);
+    const user = (await handler.users.get(query)) as null;
 
     expect(user).toBe(null);
   });
@@ -160,9 +172,9 @@ describe("Service: Data", () => {
     const object = { foo: "bar" };
     const string = "foo";
 
-    const emptyArray = [];
-    const emptyObject = {};
-    const emptyString = "";
+    const emptyArray: any = [];
+    const emptyObject: any = {};
+    const emptyString: any = "";
 
     expect(handler.users.isEmpty(array)).toBeFalsy();
     expect(handler.users.isEmpty(object)).toBeFalsy();

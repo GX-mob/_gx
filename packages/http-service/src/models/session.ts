@@ -24,7 +24,7 @@ export interface Session {
   userAgent: string;
   ips: (string | null)[];
   createdAt?: Date;
-  active?: boolean;
+  active: boolean;
 }
 
 export interface SessionDocument extends Session, Document {}

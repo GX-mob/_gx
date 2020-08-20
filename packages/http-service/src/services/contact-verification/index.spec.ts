@@ -45,7 +45,7 @@ describe("Service: ContactVerification", () => {
 
   it("should create a verification", async () => {
     const sid1 = await service.request("foo@bar.com");
-    const sid2 = await service.request("82988888888");
+    const sid2 = await service.request("+5582988888888");
 
     expect(sid1.startsWith("VE")).toBeTruthy();
     expect(sid2.startsWith("VE")).toBeTruthy();

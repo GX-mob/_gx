@@ -18,7 +18,7 @@
 import { Service, Inject } from "fastify-decorators";
 import { CacheService } from "../cache";
 import mongoose, { DocumentQuery, Document } from "mongoose";
-import { handleRejectionByUnderHood } from "../../helpers/utils";
+import { handleRejectionByUnderHood } from "../../helpers/util";
 
 // Standard handlers
 import { User, UserModel } from "../../models/user";
@@ -180,7 +180,7 @@ export class Handler<Model, Create> {
     }, []);
   }
 
-  private isEmpty(value: any) {
+  public isEmpty(value: any) {
     if (Array.isArray(value)) {
       return value.length === 0;
     }
@@ -205,10 +205,13 @@ export class DataService {
       linkingKeys: ["pid", "phones", "emails", "cpf"],
     }
   );
-  public sessions = this.create<Session>(SessionModel, {
-    namespace: "sessions",
-    autoPopulate: ["user"],
-  });
+  public sessions = this.create<Session, Omit<Session, "active">>(
+    SessionModel,
+    {
+      namespace: "sessions",
+      autoPopulate: ["user"],
+    }
+  );
   public rides = this.create<Ride, Omit<Ride, "pid">>(RideModel, {
     namespace: "rides",
     linkingKeys: ["pid"],

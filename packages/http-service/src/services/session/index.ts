@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { FastifyRequest } from "fastify";
 import { Service, Inject } from "fastify-decorators";
 import { Types } from "mongoose";
 import { promisify } from "util";
@@ -23,8 +22,7 @@ import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "../data";
 import { CacheService } from "../cache";
 import { User, Session } from "../../models";
-import { getClientIp } from "request-ip";
-import { handleRejectionByUnderHood } from "../../helpers/utils";
+import { handleRejectionByUnderHood } from "../../helpers/util";
 import HttpError from "http-errors";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
@@ -54,12 +52,13 @@ export class SessionService {
    */
   async create(
     user: User,
-    request: FastifyRequest
+    userAgent: string,
+    ip: string
   ): Promise<{ token: string; session: Session }> {
     const session = await this.data.sessions.create({
       user: user._id,
-      userAgent: request.headers["user-agent"] as string,
-      ips: [getClientIp(request.raw)],
+      userAgent,
+      ips: [ip],
     });
 
     const token = await this.signToken({ sid: session._id, uid: user._id });

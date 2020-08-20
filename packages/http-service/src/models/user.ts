@@ -18,7 +18,7 @@
 import { Document, Schema, Types, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { emailRegex, internationalMobilePhoneRegex } from "../helpers/utils";
+import { emailRegex, internationalMobilePhoneRegex } from "../helpers/util";
 import shortid from "shortid";
 
 export interface User {

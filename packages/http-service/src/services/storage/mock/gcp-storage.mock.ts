@@ -2,7 +2,10 @@
  * Quick & Dirty Google Cloud Storage emulator for tests.
  * from @https://gist.github.com/nfarina/90ba99a5187113900c86289e67586aaa
  */
-import { WritableStreamBuffer, ReadableStreamBuffer } from "stream-buffers";
+const {
+  WritableStreamBuffer,
+  ReadableStreamBuffer,
+} = require("stream-buffers");
 
 export default class MockStorage {
   buckets: { [name: string]: MockBucket };

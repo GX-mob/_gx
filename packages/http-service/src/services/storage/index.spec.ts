@@ -6,9 +6,12 @@
 import { configureServiceTest } from "fastify-decorators/testing";
 import { StorageService, AbstractionBucket } from ".";
 
-import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
 import { readFileSync } from "fs";
 import { join } from "path";
+const {
+  ReadableStreamBuffer,
+  WritableStreamBuffer,
+} = require("stream-buffers");
 
 describe("Service: Storage", () => {
   let service: StorageService;
@@ -19,7 +22,7 @@ describe("Service: Storage", () => {
   const jpegBuffer = readFileSync(join(__dirname, "mock", "mock.jpeg"));
   const pngBuffer = readFileSync(join(__dirname, "mock", "mock.png"));
 
-  function createReadableFrom(buffer) {
+  function createReadableFrom(buffer: Buffer) {
     const readable = new ReadableStreamBuffer();
     readable.put(buffer);
     readable.stop();
@@ -136,13 +139,14 @@ describe("Service: Storage", () => {
     });
   });
 
-  it("should upload", async (done) => {
+  it("should upload and don't compress", async (done) => {
     service.bucket("test");
 
     const image = createReadableFrom(pngBuffer);
     const { bucketFile } = await service.uploadStream("test", image, {
       filename: "avatar.png",
       public: true,
+      compress: false,
       acceptMIME: ["image/jpeg", "image/png"],
     });
 
@@ -154,7 +158,7 @@ describe("Service: Storage", () => {
     });
   });
 
-  it("should upload and compress", async (done) => {
+  it("should upload", async (done) => {
     service.bucket("test");
 
     const image = createReadableFrom(pngBuffer);

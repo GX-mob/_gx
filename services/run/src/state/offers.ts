@@ -3,7 +3,6 @@ import { Inject } from "fastify-decorators";
 import { DataService, CacheService } from "@gx-mob/http-service";
 import { OfferRequest, OfferServer } from "../schemas/events/offer";
 import { ParsersList } from "extensor/dist/types";
-import shortid from "shortid";
 import Node from "../";
 
 export class Offers {
@@ -36,8 +35,6 @@ export class Offers {
       offeredTo: null,
       offerResponseTimeout: null,
     };
-
-    // await this.save(this.offers[id]);
 
     this.io.state.riders.offer(this.offers[offer.rideID]);
 
