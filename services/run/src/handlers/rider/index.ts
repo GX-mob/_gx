@@ -8,7 +8,7 @@ export class Rider extends Common {
     super(node, io, socket);
 
     this.on("position", (position) => {
-      io.state.riders.setPosition(this.self.pid, position);
+      io.state.riders.setPosition(socket.connection.pid, position);
     });
 
     socket.on("setup", async (setup: Setup) => {
@@ -16,7 +16,7 @@ export class Rider extends Common {
     });
 
     socket.on("configuration", (configuration) => {
-      io.state.riders.setConfiguration(this.self.pid, configuration);
+      io.state.riders.setConfiguration(socket.connection.pid, configuration);
     });
 
     socket.on("offerReponse", (response) =>

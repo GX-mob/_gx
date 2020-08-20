@@ -26,48 +26,40 @@ export default class Node {
       offers: new Offers(this, io, parser),
     };
 
-    auth.server(io, async ({ socket, data: { access, token, p2p } }) => {
-      socket.session = await this.session.verify(
+    auth.server(io, async ({ socket, data: { mode, token, p2p } }) => {
+      const session = await this.session.verify(
         token,
         socket.handshake.address
       );
 
-      const hasPermission = this.session.hasPermission(socket.session, [
-        access,
-      ]);
+      const hasPermission = this.session.hasPermission(session, [mode]);
 
       if (!hasPermission) {
         throw new Error("unauthorized");
       }
 
-      socket.access = access;
+      const { pid, averageEvaluation } = session.user;
+      const previous = await this.getConnection(pid);
 
-      const {
+      const connection: Connection = {
+        _id: session.user._id,
         pid,
-        firstName,
-        lastName,
-        averageEvaluation,
-      } = socket.session.user;
-
-      const observers = (await this.getConnection(pid)).observers || [];
-
-      await this.setConnection(pid, {
-        pid,
-        firstName,
-        lastName,
+        mode,
         p2p,
-        observers,
+        observers: previous.observers || [],
         rate: averageEvaluation,
         socketId: socket.id,
-      });
+      };
 
-      socket.observers = observers;
+      await this.setConnection(pid, connection);
+
+      socket.connection = connection;
 
       return true;
     });
 
     io.on("connection", (socket) => {
-      switch (socket.access) {
+      switch (socket.connection.mode) {
         case NAMESPACES.VOYAGER:
           new Voyager(this, io, socket);
         case NAMESPACES.RIDER:
@@ -87,11 +79,12 @@ export default class Node {
   /**
    * Set connection data
    * @param pid User public ID
+   * @param data
    */
-  public setConnection(pid: string, data: Connection) {
+  public async setConnection(pid: string, data: Connection) {
     return this.cache.set("rides:connections", pid, data, {
       link: ["socketId"],
-      ex: 1000 * 60 * 60,
+      ex: 1000 * 60 * 60 * 5, // store for 5 hours
     });
   }
 }

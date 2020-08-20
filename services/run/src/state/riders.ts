@@ -1,4 +1,6 @@
+import { Inject } from "fastify-decorators";
 import { Server } from "socket.io";
+import { DataService } from "@gx-mob/http-service";
 import { distance as Distance } from "@gx-mob/geo-helper";
 import { Driver } from "../schemas/common/driver";
 import { Setup } from "../schemas/events/setup";
@@ -21,7 +23,12 @@ type DriversList = {
   [id: string]: Driver;
 };
 
+type BroadcastedEvent<Data> = { socketId: string; data: Data };
+
 export class Riders {
+  @Inject(DataService)
+  public data!: DataService;
+
   /**
    * Drivers position list
    */
@@ -39,23 +46,35 @@ export class Riders {
     public io: Server,
     public parser: ParsersList
   ) {
-    io.nodes.on("setup", async ({ socketId, data }) => {
-      this.setupDriver(socketId, data);
-    });
-
-    io.nodes.on("position", async ({ socketId, data }) => {
-      this.setPosition(socketId, data);
-    });
-
-    io.nodes.on("offerResponse", ({ socketId, data }) => {
-      if (data.id in io.state.offers.offers) {
-        this.offerResponse(socketId, data);
+    io.nodes.on(
+      "setup",
+      async ({ socketId, data }: BroadcastedEvent<Setup>) => {
+        this.setupDriver(socketId, data);
       }
-    });
+    );
 
-    io.nodes.on("configuration", ({ socketId, data }) => {
-      this.setConfiguration(socketId, data);
-    });
+    io.nodes.on(
+      "position",
+      async ({ socketId, data }: BroadcastedEvent<Position>) => {
+        this.setPosition(socketId, data);
+      }
+    );
+
+    io.nodes.on(
+      "offerResponse",
+      ({ socketId, data }: BroadcastedEvent<OfferResponse>) => {
+        if (data.id in io.state.offers.offers) {
+          this.offerResponse(socketId, data);
+        }
+      }
+    );
+
+    io.nodes.on(
+      "configuration",
+      ({ socketId, data }: BroadcastedEvent<Configuration>) => {
+        this.setConfiguration(socketId, data);
+      }
+    );
   }
 
   /**
@@ -69,15 +88,9 @@ export class Riders {
     this.socketIdPidRef[socketId] = connection.pid;
 
     this.list[connection.pid] = {
-      socketId,
-      firstName: connection.firstName,
-      lastName: connection.lastName,
-      pid: connection.pid,
-      rate: connection.rate,
-      p2p: false,
+      ...connection,
       position: setup.position,
       config: setup.configuration,
-      state: connection.state || 1,
     };
   }
 
@@ -109,8 +122,6 @@ export class Riders {
   async offer(offer: OfferServer): Promise<void> {
     const driver = await this.match(offer);
 
-    offer.trys++;
-
     /**
      * If don't have a match, inform to user the break time
      */
@@ -125,7 +136,7 @@ export class Riders {
     offer.offeredTo = driver.pid;
 
     /**
-     * Emit to driver the offer
+     * Emit the offer to driver
      */
     this.emit(driver.socketId, "offer", offer);
 
@@ -164,18 +175,18 @@ export class Riders {
     ++runTimes;
 
     const nextList: DriversList = {};
-    const maxDistance = this.getDistance(offer.trys);
+    const maxDistance = this.getDistance(runTimes);
     const keys = Object.keys(list);
-    let lastDistance: number = Number.MAX_SAFE_INTEGER;
+    let currentDistnace: number = Number.MAX_SAFE_INTEGER;
     let choiced: Driver | null = null;
 
     for (let i = 0; i < keys.length; ++i) {
-      const driver = list[keys[i]];
-      const { pid, rate } = driver;
+      const current = list[keys[i]];
+      const { ride } = offer;
 
       const distance = Distance.calculate(
-        driver.position.latLng,
-        offer.start.latLng
+        current.position.latLng,
+        ride.route.start.coord
       );
       /**
        * Hard skip conditions
@@ -186,7 +197,7 @@ export class Riders {
         /**
          * Is ignored driver
          */
-        offer.ignoreds.includes(pid) ||
+        offer.ignoreds.includes(current.pid) ||
         /**
          * Removes drivers that are too away
          */
@@ -195,7 +206,7 @@ export class Riders {
         continue;
       }
 
-      nextList[pid] = driver;
+      nextList[current.pid] = current;
 
       /**
        * Soft skip conditions
@@ -208,21 +219,21 @@ export class Riders {
         /**
          * Not searching ride
          */
-        driver.state !== 2 ||
+        current.state !== 2 ||
         /**
          * Not match with the driver configured district
          */
-        (driver.config.drops[0] !== "any" &&
-          driver.config.drops.includes(offer.end.district)) ||
+        (current.config.drops[0] !== "any" &&
+          current.config.drops.includes(ride.route.end.district)) ||
         /**
          * Not match with the driver configured pay method
          */
-        driver.config.payMethods.includes(offer.payMethod) ||
+        current.config.payMethods.includes(ride.payMethod) ||
         /**
          * The driver not accept the ride type
          * * For future feature, for give the choice to driver not receive offers of group rides
          */
-        driver.config.types.includes(offer.type) ||
+        current.config.types.includes(ride.type) ||
         /**
          * Not eligible, for now, but can be in future
          */
@@ -235,25 +246,25 @@ export class Riders {
        * No choiced drivers, first eligible
        */
       if (!choiced) {
-        choiced = driver;
-        lastDistance = distance;
+        choiced = current;
+        currentDistnace = distance;
         continue;
       }
 
       /**
        * This driver is 20% more closer to the offer start point than last choiced driver
        */
-      if (distance < lastDistance * 1.2) {
-        choiced = driver;
-        lastDistance = distance;
+      if (distance < currentDistnace * 1.2) {
+        choiced = current;
+        currentDistnace = distance;
       }
 
       /**
        * This driver have a avaliation rate 20% better than last choiced driver
        */
-      if (rate < choiced.rate * 1.2) {
-        choiced = driver;
-        lastDistance = distance;
+      if (current.rate < choiced.rate * 1.2) {
+        choiced = current;
+        currentDistnace = distance;
       }
     }
 
@@ -274,7 +285,7 @@ export class Riders {
     return choiced;
   }
 
-  // TODO Algorithm that defines this dynamically based on region(with a database configuration services provider) and route distance
+  // TODO Algorithm that defines this dynamically based on region(with a database configuration service provider) and route distance
   /**
    * Gets the max distance to offer ride to drivers
    * @param trys
@@ -299,7 +310,7 @@ export class Riders {
   /**
    * Handle driver offer response
    */
-  offerResponse(socketId: string, data: OfferResponse) {
+  async offerResponse(socketId: string, data: OfferResponse) {
     const pid = this.socketIdPidRef[socketId];
     const driver = this.list[pid];
     const offer = this.io.state.offers.offers[data.id];
@@ -326,15 +337,21 @@ export class Riders {
     }
 
     /**
-     * Emits a success response to driver to pickup the voyager
-     * Don't saves the ride, both side can cancel the ride yet,
-     * only saves when the driver emit event ride start.
+     * // Emits a success response to driver to pickup the voyager
+     * // Don't saves the ride, both side can cancel the ride yet,
+     * // only saves when the driver emit event ride start.
      */
+
+    await this.data.rides.update(
+      { pid: offer.ride.pid },
+      { driver: driver._id }
+    );
+
     // Driver
     this.io.nodes.emit("driver_offerAccepted", socketId, true);
     // Voyager
     this.io.nodes.emit("voyager_offerAccepted", offer.requesterSocketId, {
-      offerID: offer.id,
+      ridePID: offer.ride.pid,
       driverPID: driver.pid,
     });
   }

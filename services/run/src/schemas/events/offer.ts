@@ -48,10 +48,6 @@ export type OfferServer = {
    * Current offered driver
    */
   offeredTo: string | null;
-  /**
-   * Used to increase the distance ratio of match algorithm
-   */
-  trys: number;
 };
 
 export const schema = {

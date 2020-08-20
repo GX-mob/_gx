@@ -5,11 +5,11 @@ import { Configuration } from "../events/configuration";
 export type Driver = UserBasic & {
   /**
    * Driver state list:
-   * * 1 = Idle
+   * * undefined | 1 = Idle
    * * 2 = Searching
    * * 3 = Running
    */
-  state: 1 | 2 | 3;
+  state?: 1 | 2 | 3;
   position: Position;
 } & {
   /**

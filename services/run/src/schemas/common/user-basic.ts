@@ -1,7 +1,12 @@
 export type UserBasic = {
+  /**
+   * User internal id
+   */
+  _id: string;
+  /**
+   * User public id
+   */
   pid: string;
-  firstName: string;
-  lastName: string;
   /**
    * User average avaliations rate
    */

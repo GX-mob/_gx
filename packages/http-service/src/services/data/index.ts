@@ -202,16 +202,17 @@ export class DataService {
     UserModel,
     {
       namespace: "users",
-      linkingKeys: ["phones", "emails", "cpf"],
+      linkingKeys: ["pid", "phones", "emails", "cpf"],
     }
   );
   public sessions = this.create<Session>(SessionModel, {
     namespace: "sessions",
     autoPopulate: ["user"],
   });
-  public rides = this.create<Ride, Omit<User, "pid">>(RideModel, {
+  public rides = this.create<Ride, Omit<Ride, "pid">>(RideModel, {
     namespace: "rides",
-    autoPopulate: ["pendencies"],
+    linkingKeys: ["pid"],
+    autoPopulate: ["voyager", "driver", "pendencies"],
   });
   /**
    *

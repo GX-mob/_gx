@@ -85,9 +85,10 @@ class Route extends mongoose.SchemaType {
 (mongoose.Schema.Types as any).Route = Route;
 
 type RoutePoint = {
-  coord: number[];
+  coord: [number, number];
   primary: string;
   secondary: string;
+  district: string;
 };
 
 type TRoute = {
@@ -100,14 +101,18 @@ type TRoute = {
 
 export interface Ride {
   pid: string;
-  voyager: User["_id"][];
+  voyager: User["_id"];
   route: TRoute;
   /**
-   * Ride types
    * * 1 = Normal
    * * 2 = VIG - Very important gx
    */
   type: 1 | 2;
+  /**
+   * * 1 = Money
+   * * 2 = Credit card
+   */
+  payMethod: 1 | 2;
   driver?: User["_id"];
   pendencies?: Pendencie[];
 }
@@ -117,9 +122,8 @@ export interface RideDocument extends Ride, Document {}
 export const RideSchema: Schema = new Schema(
   {
     pid: { Type: String, default: shortid.generate, unique: true },
-    voyagers: {
-      type: Array,
-      of: Schema.Types.ObjectId,
+    voyager: {
+      type: Schema.Types.ObjectId,
       required: true,
       ref: "User",
     },

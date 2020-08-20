@@ -12,6 +12,10 @@ export class Voyager extends Common {
 
       ack(result);
     });
+
+    socket.on("amIrunning", (ack) => {
+      ack(socket.connection.rides);
+    });
   }
 
   offerRideEvent(offer: OfferRequest) {

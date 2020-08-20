@@ -13,16 +13,12 @@ export class Common extends EventEmitter {
   @Inject(DataService)
   public cache!: CacheService;
 
-  /**
-   * User
-   */
-  public self: User;
   public connectionState: State["state"] = 1;
 
   constructor(public node: Node, public io: Server, public socket: Socket) {
     super();
 
-    this.self = socket.session.user;
+    const { pid } = socket.connection;
 
     socket.on("position", (data) => this.positionEvent(data));
     socket.on("state", (data) => this.stateEvent(data));
@@ -31,26 +27,11 @@ export class Common extends EventEmitter {
       this.dispachToObervers<State>(
         "state",
         {
+          pid,
           state: 0,
-          pid: this.self.pid,
         },
         false
       );
-    });
-  }
-
-  /**
-   * Get information of connection in memory database
-   */
-  get() {
-    return this.cache.get("rides:connections", this.self.pid);
-  }
-  /**
-   * Set information of connection in memory database
-   */
-  set(data: any) {
-    return this.cache.set("rides:connections", this.self.pid, data, {
-      ex: 1000 * 60 * 60, // keep by 1 hour
     });
   }
 
@@ -67,7 +48,7 @@ export class Common extends EventEmitter {
   }
 
   dispachToObervers<T = any>(event: string, data: T, considerP2P = true) {
-    const { observers } = this.socket;
+    const { observers } = this.socket.connection;
     for (let i = 0; i < observers.length; ++i) {
       if (considerP2P && observers[i].p2p) {
         continue;
@@ -77,6 +58,6 @@ export class Common extends EventEmitter {
   }
 
   signObservableEvent<T = any>(packet: T): T {
-    return { ...packet, pid: this.self.pid };
+    return { ...packet, pid: this.socket.connection.pid };
   }
 }

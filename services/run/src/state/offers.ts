@@ -33,7 +33,6 @@ export class Offers {
       requesterSocketId: socketId,
       ignoreds: [],
       //sendBuff: this.parser.offer.encode(offer),
-      trys: 0,
       offeredTo: null,
       offerResponseTimeout: null,
     };
