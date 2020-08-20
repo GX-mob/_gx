@@ -3,6 +3,7 @@ import { Position } from "../events/position";
 import { Configuration } from "../events/configuration";
 
 export type Driver = UserBasic & {
+  position: Position;
   /**
    * Driver state list:
    * * undefined | 1 = Idle
@@ -10,8 +11,6 @@ export type Driver = UserBasic & {
    * * 3 = Running
    */
   state?: 1 | 2 | 3;
-  position: Position;
-} & {
   /**
    * Driver ride match configuration
    */

@@ -18,6 +18,7 @@ import {
   MATCH_MAX_EXECUTION,
   MATCH_EXECUTION_INTERVAL,
 } from "../constants";
+import { Connection } from "src/schemas/common/connection";
 
 type DriversList = {
   [id: string]: Driver;
@@ -82,8 +83,12 @@ export class Riders {
    * @param {string} socketId
    * @param {string} pid
    */
-  public async setupDriver(socketId: string, setup: Setup) {
-    const connection = await this.node.getConnection(socketId);
+  public async setupDriver(
+    socketId: string,
+    setup: Setup,
+    connection?: Connection
+  ) {
+    connection = connection || (await this.node.getConnection(socketId));
 
     this.socketIdPidRef[socketId] = connection.pid;
 
@@ -311,6 +316,14 @@ export class Riders {
    * Handle driver offer response
    */
   async offerResponse(socketId: string, data: OfferResponse) {
+    // TODO
+    // await util.reRunOverFail(
+    //   this.data.rides.update(
+    //     { pid: offer.ride.pid },
+    //     { driver: driver._id }
+    //   )
+    // , 3);
+
     const pid = this.socketIdPidRef[socketId];
     const driver = this.list[pid];
     const offer = this.io.state.offers.offers[data.id];

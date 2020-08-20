@@ -11,8 +11,9 @@ export class Rider extends Common {
       io.state.riders.setPosition(socket.connection.pid, position);
     });
 
-    socket.on("setup", async (setup: Setup) => {
-      io.state.riders.setupDriver(socket.id, setup);
+    socket.on("setup", async (setup: Setup, ack) => {
+      io.state.riders.setupDriver(socket.id, setup, socket.connection);
+      ack(socket.connection.state);
     });
 
     socket.on("configuration", (configuration) => {
