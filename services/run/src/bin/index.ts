@@ -16,71 +16,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { resolve } from "path";
-
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isProduction) {
-  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") });
+  require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") }); // eslint-disable-line
 }
 
-import { FastifyInstance } from "fastify";
-import { bootstrap } from "@gx-mob/http-service";
-import { createServer } from "@gx-mob/socket.io-module";
-import { parsers } from "extensor";
-import { schemas } from "../schemas";
-import Node from "../";
-
-const redis = process.env.REDIS_URI as string;
-
-const instance: FastifyInstance = bootstrap({
-  controllers: [],
-  redis,
-});
-
-const parser = parsers.schemapack(schemas);
-
-const io = createServer(instance.server, {
-  redis,
-  broadcastedEvents: ["setup", "position", "offerResponse", "configuration"],
-  options: {
-    parser,
-  },
-});
-
-instance.decorate("io", io);
+import service from "../service";
 
 (async function start() {
   try {
     if (!process.env.MONGO_URI && !isProduction) {
-      const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line
+      const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
       const mongoServer = new MongoMemoryServer();
       process.env.MONGO_URI = await mongoServer.getUri();
     }
 
-    new Node(instance.io, parser.schemas);
+    await service.ready();
 
-    await instance.ready();
-
-    await instance.listen(
+    await service.listen(
       Number(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 
-    console.log(instance.printRoutes());
+    console.log(service.printRoutes());
   } catch (err) {
     console.log(err);
     process.exit(1);
   }
 })();
 
-module.exports = instance.server;
+/**
+ * Needed to App Engine auto scale
+ */
+module.exports = service.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);
-  process.exit();
 });
-
 process.on("unhandledRejection", (error) => {
   console.log(error);
-  process.exit();
+  process.abort();
 });

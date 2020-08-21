@@ -28,16 +28,7 @@ import { bootstrap } from "@gx-mob/http-service";
 import "fastify-multipart";
 import "fastify-swagger";
 
-import IndexController from "../controllers/index.controller";
-import ContactController from "../controllers/contact.controller";
-import SecutiryController from "../controllers/secutiry.controller";
-
-const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
-
-const instance = bootstrap({
-  controllers: [IndexController, ContactController, SecutiryController],
-  redis,
-});
+import service from "../service";
 
 (async function start() {
   try {
@@ -47,21 +38,24 @@ const instance = bootstrap({
       process.env.MONGO_URI = await mongoServer.getUri();
     }
 
-    await instance.ready();
+    await service.ready();
 
-    await instance.listen(
+    await service.listen(
       Number(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 
-    console.log(instance.printRoutes());
+    console.log(service.printRoutes());
   } catch (err) {
     console.log(err);
     process.exit(1);
   }
 })();
 
-module.exports = instance.server;
+/**
+ * Needed to App Engine auto scale
+ */
+module.exports = service.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);

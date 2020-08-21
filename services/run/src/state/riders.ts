@@ -9,7 +9,7 @@ import { Position } from "../schemas/events/position";
 import { OfferServer } from "../schemas/events/offer";
 import { OfferResponse } from "../schemas/events/offer-response";
 import { ParsersList } from "extensor/dist/types";
-import Node from "../";
+import Node from "../node";
 import {
   OFFER_DRIVER_RESPONSE_TIMEOUT,
   OFFER_ADDITIONAL_METERS_OVER_TRY,

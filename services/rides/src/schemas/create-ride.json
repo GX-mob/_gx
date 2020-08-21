@@ -35,7 +35,8 @@
           "$ref": "#/definitions/point"
         },
         "path": { "description": "Encoded path polyline", "type": "string" },
-        "distance": { "type": "integer" }
+        "distance": { "type": "integer" },
+        "duration": { "type": "integer" }
       },
       "additionalProperties": false,
       "required": ["start", "end", "path", "distance"]
@@ -52,8 +53,16 @@
       "description": "Payment method \n * 1 = Money \n * 2 = Credit Card",
       "type": "integer",
       "enum": [1, 2]
-    }
+    },
+    "administrativeArea1": { "type": "string" },
+    "administrativeArea2": { "type": "string" }
   },
   "additionalProperties": false,
-  "required": ["route", "type", "payMethod"]
+  "required": [
+    "route",
+    "type",
+    "payMethod",
+    "administrativeArea1",
+    "administrativeArea2"
+  ]
 }

@@ -38,8 +38,11 @@ import { distance as Distance } from "@gx-mob/geo-helper";
 import CreateRideJsonBodySchema from "../schemas/create-ride.json";
 import { CreateRideBodySchema as ICreateRideBodySchema } from "../types/create-ride";
 
-@Controller("/profile")
-export default class StandardAuthController {
+import PricesStatusResponse from "../schemas/prices-status-response.json";
+import { PricesStatusResponse as IPricesStatusResponse } from "../types/prices-status-response";
+
+@Controller("/")
+export default class IndexController {
   @Inject(FastifyInstanceToken)
   private instance!: FastifyInstance;
 
@@ -194,6 +197,49 @@ export default class StandardAuthController {
     });
 
     return reply.code(201).send({ pid, pendencies });
-    // const userPendencies = await this.data.pendencies.get({ issuer: _id });
+  }
+
+  @GET("/", {
+    schema: {
+      response: {
+        "200": PricesStatusResponse,
+      },
+    },
+  })
+  async serviceStatus(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send<IPricesStatusResponse>([
+      {
+        type: 1, // Normal
+        values: {
+          per_kilometer: 1.1,
+          per_minute: 0.25,
+          kilometer_multipler: 0.01,
+          minute_multipler: 0.05,
+          over_business_time_km_add: 0.01,
+          over_business_time_minute_add: 0.05,
+        },
+      },
+      {
+        type: 2, // VIG
+        values: {
+          per_kilometer: 1.5,
+          per_minute: 0.35,
+          kilometer_multipler: 0.03,
+          minute_multipler: 0.1,
+          over_business_time_km_add: 0.03,
+          over_business_time_minute_add: 0.1,
+        },
+      },
+    ]);
+  }
+
+  private getPathPrice(path: string): number {
+    const distance = Distance.path(path);
+
+    return distance;
+  }
+
+  private getTimePrice(time: number): number {
+    return 0;
   }
 }

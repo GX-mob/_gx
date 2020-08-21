@@ -4,7 +4,7 @@ import { DataService, CacheService } from "@gx-mob/http-service";
 import { Position, State } from "../schemas/events";
 import { EventEmitter } from "eventemitter3";
 import { User } from "@gx-mob/http-service/dist/models";
-import Node from "../";
+import Node from "../node";
 
 export class Common extends EventEmitter {
   @Inject(DataService)

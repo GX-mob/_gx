@@ -22,16 +22,7 @@ if (!isProduction) {
   require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") }); // eslint-disable-line
 }
 
-import { bootstrap } from "@gx-mob/http-service";
-
-import SignupController from "../controllers/signup.controller";
-
-const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
-
-const instance = bootstrap({
-  controllers: [SignupController],
-  redis,
-});
+import service from "../service";
 
 (async function start() {
   try {
@@ -41,21 +32,24 @@ const instance = bootstrap({
       process.env.MONGO_URI = await mongoServer.getUri();
     }
 
-    await instance.ready();
+    await service.ready();
 
-    await instance.listen(
+    await service.listen(
       Number(process.env.PORT as string) || 8080,
       process.env.IP || "0.0.0.0"
     );
 
-    console.log(instance.printRoutes());
+    console.log(service.printRoutes());
   } catch (err) {
     console.log(err);
     process.exit(1);
   }
 })();
 
-module.exports = instance.server;
+/**
+ * Needed to App Engine auto scale
+ */
+module.exports = service.server;
 
 process.on("uncaughtException", (error) => {
   console.log(error);

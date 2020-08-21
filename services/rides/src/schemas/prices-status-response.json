@@ -1,0 +1,48 @@
+{
+  "title": "Prices Status Response",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "type": {
+        "description": "Ride type: \n * 1 = Normal \n * 2 = VIG",
+        "type": "integer",
+        "enum": [1, 2]
+      },
+      "values": {
+        "type": "object",
+        "properties": {
+          "per_kilometer": { "type": "integer" },
+          "per_minute": { "type": "integer" },
+          "kilometer_multipler": {
+            "description": "Additional cost per kilometer in rides bigger than 10 kilometers",
+            "type": "integer"
+          },
+          "minute_multipler": {
+            "description": "Additional cost per minute in rides bigger than 10 kilometers",
+            "type": "integer"
+          },
+          "over_business_time_km_add": {
+            "description": "Additional cost per kilometer in rides out of business time",
+            "type": "integer"
+          },
+          "over_business_time_minute_add": {
+            "description": "Additional cost per minute in rides out of business time",
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "per_kilometer",
+          "per_minute",
+          "kilometer_multipler",
+          "minute_multipler",
+          "over_business_time_km_add",
+          "over_business_time_minute_add"
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": ["type", "values"]
+  }
+}

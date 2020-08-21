@@ -3,7 +3,7 @@ import { Inject } from "fastify-decorators";
 import { DataService, CacheService } from "@gx-mob/http-service";
 import { OfferRequest, OfferServer } from "../schemas/events/offer";
 import { ParsersList } from "extensor/dist/types";
-import Node from "../";
+import Node from "../node";
 
 export class Offers {
   @Inject(DataService)

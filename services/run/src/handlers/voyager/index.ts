@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { Common } from "../common";
 import { OfferRequest } from "../../schemas/events/offer";
-import Node from "../../";
+import Node from "../../node";
 
 export class Voyager extends Common {
   constructor(public node: Node, public io: Server, public socket: Socket) {
