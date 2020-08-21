@@ -1,44 +1,36 @@
-import { convertLatLng, LatLng, LatLngLike } from "spherical-geometry-js";
+import {
+  convertLatLng,
+  LatLng,
+  LatLngLike,
+  computeDistanceBetween,
+} from "spherical-geometry-js";
 import { decode } from "google-polyline";
 import { Path, DecodedPath } from "../types";
-// internal
-function calc(a: number, t: number, n: number, h: number): number {
-  var r = 0.017453292519943295,
-    s = (h - t) * r,
-    M = (n - a) * r,
-    c = Math.sin(M / 2),
-    i = Math.cos(a * r),
-    o = Math.sin(s / 2),
-    q = c * c + i * i * (o * o);
-  return 6368.1 * (2 * Math.atan2(Math.sqrt(q), Math.sqrt(1 - q)));
-}
 
 /**
  * Calculates the distance between 2 points
- * @param latLng1 Coordinate 1
- * @param latLng2 Coordinate 2
- * @param km if should return in kilometers
+ * @param {LatLngLike} latLng1 Coordinate 1
+ * @param {LatLngLike} latLng2 Coordinate 2
+ * @param {Boolean} km if should return in kilometers
  */
 export function calculate(
   latLng1: LatLngLike,
   latLng2: LatLngLike,
-  km = false
+  km: boolean = false
 ) {
-  const latlng = convertLatLng(latLng1);
-  const latlng2 = convertLatLng(latLng2);
-  const distance = calc(latlng[0], latlng[1], latlng2[0], latlng2[1]);
+  const distance = computeDistanceBetween(latLng1, latLng2);
 
   return km ? distance : Math.round(distance * 1000);
 }
 
 /**
- * Calculates the distance of path
+ * Calculates the path length in meters
  * @param {Path} path
- * @param start Start point
- * @param limit Limite point
+ * @param {number} start Start point
+ * @param {number} limit Limit point
  * @return {number} Distance in meters
  */
-export function path(path: Path, start = 0, limit?: number): number {
+export function path(path: Path, start: number = 0, limit?: number): number {
   if (typeof path === "string") {
     path = decode(path);
   }
@@ -61,9 +53,9 @@ export function path(path: Path, start = 0, limit?: number): number {
 
 /**
  * Internal method to iterate over path points
- * @param latLng1 Coordinate 1
- * @param latLng2 Coordinate 2
- * @param km if shoudl return in kilometers
+ * @param {String} target
+ * @param {DecodedPath} route
+ * @param {LatLngLike} from
  */
 export function workDistanceRoutePoints(
   target: "long" | "prox" | "next",
@@ -72,7 +64,7 @@ export function workDistanceRoutePoints(
   callback?: (point: LatLng) => void
 ): number {
   let idx: number = 0;
-  let ldistance = target === "prox" ? 9e3 : 0;
+  let lastDistance = target === "prox" ? 9e3 : 0;
 
   const _from = convertLatLng(from || route[0]);
 
@@ -83,15 +75,18 @@ export function workDistanceRoutePoints(
 
     let distance = calculate(_from, point);
 
-    if (ldistance) {
-      if (target === "long" && distance > ldistance) {
-        idx = count;
-        ldistance = distance;
-      } else if (target === "prox" && distance < ldistance) {
-        idx = count;
-        ldistance = distance;
-      }
-    } else ldistance = distance;
+    if (!lastDistance) {
+      lastDistance = distance;
+      continue;
+    }
+
+    if (target === "long" && distance > lastDistance) {
+      idx = count;
+      lastDistance = distance;
+    } else if (target === "prox" && distance < lastDistance) {
+      idx = count;
+      lastDistance = distance;
+    }
   }
 
   return idx;
@@ -128,7 +123,6 @@ type PercurredDistance = {
  * Get percurred distance of a path relative to a point
  * @param {DecodedPath} Path
  * @param {LatLngLike} point
- * @param km if shoudl return in kilometers
  * @return {PercurredDistance} PercurredDistance Object
  */
 export function percurredDistance(

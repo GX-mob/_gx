@@ -66,5 +66,20 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
 
   instance.decorateRequest("session", "");
 
+  /**
+   * Shared common schemas
+   */
+  instance.addSchema({
+    $id: "userPublicData",
+    type: "object",
+    properties: {
+      pid: { type: "string" },
+      firstName: { type: "string" },
+      lastName: { type: "string" },
+      avatar: { type: "string" },
+      averageEvaluation: { type: "integer" },
+    },
+  });
+
   return instance;
 }

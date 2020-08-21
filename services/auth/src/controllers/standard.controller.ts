@@ -48,13 +48,19 @@ export default class StandardAuthController {
       body: IdentifyBodySchema,
       response: {
         "200": {
-          firstName: { type: "string" },
-          avatar: { type: "string" },
+          type: "object",
+          properties: {
+            firstName: { type: "string" },
+            avatar: { type: "string" },
+          },
         },
         "202": {
-          firstName: { type: "string" },
-          avatar: { type: "string" },
-          last4: { type: "string" },
+          type: "object",
+          properties: {
+            firstName: { type: "string" },
+            avatar: { type: "string" },
+            last4: { type: "string" },
+          },
         },
       },
     },
@@ -89,10 +95,16 @@ export default class StandardAuthController {
       body: CredentialsBodySchema,
       response: {
         "201": {
-          token: { type: "string" },
+          type: "object",
+          properties: {
+            token: { type: "string" },
+          },
         },
         "202": {
-          target: { type: "string" },
+          type: "object",
+          properties: {
+            target: { type: "string" },
+          },
         },
       },
     },
@@ -140,7 +152,10 @@ export default class StandardAuthController {
       body: CodeBodySchema,
       response: {
         "201": {
-          token: { type: "string" },
+          type: "object",
+          properties: {
+            token: { type: "string" },
+          },
         },
       },
     },

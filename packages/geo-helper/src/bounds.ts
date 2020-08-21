@@ -11,7 +11,7 @@ import { Coord, Path } from "../types";
  * Get bound of coordinates
  * @param {LatLng} latLng1
  * @param {LatLng} latLng2
- * @return {LatLngArray} [latitude, longitude]
+ * @return {LatLngBounds} The bounds
  */
 export function latLngBounds(
   latLng1: LatLngLike,
@@ -40,6 +40,7 @@ export function latLngBounds(
 /**
  * Return LatLngBounds of path
  * @param {Path} path
+ * @return {LatLngBounds} The bounds
  */
 export function boundsOfPath(path: Path): LatLngBounds {
   if (typeof path === "string") path = decode(path);
@@ -50,8 +51,13 @@ export function boundsOfPath(path: Path): LatLngBounds {
 /**
  * Return LatLngBounds running progress of path
  * @param {Path} path
+ * @param {LatLngLike} runnerPosition
+ * @return {LatLngBounds} The bounds
  */
-export function boundsOfRunningPath(path: Path, runnerPosition?: LatLngLike) {
+export function boundsOfRunningPath(
+  path: Path,
+  runnerPosition?: LatLngLike
+): LatLngBounds {
   path = typeof path === "string" ? decode(path) : path;
 
   let mostDistanceRouteIdx = workDistanceRoutePoints("long", path);

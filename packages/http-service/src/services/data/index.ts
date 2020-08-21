@@ -24,6 +24,7 @@ import { handleRejectionByUnderHood } from "../../helpers/util";
 import { User, UserModel } from "../../models/user";
 import { Session, SessionModel } from "../../models/session";
 import { Ride, RideModel } from "../../models/ride";
+import { Pendencie } from "models/pendencie";
 
 interface Settings<Model> {
   namespace: string;
@@ -64,6 +65,8 @@ export class Handler<Model, Create> {
 
     return data as Model;
   }
+
+  // getMany(query, )
 
   private async makeQuery(query: Partial<Model>) {
     const _query = this.model.findOne(query).lean();
@@ -147,7 +150,7 @@ export class Handler<Model, Create> {
    * @param query
    * @returns {Promise<void>}
    */
-  async remove(query: any) {
+  async remove(query: any): Promise<void> {
     await this.model.deleteOne(query);
     await this.cache.del(this.settings.namespace, query);
   }
@@ -212,11 +215,19 @@ export class DataService {
       autoPopulate: ["user"],
     }
   );
-  public rides = this.create<Ride, Omit<Ride, "pid">>(RideModel, {
+  public rides = this.create<Ride, Omit<Ride, "pid" | "status">>(RideModel, {
     namespace: "rides",
     linkingKeys: ["pid"],
     autoPopulate: ["voyager", "driver", "pendencies"],
   });
+
+  public pendencies = this.create<Pendencie, Omit<Pendencie, "pid">>(
+    RideModel,
+    {
+      namespace: "pendencies",
+      linkingKeys: ["issuer"],
+    }
+  );
   /**
    *
    * @param model

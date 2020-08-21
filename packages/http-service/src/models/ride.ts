@@ -113,6 +113,15 @@ export interface Ride {
    * * 2 = Credit card
    */
   payMethod: 1 | 2;
+  /**
+   * Ride base cost
+   */
+  baseCost: number;
+  /**
+   * Ride final cost, calculated with the cost of pendencies
+   */
+  finalCost: number;
+  status: "created" | "running" | "completed" | "canceled";
   driver?: User["_id"];
   pendencies?: Pendencie[];
 }
@@ -131,6 +140,11 @@ export const RideSchema: Schema = new Schema(
     route: { type: Route, required: true },
     options: Object,
     driver: { type: Schema.Types.ObjectId, ref: "User" },
+    status: {
+      type: String,
+      enum: ["created", "running", "completed"],
+      default: "created",
+    },
     pendencies: {
       type: Array,
       of: Schema.Types.ObjectId,

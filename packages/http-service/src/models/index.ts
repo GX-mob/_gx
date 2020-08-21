@@ -18,3 +18,4 @@
 export * from "./user";
 export * from "./session";
 export * from "./ride";
+export * from "./pendencie";

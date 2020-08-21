@@ -64,15 +64,18 @@ export default class StandardAuthController {
     schema: {
       response: {
         "200": {
-          id: { type: "string" },
-          firstName: { type: "string" },
-          lastName: { type: "string" },
-          phones: { type: "array", items: { type: "string" } },
-          emails: { type: "array", items: { type: "string" } },
-          cpf: { type: "string" },
-          birth: { type: "string" },
-          avatar: { type: "string" },
-          groups: { type: "string" },
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            firstName: { type: "string" },
+            lastName: { type: "string" },
+            phones: { type: "array", items: { type: "string" } },
+            emails: { type: "array", items: { type: "string" } },
+            cpf: { type: "string" },
+            birth: { type: "string" },
+            avatar: { type: "string" },
+            groups: { type: "string" },
+          },
         },
       },
     },
@@ -136,7 +139,10 @@ export default class StandardAuthController {
       body: UpdateAvatarBodySchema,
       response: {
         "200": {
-          url: { type: "string" },
+          type: "object",
+          properties: {
+            url: { type: "string" },
+          },
         },
       },
     },

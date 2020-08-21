@@ -88,7 +88,7 @@ export default class StandardAuthController {
     }
 
     const update = {
-      [field]: [...user[field], contact],
+      [field]: [...(user[field] || []), contact],
     };
 
     await this.data.users.update({ _id: user._id }, update);
@@ -114,13 +114,13 @@ export default class StandardAuthController {
      * the second factor authentication
      */
     if (
-      [...user.phones, ...user.emails].length === 1 ||
+      [...user.phones, ...(user.emails || [])].length === 1 ||
       user["2fa"] === value
     ) {
       throw new HttpErrors.UnprocessableEntity("not-allowed");
     }
 
-    const updated = [...user[field]];
+    const updated = [...(user[field] || [])];
     const index = updated.indexOf(value);
 
     updated.splice(index, 1);

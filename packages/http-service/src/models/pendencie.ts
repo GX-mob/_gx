@@ -24,3 +24,11 @@ export const PendencieSchema: Schema = new Schema(
 );
 
 export const PendencieModel = model<PendencieDocument>("Ride", PendencieSchema);
+
+/**
+ * Pendencias são geradas em cancelamentos.
+ *
+ * Quando uma pendência é gerada, o valor é cobrado do emissor
+ * e quando resolvida é passada ao afetado como crédito na plataforma.
+ *
+ */
