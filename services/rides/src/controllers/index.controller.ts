@@ -34,6 +34,8 @@ import {
   Models,
 } from "@gx-mob/http-service";
 import { distance as Distance } from "@gx-mob/geo-helper";
+import { PriceDetail } from "@gx-mob/service-configure/dist/models/price";
+import { zonedTimeToUtc } from "date-fns-tz";
 
 import CreateRideJsonBodySchema from "../schemas/create-ride.json";
 import { CreateRideBodySchema as ICreateRideBodySchema } from "../types/create-ride";
@@ -110,6 +112,24 @@ export default class IndexController {
     });
   }
 
+  @GET("/:area/:subArea", {
+    schema: {
+      response: {
+        "200": PricesStatusResponse,
+      },
+    },
+  })
+  async servicePricesStatus(
+    request: FastifyRequest<{ Params: { area: string; subArea: string } }>,
+    reply: FastifyReply
+  ) {
+    const { area, subArea } = request.params;
+
+    const prices = this.instance.getPrice(area, subArea);
+
+    reply.send<IPricesStatusResponse>(prices);
+  }
+
   @GET("/:pid", {
     schema: {
       response: {
@@ -182,11 +202,21 @@ export default class IndexController {
   ) {
     const { _id } = request.session.user;
 
-    const { route, type, payMethod } = request.body;
-
+    /**
+     * Get user pendencies
+     */
     const pendencies = await Models.PendencieModel.find({ issuer: _id });
 
-    const distance = Distance.path(route.path);
+    const { route, type, payMethod, country, area, subArea } = request.body;
+
+    /**
+     * Calculate rides costs
+     */
+    const costs = this.getCosts(request.body);
+    const base = costs.duration.total + costs.distance.total;
+    const total = pendencies.reduce((v, pendencie) => {
+      return v + pendencie.amount;
+    }, base);
 
     const { pid } = await this.data.rides.create({
       voyager: _id,
@@ -194,28 +224,128 @@ export default class IndexController {
       type,
       pendencies,
       payMethod,
-      baseCost: 0,
-      finalCost: 0,
+      country,
+      area,
+      subArea,
+      costs: {
+        ...costs,
+        base,
+        total,
+      },
     });
 
-    return reply.code(201).send({ pid, pendencies });
+    reply.code(201).send({ pid, pendencies });
   }
 
-  @GET("/:area/:subArea", {
-    schema: {
-      response: {
-        "200": PricesStatusResponse,
-      },
-    },
-  })
-  async servicePricesStatus(
-    request: FastifyRequest<{ Params: { area: string; subArea: string } }>,
-    reply: FastifyReply
-  ) {
-    const { area, subArea } = request.params;
+  private getCosts(request: ICreateRideBodySchema) {
+    const { type, area, subArea } = request;
 
-    const prices = this.instance.getPrice(area, subArea);
+    /**
+     * Get the price of ride type
+     */
+    const price = this.instance
+      .getPrice(area, subArea)
+      .find((price) => price.type === type);
 
-    return reply.send<IPricesStatusResponse>(prices);
+    if (!price) {
+      throw new HttpError.UnprocessableEntity("invalid-ride-type");
+    }
+
+    /**
+     * Check if is out of business time
+     */
+    const hour = zonedTimeToUtc(new Date(), request.country).getHours();
+    const isBusinessTime = hour > 9 && hour < 18;
+
+    const duration = this.durationPrice(
+      request.route.duration,
+      price,
+      isBusinessTime
+    );
+    const distance = this.distancePrice(
+      request.route.distance,
+      price,
+      isBusinessTime
+    );
+
+    return { duration, distance };
+  }
+
+  private durationPrice(
+    duration: number,
+    price: PriceDetail,
+    isBusinessTime: boolean
+  ): {
+    total: number;
+    aditionalFoLongRide: number;
+    aditionalForOutBusinessTime: number;
+  } {
+    /**
+     * Default price multiplier
+     */
+    let multipler = price.perMinute;
+    let aditionalFoLongRide = 0;
+    let aditionalForOutBusinessTime = 0;
+
+    /**
+     * Aditional multipler to rides long than 40 minutes.
+     */
+    if (duration > 40) {
+      multipler += price.minuteMultipler;
+      aditionalFoLongRide = duration * price.minuteMultipler;
+    }
+
+    /**
+     * Add aditional to non business time rides
+     */
+    if (!isBusinessTime) {
+      multipler += price.overBusinessTimeMinuteAdd;
+      aditionalForOutBusinessTime = duration * price.minuteMultipler;
+    }
+
+    return {
+      total: duration * multipler,
+      aditionalFoLongRide,
+      aditionalForOutBusinessTime,
+    };
+  }
+
+  private distancePrice(
+    distance: number,
+    price: PriceDetail,
+    isBusinessTime: boolean
+  ): {
+    total: number;
+    aditionalFoLongRide: number;
+    aditionalForOutBusinessTime: number;
+  } {
+    /**
+     * Default price multiplier
+     */
+    let multipler = price.perKilometer;
+    let aditionalFoLongRide = 0;
+    let aditionalForOutBusinessTime = 0;
+
+    /**
+     * Aditional multipler to rides long than 10 km
+     */
+    if (distance > 10000) {
+      multipler += price.overBusinessTimeKmAdd;
+      aditionalFoLongRide = distance * aditionalFoLongRide;
+    }
+
+    /**
+     * Add aditional to non business time rides
+     */
+    if (!isBusinessTime) {
+      multipler += price.overBusinessTimeKmAdd;
+      aditionalForOutBusinessTime = distance * price.overBusinessTimeKmAdd;
+    }
+
+    return {
+      total: multipler * distance,
+      aditionalFoLongRide,
+      aditionalForOutBusinessTime,
+    };
   }
 }

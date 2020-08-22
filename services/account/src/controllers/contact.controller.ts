@@ -22,7 +22,7 @@ import {
   DataService,
   ContactVerificationService,
   GuardHook,
-  utils,
+  util,
 } from "@gx-mob/http-service";
 import HttpErrors from "http-errors";
 
@@ -60,11 +60,11 @@ export default class StandardAuthController {
     request: FastifyRequest<{ Body: AddContactBodySchema }>,
     reply: FastifyReply
   ) {
-    const { value } = utils.isValidContact(request.body.contact);
+    const { value } = util.isValidContact(request.body.contact);
 
     await this.verify.request(value);
 
-    return reply.code(202).send();
+    reply.code(202).send();
   }
 
   @PATCH("/add", {
@@ -79,7 +79,7 @@ export default class StandardAuthController {
   ) {
     const { user } = request.session;
     const { contact, code } = request.body;
-    const { value, field } = utils.isValidContact(contact);
+    const { value, field } = util.isValidContact(contact);
 
     const valid = await this.verify.verify(value, code);
 
@@ -93,7 +93,7 @@ export default class StandardAuthController {
 
     await this.data.users.update({ _id: user._id }, update);
 
-    return reply.code(201).send();
+    reply.code(201).send();
   }
 
   @PATCH("/remove", {
@@ -107,7 +107,7 @@ export default class StandardAuthController {
     reply: FastifyReply
   ) {
     const { user } = request.session;
-    const { field, value } = utils.isValidContact(request.body.contact);
+    const { field, value } = util.isValidContact(request.body.contact);
 
     /**
      * Prevent removing the last contact or
@@ -127,6 +127,6 @@ export default class StandardAuthController {
 
     await this.data.users.update({ _id: user._id }, { [field]: updated });
 
-    return reply.send();
+    reply.send();
   }
 }

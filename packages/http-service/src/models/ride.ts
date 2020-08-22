@@ -114,13 +114,31 @@ export interface Ride {
    */
   payMethod: 1 | 2;
   /**
-   * Ride base cost
+   * Ride costs
    */
-  baseCost: number;
-  /**
-   * Ride final cost, calculated with the cost of pendencies
-   */
-  finalCost: number;
+  costs: {
+    /**
+     * Base costs, distance + duration
+     */
+    base: number;
+    distance: {
+      total: number;
+      aditionalFoLongRide: number;
+      aditionalForOutBusinessTime: number;
+    };
+    duration: {
+      total: number;
+      aditionalFoLongRide: number;
+      aditionalForOutBusinessTime: number;
+    };
+    /**
+     * Total cost, base cost + pendencies value
+     */
+    total: number;
+  };
+  country: string;
+  area: string;
+  subArea: string;
   status: "created" | "running" | "completed" | "canceled";
   driver?: User["_id"];
   pendencies?: Pendencie[];

@@ -5,7 +5,7 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CredentialsBodySchema {
+export interface IdentifyBodySchema {
   id:
     | string
     | {

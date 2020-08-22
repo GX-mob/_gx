@@ -60,7 +60,7 @@ const configure: FastifyPluginAsync = async (instance, _options) => {
     }
 
     if (subArea) {
-      return pricesAreas[area].subAreas[subArea];
+      return pricesAreas[area].subAreas[subArea] || pricesAreas[area].general;
     }
 
     return pricesAreas[area].general;

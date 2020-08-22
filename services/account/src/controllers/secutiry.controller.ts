@@ -15,9 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Inject, PATCH } from "fastify-decorators";
+import { Controller, Inject, Hook, PATCH } from "fastify-decorators";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { DataService, HttpError, utils } from "@gx-mob/http-service";
+import {
+  DataService,
+  SessionService,
+  GuardHook,
+  HttpError,
+  util,
+} from "@gx-mob/http-service";
 import bcrypt from "bcrypt";
 
 import UpdateCredentialBodySchema from "../schemas/security/credential-body.json";
@@ -33,6 +39,14 @@ export default class StandardAuthController {
   @Inject(DataService)
   private data!: DataService;
 
+  @Inject(SessionService)
+  private session!: SessionService;
+
+  @Hook("onRequest")
+  async guard(request: FastifyRequest) {
+    await GuardHook(this.session, request);
+  }
+
   @PATCH("/password", {
     schema: {
       description: "Update password",
@@ -47,7 +61,7 @@ export default class StandardAuthController {
     const { current, new: newPassword } = request.body;
 
     if (user.password) {
-      await utils.assertPassword(
+      await util.assertPassword(
         {
           value: current,
           to: user.password,
@@ -56,7 +70,7 @@ export default class StandardAuthController {
         "wrong-credential"
       );
 
-      await utils.assertPassword(
+      await util.assertPassword(
         {
           value: newPassword,
           to: user.password,
@@ -70,7 +84,7 @@ export default class StandardAuthController {
 
     await this.data.users.model.updateOne({ _id: user._id }, { password });
 
-    return reply.send();
+    reply.send();
   }
 
   @PATCH("/2fa/enable", {
@@ -85,14 +99,14 @@ export default class StandardAuthController {
   ) {
     this.passwordRequired(request);
 
-    const { value: contact } = utils.isValidContact(request.body.target);
+    const { value: contact } = util.isValidContact(request.body.target);
     const { user } = request.session;
 
     this.hasContact(contact, user);
 
     await this.data.users.update({ _id: user._id }, { "2fa": contact });
 
-    return reply.send();
+    reply.send();
   }
 
   @PATCH("/2fa/disable", {
@@ -108,7 +122,7 @@ export default class StandardAuthController {
     this.passwordRequired(request);
     const { user } = request.session;
 
-    await utils.assertPassword(
+    await util.assertPassword(
       {
         value: request.body.password,
         to: user.password as string,

@@ -31,7 +31,7 @@ import {
   StorageService,
   GuardHook,
   HttpError,
-  utils,
+  util,
 } from "@gx-mob/http-service";
 
 import UpdateProfileBodySchema from "../schemas/profile-body.json";
@@ -131,7 +131,7 @@ export default class StandardAuthController {
     await this.data.users.update({ _id: session.user._id }, request.body);
     await this.data.sessions.updateCache({ _id: session._id });
 
-    return reply.send();
+    reply.send();
   }
 
   @PATCH("/avatar", {
@@ -196,7 +196,7 @@ export default class StandardAuthController {
 
       if (user.avatar) {
         const remove = this.storage.delete("gx-mob-avatars", user.avatar);
-        utils.handleRejectionByUnderHood(remove);
+        util.handleRejectionByUnderHood(remove);
       }
 
       reply.send({ url });

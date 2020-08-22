@@ -47,18 +47,19 @@ export class SessionService {
 
   /**
    * @param user_id
-   * @param session_data Object with userAgent and user IP
+   * @param userAgent
+   * @param ip
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
     user: User,
-    userAgent: string,
-    ip: string
+    userAgent: string | null,
+    ip: string | null
   ): Promise<{ token: string; session: Session }> {
     const session = await this.data.sessions.create({
       user: user._id,
-      userAgent,
-      ips: [ip],
+      userAgent: userAgent || "",
+      ips: ip ? [ip] : [],
     });
 
     const token = await this.signToken({ sid: session._id, uid: user._id });

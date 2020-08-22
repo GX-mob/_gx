@@ -1,5 +1,5 @@
 {
-  "title": "Credentials Body Schema",
+  "title": "Identify Body Schema",
   "type": "object",
   "properties": {
     "id": {

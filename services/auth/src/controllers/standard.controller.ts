@@ -21,7 +21,7 @@ import {
   DataService,
   SessionService,
   ContactVerificationService,
-  utils,
+  util,
 } from "@gx-mob/http-service";
 import HttpError from "http-errors";
 
@@ -116,7 +116,7 @@ export default class StandardAuthController {
     const { id, credential } = request.body;
     const { user } = await this.getUser(id);
 
-    await utils.assertPassword(
+    await util.assertPassword(
       {
         value: credential,
         to: user.password as string,
@@ -130,7 +130,7 @@ export default class StandardAuthController {
 
       reply.code(202);
 
-      if (utils.emailRegex.test(user["2fa"])) {
+      if (util.emailRegex.test(user["2fa"])) {
         const [name, domain] = user["2fa"].split("@");
         return {
           target: `${name.slice(0, 3).padEnd(name.length, "*")}@${domain}`,
@@ -142,7 +142,11 @@ export default class StandardAuthController {
       };
     }
 
-    const { token } = await this.session.create(user, request);
+    const { token } = await this.session.create(
+      user,
+      request.headers["user-agent"] as string,
+      util.getClientIp(request.raw)
+    );
 
     return reply.code(201).send({ token });
   }
@@ -169,9 +173,14 @@ export default class StandardAuthController {
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
-        const { token } = await this.session.create(user, request);
+        const { token } = await this.session.create(
+          user,
+          request.headers["user-agent"] as string,
+          util.getClientIp(request.raw)
+        );
 
-        return reply.code(201).send({ token });
+        reply.code(201);
+        return { token };
       }
 
       throw new HttpError.UnprocessableEntity("wrong-code");
@@ -183,9 +192,14 @@ export default class StandardAuthController {
       throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
-    const { token } = await this.session.create(user, request);
+    const { token } = await this.session.create(
+      user,
+      request.headers["user-agent"] as string,
+      util.getClientIp(request.raw)
+    );
 
-    return reply.code(201).send({ token });
+    reply.code(201);
+    return { token };
   }
 
   /**
@@ -193,7 +207,7 @@ export default class StandardAuthController {
    */
   /** */
   private async getUser(id: string | IIdentifyBodySchema["id"]) {
-    const { value: contact, field } = utils.isValidContact(id);
+    const { value: contact, field } = util.isValidContact(id);
     const user = await this.data.users.get({ [field]: contact });
 
     if (!user) {

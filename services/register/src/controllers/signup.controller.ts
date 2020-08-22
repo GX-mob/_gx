@@ -23,7 +23,7 @@ import {
   SessionService,
   HandleError,
   HttpError,
-  utils,
+  util,
 } from "@gx-mob/http-service";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 
@@ -72,7 +72,8 @@ export default class StandardRegisterController {
     }
 
     if (process.env.NODE_ENV === "development") {
-      return reply.code(202).send();
+      reply.code(202).send();
+      return;
     }
 
     // Prevent resent before expiration
@@ -87,11 +88,11 @@ export default class StandardRegisterController {
       reply.code(202);
     }
 
-    return reply.send();
+    reply.send();
   }
 
   private contact(value: any): string {
-    const contact = utils.parseContact(value);
+    const contact = util.parseContact(value);
 
     if (!contact) {
       throw new HttpError.UnprocessableEntity("invalid-contact");
@@ -124,7 +125,8 @@ export default class StandardRegisterController {
           validated: true,
         });
 
-        return reply.code(200).send();
+        reply.code(200).send();
+        return;
       }
 
       throw new HttpError.UnprocessableEntity("wrong-code");
@@ -137,7 +139,8 @@ export default class StandardRegisterController {
     }
 
     await this.setCache(phone, { code, validated: true });
-    return reply.code(200).send();
+    reply.code(200).send();
+    return;
   }
 
   @POST("/sign-up", {
@@ -219,7 +222,11 @@ export default class StandardRegisterController {
     };
 
     const user = await this.data.users.create(userObject);
-    const session = await this.session.create(user, request);
+    const session = await this.session.create(
+      user,
+      request.headers["user-agent"] as string,
+      util.getClientIp(request.raw)
+    );
 
     reply.code(201);
 

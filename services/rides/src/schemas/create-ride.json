@@ -39,7 +39,7 @@
         "duration": { "type": "integer" }
       },
       "additionalProperties": false,
-      "required": ["start", "end", "path", "distance"]
+      "required": ["start", "end", "path", "distance", "duration"]
     }
   },
   "properties": {
@@ -54,15 +54,10 @@
       "type": "integer",
       "enum": [1, 2]
     },
-    "administrativeArea1": { "type": "string" },
-    "administrativeArea2": { "type": "string" }
+    "country": { "type": "string" },
+    "area": { "type": "string" },
+    "subArea": { "type": "string" }
   },
   "additionalProperties": false,
-  "required": [
-    "route",
-    "type",
-    "payMethod",
-    "administrativeArea1",
-    "administrativeArea2"
-  ]
+  "required": ["route", "type", "payMethod", "country", "area", "subArea"]
 }
