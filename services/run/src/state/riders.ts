@@ -1,6 +1,6 @@
 import { Inject } from "fastify-decorators";
 import { Server } from "socket.io";
-import { DataService } from "@gx-mob/http-service";
+import { DataService, util } from "@gx-mob/http-service";
 import { distance as Distance } from "@gx-mob/geo-helper";
 import { Driver } from "../schemas/common/driver";
 import { Setup } from "../schemas/events/setup";
@@ -317,7 +317,7 @@ export class Riders {
    */
   async offerResponse(socketId: string, data: OfferResponse) {
     // TODO
-    // await util.reRunOverFail(
+    // await util.rerunOverFail(
     //   this.data.rides.update(
     //     { pid: offer.ride.pid },
     //     { driver: driver._id }
@@ -349,23 +349,37 @@ export class Riders {
       return this.offer(offer);
     }
 
-    /**
-     * // Emits a success response to driver to pickup the voyager
-     * // Don't saves the ride, both side can cancel the ride yet,
-     * // only saves when the driver emit event ride start.
-     */
+    // Convert to seconds to be right serialized by schemapack uint32 type field
+    const driverAcceptedTimestamp = Math.round(Date.now() / 1000);
 
-    await this.data.rides.update(
-      { pid: offer.ride.pid },
-      { driver: driver._id }
+    // Store to decide in future if would generate a pendencie in a cancel case.
+    await util.retry(
+      () =>
+        this.io.state.offers.save(data.id, {
+          rideAcceptedTimestamp: driverAcceptedTimestamp,
+        }),
+      3,
+      500
     );
 
-    // Driver
-    this.io.nodes.emit("driver_offerAccepted", socketId, true);
-    // Voyager
+    // Update ride data
+    await util.retry(
+      () =>
+        this.data.rides.update({ pid: offer.ride.pid }, { driver: driver._id }),
+      3,
+      500
+    );
+
+    // Emit to driver
+    this.io.nodes.emit("driver_offerAccepted", socketId, {
+      rideAcceptedTimestamp: driverAcceptedTimestamp,
+    });
+
+    // Emit to voyager
     this.io.nodes.emit("voyager_offerAccepted", offer.requesterSocketId, {
       ridePID: offer.ride.pid,
       driverPID: driver.pid,
+      rideAcceptedTimestamp: driverAcceptedTimestamp,
     });
   }
 }

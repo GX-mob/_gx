@@ -20,8 +20,23 @@ export class Rider extends Common {
       io.state.riders.setConfiguration(socket.connection.pid, configuration);
     });
 
-    socket.on("offerReponse", (response) =>
-      io.state.riders.offerResponse(socket.id, response)
-    );
+    socket.on("offerReponse", (response) => {
+      io.state.riders.offerResponse(socket.id, response);
+    });
+
+    socket.on("cancelRide", async (pid, ack) => {
+      try {
+        await this.cancelRide(pid);
+        ack(true);
+      } catch (error) {
+        this.node.instance.log.error(error);
+        ack(false);
+      }
+    });
+  }
+
+  async cancelRide(pid: string) {
+    get
+
   }
 }

@@ -6,6 +6,7 @@ export type Type = {
 export const schema = {
   offerID: "string",
   driverPID: "string",
+  driverAcceptedTimestamp: "uint32",
 };
 
 export default {
