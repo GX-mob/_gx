@@ -352,7 +352,7 @@ export class Riders {
     // Convert to seconds to be right serialized by schemapack uint32 type field
     const driverAcceptedTimestamp = Math.round(Date.now() / 1000);
 
-    // Store to decide in future if would generate a pendencie in a cancel case.
+    // Store to decide in the future whether to generate a pendencie in a cancelation event
     await util.retry(
       () =>
         this.io.state.offers.save(data.id, {

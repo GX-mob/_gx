@@ -36,7 +36,14 @@ export class Rider extends Common {
   }
 
   async cancelRide(pid: string) {
-    get
+    const { driverAcceptedTimestamp } = await this.io.state.offers.get(pid);
+    const timestampInMs = driverAcceptedTimestamp * 1000;
+    const threeMinutes = 1000 * 60 * 3;
 
+    if (timestampInMs + threeMinutes > Date.now()) {
+      // no pendencie
+    }
+
+    // TODO generate a pendencie
   }
 }

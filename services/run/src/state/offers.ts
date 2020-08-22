@@ -36,7 +36,6 @@ export class Offers {
       offerResponseTimeout: null,
     };
 
-    await this.save(offer.rideID, {});
     this.io.state.riders.offer(this.offers[offer.rideID]);
 
     return "offering";
@@ -44,5 +43,9 @@ export class Offers {
 
   save(id: string, data: any) {
     return this.cache.set("rides:offers", id, data);
+  }
+
+  get(id: string) {
+    return this.cache.get("rides:offers", id);
   }
 }
