@@ -13,8 +13,9 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.10",
-    "fastify": "^3.1.1",
+    "fastify": "^3.2.1",
     "fastify-decorators": "^3.1.1",
+    "fastify-plugin": "^2.3.2",
     "google-polyline": "^1.0.3"
   },
   "devDependencies": {

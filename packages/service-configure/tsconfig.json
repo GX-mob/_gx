@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "allowJs": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true
+  },
+  "extends": "@tsconfig/node12/tsconfig.json",
+  "include": ["./src/**/*.ts", "./google-poyline.d.ts", "./types.d.ts"],
+  "exclude": [
+    "node_modules",
+    "./src/**/__tests__/*.ts",
+    "./src/**/*.test.ts",
+    "./src/**/*.spec.ts",
+    "./src/**/*.mock.ts"
+  ]
+}

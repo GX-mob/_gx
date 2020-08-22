@@ -19,6 +19,8 @@ export interface CreateRideBodySchema {
    *  * 2 = Credit Card
    */
   payMethod: 1 | 2;
+  administrativeArea1: string;
+  administrativeArea2: string;
 }
 export interface Route {
   start: Point;
@@ -29,6 +31,7 @@ export interface Route {
    */
   path: string;
   distance: number;
+  duration?: number;
 }
 export interface Point {
   /**

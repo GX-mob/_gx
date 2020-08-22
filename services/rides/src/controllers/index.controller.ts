@@ -194,52 +194,28 @@ export default class IndexController {
       type,
       pendencies,
       payMethod,
+      baseCost: 0,
+      finalCost: 0,
     });
 
     return reply.code(201).send({ pid, pendencies });
   }
 
-  @GET("/", {
+  @GET("/:area/:subArea", {
     schema: {
       response: {
         "200": PricesStatusResponse,
       },
     },
   })
-  async serviceStatus(request: FastifyRequest, reply: FastifyReply) {
-    return reply.send<IPricesStatusResponse>([
-      {
-        type: 1, // Normal
-        values: {
-          per_kilometer: 1.1,
-          per_minute: 0.25,
-          kilometer_multipler: 0.01,
-          minute_multipler: 0.05,
-          over_business_time_km_add: 0.01,
-          over_business_time_minute_add: 0.05,
-        },
-      },
-      {
-        type: 2, // VIG
-        values: {
-          per_kilometer: 1.5,
-          per_minute: 0.35,
-          kilometer_multipler: 0.03,
-          minute_multipler: 0.1,
-          over_business_time_km_add: 0.03,
-          over_business_time_minute_add: 0.1,
-        },
-      },
-    ]);
-  }
+  async servicePricesStatus(
+    request: FastifyRequest<{ Params: { area: string; subArea: string } }>,
+    reply: FastifyReply
+  ) {
+    const { area, subArea } = request.params;
 
-  private getPathPrice(path: string): number {
-    const distance = Distance.path(path);
+    const prices = this.instance.getPrice(area, subArea);
 
-    return distance;
-  }
-
-  private getTimePrice(time: number): number {
-    return 0;
+    return reply.send<IPricesStatusResponse>(prices);
   }
 }

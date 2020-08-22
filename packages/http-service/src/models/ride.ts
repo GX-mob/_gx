@@ -138,7 +138,6 @@ export const RideSchema: Schema = new Schema(
     },
     type: { type: Number, enum: [1, 2], required: true },
     route: { type: Route, required: true },
-    options: Object,
     driver: { type: Schema.Types.ObjectId, ref: "User" },
     status: {
       type: String,

@@ -44,7 +44,7 @@ export async function GuardHook(
     throw new HttpError.Forbidden("unauthorized");
   }
 
-  request.session = session;
+  (request as any).session = session;
 }
 
 /**

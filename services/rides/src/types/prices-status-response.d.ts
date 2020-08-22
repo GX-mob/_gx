@@ -12,24 +12,22 @@ export type PricesStatusResponse = {
    *  * 2 = VIG
    */
   type: 1 | 2;
-  values: {
-    per_kilometer: number;
-    per_minute: number;
-    /**
-     * Additional cost per kilometer in rides bigger than 10 kilometers
-     */
-    kilometer_multipler: number;
-    /**
-     * Additional cost per minute in rides bigger than 10 kilometers
-     */
-    minute_multipler: number;
-    /**
-     * Additional cost per kilometer in rides out of business time
-     */
-    over_business_time_km_add: number;
-    /**
-     * Additional cost per minute in rides out of business time
-     */
-    over_business_time_minute_add: number;
-  };
+  perKilometer?: number;
+  perMinute?: number;
+  /**
+   * Additional cost per kilometer in rides bigger than 10 kilometers
+   */
+  kilometerMultipler?: number;
+  /**
+   * Additional cost per minute in rides bigger than 10 kilometers
+   */
+  minuteMultipler?: number;
+  /**
+   * Additional cost per kilometer in rides out of business time
+   */
+  overBusinessTimeKmAdd?: number;
+  /**
+   * Additional cost per minute in rides out of business time
+   */
+  overBusinessTimeMinuteAdd?: number;
 }[];
