@@ -17,8 +17,10 @@
  */
 import logger from "./logger";
 import HttpError from "http-errors";
-import bcrypt from "bcrypt";
+import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
+
+const securePassword = new SecurePassword();
 
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {
@@ -117,13 +119,23 @@ export function isValidContact(
 }
 
 /**
+ * Creates a password buffer hash
+ * @param password
+ */
+export function hashPassword(password: string | Buffer): Promise<Buffer> {
+  return securePassword.hash(
+    typeof password === "string" ? Buffer.from(password) : password
+  );
+}
+
+/**
  * Compare password
- *
  * @param config.value Plain text value
  * @param config.to Hash value
  * @param config.be Result expected
  * @param errorMsg Error message if expectation fail
  * @throws Http.UnprocessableEntity: wrong-password
+ * @returns {Promise<Buffer | void>} Buffer of new improved password hash `if needed`
  */
 export async function assertPassword(
   {
@@ -132,15 +144,23 @@ export async function assertPassword(
     be,
   }: {
     value: string;
-    to: string;
+    to: Buffer;
     be: boolean;
   },
   errorMsg: string
-) {
-  const assert = await bcrypt.compare(value, to);
+): Promise<Buffer | void> {
+  const passwordValue = Buffer.from(value);
+  const result = await securePassword.verify(passwordValue, to);
 
-  if ((be && !assert) || (!be && assert)) {
+  if (
+    (be && result === SecurePassword.INVALID) ||
+    (!be && result === SecurePassword.VALID)
+  ) {
     throw new HttpError.UnprocessableEntity(errorMsg);
+  }
+
+  if (result === SecurePassword.VALID_NEEDS_REHASH) {
+    return hashPassword(passwordValue);
   }
 }
 /**

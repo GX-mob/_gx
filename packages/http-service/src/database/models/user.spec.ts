@@ -14,7 +14,7 @@ const mockUser = {
   phones: ["82988888888"],
   emails: ["valid@email.com"],
   birth: new Date("06/13/1994"),
-  password: "asd",
+  password: Buffer.from("asd"),
 };
 
 describe("Model: User", () => {

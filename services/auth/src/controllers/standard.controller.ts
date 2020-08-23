@@ -113,13 +113,13 @@ export default class StandardAuthController {
     request: FastifyRequest<{ Body: ICredentialsBodySchema }>,
     reply: FastifyReply
   ) {
-    const { id, credential } = request.body;
+    const { id, password } = request.body;
     const { user } = await this.getUser(id);
 
     await util.assertPassword(
       {
-        value: credential,
-        to: user.password as string,
+        value: password,
+        to: user.password as Buffer,
         be: true,
       },
       "wrong-password"
@@ -148,7 +148,8 @@ export default class StandardAuthController {
       util.getClientIp(request.raw)
     );
 
-    return reply.code(201).send({ token });
+    reply.code(201);
+    return { token };
   }
 
   @POST("/code", {

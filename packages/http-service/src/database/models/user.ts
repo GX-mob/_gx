@@ -38,7 +38,7 @@ export interface User {
   createdAt?: Date;
   updatedAt?: Date;
   groups?: number[];
-  password?: string;
+  password?: Buffer;
   ["2fa"]?: string;
 }
 
@@ -101,7 +101,7 @@ export const UserSchema: Schema = new Schema(
     updatedAt: Date,
     birth: { type: Date, required: true },
     groups: { type: Array, of: Number, default: [1] },
-    password: String,
+    password: Buffer,
     ["2fa"]: String,
   },
   { collection: "users" }

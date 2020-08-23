@@ -3,9 +3,12 @@
  *
  * @group unit/helpers
  */
-
-import bcrypt from "bcrypt";
-import { parseContact, isValidContact, assertPassword } from "./util";
+import {
+  parseContact,
+  isValidContact,
+  hashPassword,
+  assertPassword,
+} from "./util";
 
 describe("Helper: util", () => {
   const validEmail = "foo@bar.com";
@@ -53,7 +56,7 @@ describe("Helper: util", () => {
 
   it("Assert password", async () => {
     const plain = "foo";
-    const hash = await bcrypt.hash(plain, 1);
+    const hash = await hashPassword(Buffer.from(plain));
 
     await expect(
       assertPassword(

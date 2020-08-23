@@ -12,5 +12,5 @@ export interface CredentialsBodySchema {
         cc: string;
         number: string;
       };
-  credential: string;
+  password: string;
 }
