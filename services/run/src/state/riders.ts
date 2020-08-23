@@ -316,14 +316,6 @@ export class Riders {
    * Handle driver offer response
    */
   async offerResponse(socketId: string, data: OfferResponse) {
-    // TODO
-    // await util.rerunOverFail(
-    //   this.data.rides.update(
-    //     { pid: offer.ride.pid },
-    //     { driver: driver._id }
-    //   )
-    // , 3);
-
     const pid = this.socketIdPidRef[socketId];
     const driver = this.list[pid];
     const offer = this.io.state.offers.offers[data.id];
@@ -349,14 +341,16 @@ export class Riders {
       return this.offer(offer);
     }
 
-    // Convert to seconds to be right serialized by schemapack uint32 type field
-    const driverAcceptedTimestamp = Math.round(Date.now() / 1000);
+    // Defines safe time cancel
+    const acceptTimestamp = Date.now();
 
     // Store to decide in the future whether to generate a pendencie in a cancelation event
     await util.retry(
       () =>
         this.io.state.offers.save(data.id, {
-          rideAcceptedTimestamp: driverAcceptedTimestamp,
+          ...offer,
+          driverSocketId: driver.socketId,
+          acceptTimestamp,
         }),
       3,
       500
@@ -370,16 +364,20 @@ export class Riders {
       500
     );
 
+    // Convert to seconds to be right serialized by schemapack uint32 type field
+    const timestamp = Math.round(acceptTimestamp / 1000);
+
     // Emit to driver
     this.io.nodes.emit("driver_offerAccepted", socketId, {
-      rideAcceptedTimestamp: driverAcceptedTimestamp,
+      ridePID: offer.ride.pid,
+      timestamp,
     });
 
     // Emit to voyager
     this.io.nodes.emit("voyager_offerAccepted", offer.requesterSocketId, {
       ridePID: offer.ride.pid,
       driverPID: driver.pid,
-      rideAcceptedTimestamp: driverAcceptedTimestamp,
+      timestamp,
     });
   }
 }

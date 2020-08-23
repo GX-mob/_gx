@@ -1,3 +1,4 @@
+import { Models, util } from "@gx-mob/http-service";
 import { Server, Socket } from "socket.io";
 import { Common } from "../common";
 import { Setup } from "../../schemas/events/setup";
@@ -20,30 +21,10 @@ export class Rider extends Common {
       io.state.riders.setConfiguration(socket.connection.pid, configuration);
     });
 
-    socket.on("offerReponse", (response) => {
-      io.state.riders.offerResponse(socket.id, response);
-    });
-
-    socket.on("cancelRide", async (pid, ack) => {
-      try {
-        await this.cancelRide(pid);
-        ack(true);
-      } catch (error) {
-        this.node.instance.log.error(error);
-        ack(false);
+    socket.on("offerReponse", (data) => {
+      if (data.id in io.state.offers.offers) {
+        io.state.riders.offerResponse(socket.id, data);
       }
     });
-  }
-
-  async cancelRide(pid: string) {
-    const { driverAcceptedTimestamp } = await this.io.state.offers.get(pid);
-    const timestampInMs = driverAcceptedTimestamp * 1000;
-    const threeMinutes = 1000 * 60 * 3;
-
-    if (timestampInMs + threeMinutes > Date.now()) {
-      // no pendencie
-    }
-
-    // TODO generate a pendencie
   }
 }

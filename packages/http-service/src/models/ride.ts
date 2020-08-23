@@ -100,6 +100,7 @@ type TRoute = {
 };
 
 export interface Ride {
+  _id: any;
   pid: string;
   voyager: User["_id"];
   route: TRoute;

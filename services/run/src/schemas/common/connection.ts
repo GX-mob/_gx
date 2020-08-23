@@ -9,7 +9,7 @@ export type Connection = UserBasic & {
    * * 1 = Voyager
    * * 2 = Driver
    */
-  mode: number;
+  mode: 1 | 2;
   /**
    * Sockets that observe some events of this socket
    */

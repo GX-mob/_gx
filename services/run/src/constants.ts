@@ -3,6 +3,9 @@ export const NAMESPACES = {
   RIDER: 2,
 };
 
+export const CANCELATION_SAFE_TIME_MS = 3; // 3 minutes
+export const PRICE_OF_CANCELATION_OUT_OF_SAFE_TIME = 3;
+
 export const MATCH_MAX_EXECUTION = 60 * 5; // 60 = Executes the algorithm during 1 minute
 export const MATCH_EXECUTION_INTERVAL = 1000; // 1 second
 

@@ -1,12 +1,13 @@
 export type Type = {
-  offerID: string;
+  ridePID: string;
   driverPID: string;
+  timestamp: number;
 };
 
 export const schema = {
-  offerID: "string",
+  ridePID: "string",
   driverPID: "string",
-  driverAcceptedTimestamp: "uint32",
+  timestamp: "uint32",
 };
 
 export default {

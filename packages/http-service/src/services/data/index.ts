@@ -24,7 +24,7 @@ import { handleRejectionByUnderHood } from "../../helpers/util";
 import { User, UserModel } from "../../models/user";
 import { Session, SessionModel } from "../../models/session";
 import { Ride, RideModel } from "../../models/ride";
-import { Pendencie } from "models/pendencie";
+import { Pendencie, PendencieModel } from "../../models/pendencie";
 
 interface Settings<Model> {
   namespace: string;
@@ -221,11 +221,11 @@ export class DataService {
     autoPopulate: ["voyager", "driver", "pendencies"],
   });
 
-  public pendencies = this.create<Pendencie, Omit<Pendencie, "pid">>(
-    RideModel,
+  public pendencies = this.create<Pendencie, Omit<Pendencie, "resolved">>(
+    PendencieModel,
     {
       namespace: "pendencies",
-      linkingKeys: ["issuer"],
+      linkingKeys: ["issuer", "affected"],
     }
   );
   /**
