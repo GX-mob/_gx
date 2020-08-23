@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { Document, Schema, Types, model } from "mongoose";
-import bcrypt from "bcrypt";
+import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { emailRegex, internationalMobilePhoneRegex } from "../helpers/util";
+import { emailRegex, internationalMobilePhoneRegex } from "../../helpers/util";
 import shortid from "shortid";
 
 export interface User {
@@ -111,4 +111,4 @@ UserSchema.pre<UserDocument>("updateOne", async function () {
   this.set({ updatedAt: new Date() });
 });
 
-export const UserModel = model<UserModel>("User", UserSchema);
+export const UserModel = Connections.Users.model<UserModel>("User", UserSchema);

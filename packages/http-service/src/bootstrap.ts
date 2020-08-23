@@ -24,7 +24,8 @@ import fastifyRateLimit from "fastify-rate-limit";
 import fastifyCircuitBreak from "fastify-circuit-breaker";
 import fastifyRedis from "fastify-redis";
 import { bootstrap } from "fastify-decorators";
-import { logger, DataBaseConnection } from "./helpers";
+import { logger } from "./helpers";
+import DatabasesConnections from "./database";
 import { Redis } from "ioredis";
 
 type Service = {
@@ -40,8 +41,8 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
     options ? { ...options, logger } : { logger }
   );
 
-  // Database connection
-  instance.register(DataBaseConnection);
+  // Databases connections
+  instance.register(DatabasesConnections);
 
   // Third-party plugins
   instance.register(fastifyMultipart);
@@ -59,7 +60,7 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
     exposeRoute: process.env.NODE_ENV === "development",
   });
 
-  // Controllers autoload
+  // Controllers registry
   instance.register(bootstrap, {
     controllers,
   });

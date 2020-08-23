@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import mongoose, { Document, Schema, model } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
+import Connections from "../connections";
 import shortid from "shortid";
-import { User } from "./user";
+import { User, UserModel } from "./user";
 import { Pendencie } from "./pendencie";
 
 function hasProp(obj: any, prop: string) {
@@ -153,11 +154,11 @@ export const RideSchema: Schema = new Schema(
     voyager: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: "User",
+      ref: UserModel,
     },
     type: { type: Number, enum: [1, 2], required: true },
     route: { type: Route, required: true },
-    driver: { type: Schema.Types.ObjectId, ref: "User" },
+    driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {
       type: String,
       enum: ["created", "running", "completed"],
@@ -172,4 +173,7 @@ export const RideSchema: Schema = new Schema(
   { collection: "rides" }
 );
 
-export const RideModel = model<RideDocument>("Ride", RideSchema);
+export const RideModel = Connections.Rides.model<RideDocument>(
+  "Ride",
+  RideSchema
+);

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Document, Schema, Types, model } from "mongoose";
-import { User } from "./user";
+import { Document, Schema, Types } from "mongoose";
+import Connections from "../connections";
+import { User, UserModel } from "./user";
 
 export interface Session {
   _id: Types.ObjectId | any;
@@ -31,7 +32,7 @@ export interface SessionDocument extends Session, Document {}
 
 export const SessionSchema: Schema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+    user: { type: Schema.Types.ObjectId, required: true, ref: UserModel },
     userAgent: { type: String, required: true },
     ips: { type: Array, of: String, required: true },
     createdAt: { type: Date, default: Date.now },
@@ -40,4 +41,7 @@ export const SessionSchema: Schema = new Schema(
   { collection: "sessions" }
 );
 
-export const SessionModel = model<SessionDocument>("Session", SessionSchema);
+export const SessionModel = Connections.Sessions.model<SessionDocument>(
+  "Session",
+  SessionSchema
+);

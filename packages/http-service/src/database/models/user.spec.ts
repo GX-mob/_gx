@@ -3,6 +3,8 @@
  *
  * @group unit/models/user
  */
+import { connect, disconnect } from "../";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { UserModel } from "./user";
 
 const mockUser = {
@@ -16,6 +18,19 @@ const mockUser = {
 };
 
 describe("Model: User", () => {
+  const mongoServer = new MongoMemoryServer();
+
+  beforeAll(async () => {
+    const URI = await mongoServer.getUri();
+
+    await connect(URI);
+  });
+
+  afterAll(async () => {
+    await disconnect();
+    await mongoServer.stop();
+  });
+
   it("should throw errors due to empty required fields", () => {
     const user = new UserModel();
     const { errors } = user.validateSync() as any;

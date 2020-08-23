@@ -21,10 +21,10 @@ import mongoose, { DocumentQuery, Document } from "mongoose";
 import { handleRejectionByUnderHood } from "../../helpers/util";
 
 // Standard handlers
-import { User, UserModel } from "../../models/user";
-import { Session, SessionModel } from "../../models/session";
-import { Ride, RideModel } from "../../models/ride";
-import { Pendencie, PendencieModel } from "../../models/pendencie";
+import { User, UserModel } from "../../database/models/user";
+import { Session, SessionModel } from "../../database/models/session";
+import { Ride, RideModel } from "../../database/models/ride";
+import { Pendencie, PendencieModel } from "../../database/models/pendencie";
 
 interface Settings<Model> {
   namespace: string;

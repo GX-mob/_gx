@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * GX - Corridas
  * Copyright (C) 2020  Fernando Costa

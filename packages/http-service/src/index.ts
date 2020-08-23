@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export { default as bootstrap } from "./bootstrap";
-export * as Models from "./models";
+export { Models } from "./database";
 export * from "./helpers";
 export * from "./services";
 export { default as HttpError } from "http-errors";

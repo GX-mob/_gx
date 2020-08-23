@@ -3,9 +3,12 @@
  *
  * @group unit/models/ride
  */
+import { connect, disconnect } from "../";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import { RideModel } from "./ride";
 
 describe("Model: Ride", () => {
+  const mongoServer = new MongoMemoryServer();
   let base: any;
 
   const mockRoutePoint = {
@@ -20,6 +23,17 @@ describe("Model: Ride", () => {
     end: mockRoutePoint,
     distance: 3400,
   };
+
+  beforeAll(async () => {
+    const URI = await mongoServer.getUri();
+
+    await connect(URI);
+  });
+
+  afterAll(async () => {
+    await disconnect();
+    await mongoServer.stop();
+  });
 
   it("should throw error due to empty required fields", (done) => {
     const ride = new RideModel();

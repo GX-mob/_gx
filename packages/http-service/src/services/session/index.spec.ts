@@ -5,8 +5,8 @@
  */
 import { Types } from "mongoose";
 import { configureServiceTest } from "fastify-decorators/testing";
-import { User, UserModel } from "../../models/user";
-import { Session } from "../../models/session";
+import { User, UserModel } from "../../database/models/user";
+import { Session } from "../../database/models/session";
 import { SessionService } from ".";
 import { DataService } from "../data";
 import { CacheService } from "../cache";

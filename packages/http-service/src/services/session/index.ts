@@ -21,7 +21,7 @@ import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "../data";
 import { CacheService } from "../cache";
-import { User, Session } from "../../models";
+import { User, Session } from "../../database/models";
 import { handleRejectionByUnderHood } from "../../helpers/util";
 import HttpError from "http-errors";
 

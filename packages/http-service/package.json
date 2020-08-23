@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "node ./dist/bin/index.js",
-    "test": "NODE_ENV=test jest --runInBand",
+    "test": "NODE_ENV=test jest --runInBand --forceExit --detectOpenHandles",
     "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix",
     "build": "rimraf ./dist && tsc --sourceMap -p ./",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' --files ./src/bin/index.ts",

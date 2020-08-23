@@ -5,12 +5,14 @@
  */
 import { configureServiceTest } from "fastify-decorators/testing";
 import mongoose from "mongoose";
+import { connect, disconnect } from "../../database";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { UserModel, User } from "../../models/user";
+
+import { UserModel, User } from "../../database/models/user";
 import { DataService } from ".";
 import { FastifyInstanceToken } from "fastify-decorators";
 import { generate } from "shortid";
-import { Session } from "../../models";
+import { Session } from "../../database/models/session";
 
 const IORedisMock = require("ioredis-mock");
 
@@ -53,11 +55,7 @@ describe("Service: Data", () => {
     mongoServer = new MongoMemoryServer();
     const URI = await mongoServer.getUri();
 
-    mongoose.connect(URI, {
-      useNewUrlParser: true,
-      useCreateIndex: true,
-      useUnifiedTopology: true,
-    });
+    await connect(URI);
 
     nonCached = await UserModel.create({
       ...mockUser,
@@ -68,11 +66,9 @@ describe("Service: Data", () => {
     });
   });
 
-  afterAll((done) => {
-    mongoose.disconnect(async () => {
-      await mongoServer.stop();
-      done();
-    });
+  afterAll(async () => {
+    await disconnect();
+    await mongoServer.stop();
   });
 
   it("should create", async () => {
