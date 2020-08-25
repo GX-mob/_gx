@@ -15,15 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { bootstrap as bootControllers } from "fastify-decorators";
 import { bootstrap } from "@gx-mob/http-service";
 import configure from "@gx-mob/service-configure";
 import IndexController from "./controllers/index.controller";
 
 const redis = process.env.REDIS_URI || new (require("ioredis-mock"))(); // eslint-disable-line @typescript-eslint/no-var-requires
 const service = bootstrap({
-  controllers: [IndexController],
   redis,
 });
+
+service.register(bootControllers, { controllers: [IndexController] });
 
 /**
  * Connects to the service configuration database

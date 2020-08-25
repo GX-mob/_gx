@@ -9,7 +9,6 @@ import { RideModel } from "./ride";
 
 describe("Model: Ride", () => {
   const mongoServer = new MongoMemoryServer();
-  let base: any;
 
   const mockRoutePoint = {
     coord: [1.23432, 2.31451],
@@ -22,6 +21,12 @@ describe("Model: Ride", () => {
     path: "...",
     end: mockRoutePoint,
     distance: 3400,
+  };
+
+  let base = {
+    voyager: "507f1f77bcf86cd799439011",
+    type: 1,
+    payMethod: 1,
   };
 
   beforeAll(async () => {
@@ -39,10 +44,16 @@ describe("Model: Ride", () => {
     const ride = new RideModel();
 
     ride.validate((err) => {
-      expect(Object.keys(err.errors).length).toBe(3);
-      //expect(Object.keys(err.errors).length).toBe(6);
+      expect(Object.keys(err.errors).length).toBe(4);
       done();
     });
+  });
+
+  it("should validate", () => {
+    const ride = new RideModel({ ...base, route: mockRoute });
+
+    const err = ride.validateSync() as any;
+    expect(err).toBe(undefined);
   });
 
   it("should throw error due to empty route property", () => {

@@ -23,8 +23,8 @@ import {
   ContactVerificationService,
   GuardHook,
   util,
+  HttpError,
 } from "@gx-mob/http-service";
-import HttpErrors from "http-errors";
 
 import AddBodySchema from "../schemas/contact/add-body.json";
 import ConfirmBodySchema from "../schemas/contact/confirm-body.json";
@@ -84,7 +84,7 @@ export default class StandardAuthController {
     const valid = await this.verify.verify(value, code);
 
     if (!valid) {
-      throw new HttpErrors.UnprocessableEntity("wrong-code");
+      throw new HttpError.UnprocessableEntity("wrong-code");
     }
 
     const update = {
@@ -117,7 +117,7 @@ export default class StandardAuthController {
       [...user.phones, ...(user.emails || [])].length === 1 ||
       user["2fa"] === value
     ) {
-      throw new HttpErrors.UnprocessableEntity("not-allowed");
+      throw new HttpError.UnprocessableEntity("not-allowed");
     }
 
     const updated = [...(user[field] || [])];

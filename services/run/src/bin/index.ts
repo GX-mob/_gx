@@ -26,12 +26,6 @@ import service from "../service";
 
 (async function start() {
   try {
-    if (!process.env.MONGO_URI && !isProduction) {
-      const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
-      const mongoServer = new MongoMemoryServer();
-      process.env.MONGO_URI = await mongoServer.getUri();
-    }
-
     await service.ready();
 
     await service.listen(

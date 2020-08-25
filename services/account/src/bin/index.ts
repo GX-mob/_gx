@@ -23,23 +23,13 @@ if (!isProduction) {
   require("dotenv").config({ path: resolve(__dirname, "../../", ".env.dev") }); // eslint-disable-line
 }
 
-import { bootstrap } from "@gx-mob/http-service";
-
-// For typing support only
-import "fastify-multipart";
-import "fastify-swagger";
-
 import service from "../service";
 
 (async function start() {
   try {
-    if (!process.env.MONGO_URI && !isProduction) {
-      const MongoMemoryServer = require("mongodb-memory-server").default; // eslint-disable-line @typescript-eslint/no-var-requires
-      const mongoServer = new MongoMemoryServer();
-      process.env.MONGO_URI = await mongoServer.getUri();
-    }
-
     await service.ready();
+
+    service.swagger();
 
     await service.listen(
       Number(process.env.PORT as string) || 8080,

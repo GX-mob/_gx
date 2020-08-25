@@ -20,6 +20,7 @@ const { join } = require("path");
 const chalk = require("chalk");
 const Prompt = require("prompt-checkbox");
 const MongoMemoryServer = require("mongodb-memory-server").default;
+const seed = require("./database-seed");
 
 const wait = (ts) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -44,13 +45,6 @@ const prompts = {
       ],
       PWA: ["pwa/voyager", "pwa/assistant"],
     },
-  }),
-  mongo: new Prompt({
-    name: "MongoDB Server",
-    message:
-      "Mongo URI environment variable not found, you want start one server now?",
-    radio: true,
-    choices: ["Yes", "No"],
   }),
 };
 
@@ -80,29 +74,21 @@ function log(title, content, formatTitle = true) {
 
   if (!applications.length) return;
 
-  if (applications.length > 1 && !process.env.MONGO_URI) {
-    const startMongo = (await prompts.mongo.run({}))[0] === "Yes";
+  if (!process.env.DATABASE_URI) {
+    // const startMongo = (await prompts.mongo.run({}))[0] === "Yes";
 
-    if (startMongo) {
-      log("MongoDB", chalk`{yellow Starting Server}`);
+    log("MongoDB", chalk`{yellow Starting Server}`);
 
-      const mongoServer = new MongoMemoryServer();
-      process.env.MONGO_URI = await mongoServer.getUri();
-      log("MongoDB", chalk`{yellow URI: ${chalk.bold(process.env.MONGO_URI)}}`);
-      log("MongoDB", chalk`{yellow Setted MONGO_URI enviroment variable}`);
-    } else {
-      console.log(
-        `\n${chalk.bold.red.inverse(
-          "                       WARNING                       "
-        )}\n${chalk.bgRed.bold.whiteBright(
-          " Run services that interact with each other without  \n" +
-            " a central MongoDB server probably will cause        \n" +
-            " data inconsistency issues.                          "
-        )} `
-      );
-
-      await wait(3000);
-    }
+    const mongoServer = new MongoMemoryServer();
+    process.env.DATABASE_URI = await mongoServer.getUri();
+    log(
+      "MongoDB",
+      chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`
+    );
+    log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
+    log("MongoDB", chalk`{yellow Seeding...}`);
+    await seed();
+    log("MongoDB", chalk`{yellow Seeded.}`);
   }
 
   log(chalk`\n{bold Starting development environment}\n`);

@@ -67,7 +67,7 @@ class Route extends mongoose.SchemaType {
         );
     }
 
-    // return route;
+    return route;
   }
 
   checkPoint(name: string, point: RoutePoint) {
@@ -104,7 +104,13 @@ export interface Ride {
   _id: any;
   pid: string;
   voyager: User["_id"];
-  route: TRoute;
+  route: {
+    start: RoutePoint;
+    waypoints?: RoutePoint[];
+    end: RoutePoint;
+    path: string;
+    distance: number;
+  };
   /**
    * * 1 = Normal
    * * 2 = VIG - Very important gx
@@ -157,6 +163,7 @@ export const RideSchema: Schema = new Schema(
       ref: UserModel,
     },
     type: { type: Number, enum: [1, 2], required: true },
+    payMethod: { type: Number, enum: [1, 2], required: true },
     route: { type: Route, required: true },
     driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {

@@ -12,7 +12,7 @@ export const options = {
   autoIndex: process.env.NODE_ENV !== "production",
 };
 
-export const connect = async (databaseURI: string) => {
+export const connect = (databaseURI: string) => {
   return Promise.all([
     Connections.Users.openUri(databaseURI, options),
     Connections.Sessions,

@@ -24,7 +24,6 @@ import {
   HttpError,
   util,
 } from "@gx-mob/http-service";
-import bcrypt from "bcrypt";
 
 import UpdateCredentialBodySchema from "../schemas/security/credential-body.json";
 import Enable2FABodySchema from "../schemas/security/enable-2fa-body.json";
@@ -80,7 +79,7 @@ export default class StandardAuthController {
       );
     }
 
-    const password = await bcrypt.hash(newPassword, 10);
+    const password = await util.hashPassword(newPassword);
 
     await this.data.users.model.updateOne({ _id: user._id }, { password });
 
@@ -125,7 +124,7 @@ export default class StandardAuthController {
     await util.assertPassword(
       {
         value: request.body.password,
-        to: user.password as string,
+        to: user.password as Buffer,
         be: true,
       },
       "wrong-password"

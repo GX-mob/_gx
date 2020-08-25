@@ -23,19 +23,17 @@ import fastifyMultipart from "fastify-multipart";
 import fastifyRateLimit from "fastify-rate-limit";
 import fastifyCircuitBreak from "fastify-circuit-breaker";
 import fastifyRedis from "fastify-redis";
-import { bootstrap } from "fastify-decorators";
 import { logger } from "./helpers";
 import DatabasesConnections from "./database";
 import { Redis } from "ioredis";
 
 type Service = {
-  controllers: any[];
   redis: string | Redis;
   options?: FastifyServerOptions;
 };
 
 export default function instanceBootstrap(service: Service): FastifyInstance {
-  const { controllers, redis, options } = service;
+  const { redis, options } = service;
 
   const instance: FastifyInstance = fastify(
     options ? { ...options, logger } : { logger }
@@ -58,11 +56,6 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
   });
   instance.register(fastifySwagger, {
     exposeRoute: process.env.NODE_ENV === "development",
-  });
-
-  // Controllers registry
-  instance.register(bootstrap, {
-    controllers,
   });
 
   instance.decorateRequest("session", "");

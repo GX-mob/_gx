@@ -7,7 +7,6 @@ import Node from "./node";
 const redis = process.env.REDIS_URI as string;
 
 const service = bootstrap({
-  controllers: [],
   redis,
 });
 

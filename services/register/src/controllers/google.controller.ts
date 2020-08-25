@@ -15,21 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { FastifyRequest, FastifyReply } from "fastify";
-import { Controller, GET, ErrorHandler } from "fastify-decorators";
-import { HandleError } from "@gx-mob/http-service";
+import { Controller, GET } from "fastify-decorators";
 
 @Controller("/google")
 export default class GoogleAuthRegistration {
-  @ErrorHandler()
-  private errorHandler(
-    error: Error,
-    _request: FastifyRequest,
-    reply: FastifyReply
-  ) {
-    HandleError(error, reply);
-  }
-
   @GET("/")
   async handler() {
     return {};

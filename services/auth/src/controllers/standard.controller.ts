@@ -21,9 +21,9 @@ import {
   DataService,
   SessionService,
   ContactVerificationService,
+  HttpError,
   util,
 } from "@gx-mob/http-service";
-import HttpError from "http-errors";
 
 import IdentifyBodySchema from "../schemas/id-body.json";
 import CredentialsBodySchema from "../schemas/credentials-body.json";

@@ -16,6 +16,5 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export { default as logger } from "./logger";
-export { default as DataBaseConnection } from "./database";
 export * from "./hooks";
 export * as util from "./util";
