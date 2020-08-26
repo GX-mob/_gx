@@ -19,6 +19,7 @@ import { FastifyInstanceToken, Inject, Service } from "fastify-decorators";
 import { Redis } from "ioredis";
 import schemapack, { SchemaObject, Parser } from "schemapack";
 import { FastifyInstance } from "fastify";
+import { ChildProcessWithoutNullStreams } from "child_process";
 
 type setOptions = {
   ex?: number;
@@ -115,24 +116,20 @@ export class CacheService {
 
     const ex = options.ex ? String(options.ex) : this.defaultLifetime;
 
-    if (options.link) {
-      await this.redis
-        .multi([
-          ["set", parentKey, value, "PX", ex],
-          ...options.link.map((childKey) => [
-            "set",
-            this.key(ns, childKey),
-            `${this.linkPrefix}${parentKey}`,
-          ]),
-        ])
-        .exec();
-
-      return "OK";
+    if (!options.link) {
+      return this.redis.set(parentKey, value, "PX", ex);
     }
 
-    await this.redis.set(parentKey, value, "PX", ex);
-
-    return "OK";
+    return this.redis
+      .multi([
+        ["set", parentKey, value, "PX", ex],
+        ...options.link.map((childKey) => [
+          "set",
+          this.key(ns, childKey),
+          `${this.linkPrefix}${parentKey}`,
+        ]),
+      ])
+      .exec();
   }
 
   sanitizeValue(ns: string, value: any) {

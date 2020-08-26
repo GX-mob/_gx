@@ -3,12 +3,16 @@ import { FastifyInstanceToken, Inject } from "fastify-decorators";
 import { Server } from "socket.io";
 import { SessionService, CacheService } from "@gx-mob/http-service";
 import { auth } from "extensor";
-import { NAMESPACES } from "./constants";
+import { CONNECTION_MODE } from "./constants";
 import { Voyager } from "./handlers/voyager";
 import { Rider } from "./handlers/rider";
 import { Offers, Riders } from "./state";
 import { Connection } from "./schemas/common/connection";
 import { ParsersList } from "extensor/dist/types";
+import {
+  CONNECTION_CACHE_NAMESPACE,
+  CONNECTION_DATA_LIFETIME_MS,
+} from "./constants";
 
 export default class Node {
   @Inject(FastifyInstanceToken)
@@ -60,9 +64,9 @@ export default class Node {
 
     io.on("connection", (socket) => {
       switch (socket.connection.mode) {
-        case NAMESPACES.VOYAGER:
+        case CONNECTION_MODE.VOYAGER:
           new Voyager(this, io, socket);
-        case NAMESPACES.RIDER:
+        case CONNECTION_MODE.DRIVER:
           new Rider(this, io, socket);
       }
     });
@@ -73,7 +77,7 @@ export default class Node {
    * @param id Socket ID or User public ID
    */
   public getConnection(id: string): Promise<Connection> {
-    return this.cache.get("rides:connections", id);
+    return this.cache.get(CONNECTION_CACHE_NAMESPACE, id);
   }
 
   /**
@@ -81,10 +85,18 @@ export default class Node {
    * @param pid User public ID
    * @param data
    */
-  public async setConnection(pid: string, data: Connection) {
-    return this.cache.set("rides:connections", pid, data, {
+  public async setConnection(
+    pid: string,
+    data: Connection
+  ): Promise<Connection> {
+    const previousData = await this.cache.get("rides:connections", pid);
+
+    const newData = { ...previousData, ...data };
+
+    await this.cache.set(CONNECTION_CACHE_NAMESPACE, pid, newData, {
       link: ["socketId"],
-      ex: 1000 * 60 * 60 * 5, // store for 5 hours
+      ex: CONNECTION_DATA_LIFETIME_MS,
     });
+    return newData;
   }
 }

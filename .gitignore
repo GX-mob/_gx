@@ -122,5 +122,5 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/code,node
 
-# temp
-.codecov
+# Expo files
+.expo

@@ -131,12 +131,12 @@ export interface Ride {
     base: number;
     distance: {
       total: number;
-      aditionalFoLongRide: number;
+      aditionalForLongRide: number;
       aditionalForOutBusinessTime: number;
     };
     duration: {
       total: number;
-      aditionalFoLongRide: number;
+      aditionalForLongRide: number;
       aditionalForOutBusinessTime: number;
     };
     /**

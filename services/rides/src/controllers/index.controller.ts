@@ -251,11 +251,7 @@ export default class IndexController {
       throw new HttpError.UnprocessableEntity("invalid-ride-type");
     }
 
-    /**
-     * Check if is out of business time
-     */
-    const hour = zonedTimeToUtc(new Date(), request.country).getHours();
-    const isBusinessTime = hour > 9 && hour < 18;
+    const isBusinessTime = this.isBusinessTime(request.country);
 
     const duration = this.durationPrice(
       request.route.duration,
@@ -271,13 +267,20 @@ export default class IndexController {
     return { duration, distance };
   }
 
+  private isBusinessTime(country: string) {
+    const date = zonedTimeToUtc(new Date(), country);
+    const hour = date.getHours();
+    const isSunday = date.getDay() > 0;
+    return isSunday || (hour > 9 && hour < 18);
+  }
+
   private durationPrice(
     duration: number,
     price: PriceDetail,
     isBusinessTime: boolean
   ): {
     total: number;
-    aditionalFoLongRide: number;
+    aditionalForLongRide: number;
     aditionalForOutBusinessTime: number;
   } {
     /**
@@ -305,7 +308,7 @@ export default class IndexController {
 
     return {
       total: duration * multipler,
-      aditionalFoLongRide,
+      aditionalForLongRide: aditionalFoLongRide,
       aditionalForOutBusinessTime,
     };
   }
@@ -316,7 +319,7 @@ export default class IndexController {
     isBusinessTime: boolean
   ): {
     total: number;
-    aditionalFoLongRide: number;
+    aditionalForLongRide: number;
     aditionalForOutBusinessTime: number;
   } {
     /**
@@ -344,7 +347,7 @@ export default class IndexController {
 
     return {
       total: multipler * distance,
-      aditionalFoLongRide,
+      aditionalForLongRide: aditionalFoLongRide,
       aditionalForOutBusinessTime,
     };
   }

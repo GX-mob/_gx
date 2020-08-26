@@ -54,9 +54,9 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
     timeWindow: 1000 * 60,
     redis: instance.redis,
   });
-  instance.register(fastifySwagger, {
-    exposeRoute: process.env.NODE_ENV === "development",
-  });
+  //instance.register(fastifySwagger, {
+  //  exposeRoute: process.env.NODE_ENV === "development",
+  //});
 
   instance.decorateRequest("session", "");
 

@@ -5,8 +5,10 @@ import { Position, State } from "../schemas/events";
 import { EventEmitter } from "eventemitter3";
 import Node from "../node";
 import {
+  CONNECTION_MODE,
+  PAYMETHOD,
   CANCELATION_SAFE_TIME_MS,
-  PRICE_OF_CANCELATION_OUT_OF_SAFE_TIME,
+  CANCELATION_FARE,
 } from "../constants";
 
 type CancelResponse = Promise<{
@@ -79,7 +81,7 @@ export class Common extends EventEmitter {
     return { ...packet, pid: this.socket.connection.pid };
   }
 
-  async cancelRide(pid: string) {
+  async cancelRide(pid: string): Promise<CancelResponse> {
     const now = Date.now();
     const ride = await this.data.rides.get({ pid });
 
@@ -116,9 +118,9 @@ export class Common extends EventEmitter {
      * Creates a pendencie or charge the cancel fee
      */
     switch (this.socket.connection.mode) {
-      case 1:
+      case CONNECTION_MODE.VOYAGER:
         return this.handleVoyagerNoSafeCancel(ride, offer);
-      case 2:
+      case CONNECTION_MODE.DRIVER:
         return this.handleDriverNoSafeCancel(ride, offer);
       default:
         return { status: "error", error: "undefined-usage" };
@@ -129,7 +131,7 @@ export class Common extends EventEmitter {
     /**
      * Handle voyager safe cancellation
      */
-    if (this.socket.connection.mode === 1) {
+    if (this.socket.connection.mode === CONNECTION_MODE.VOYAGER) {
       return this.data.rides.update({ pid }, { status: "canceled" });
     }
 
@@ -142,11 +144,11 @@ export class Common extends EventEmitter {
   private async handleVoyagerNoSafeCancel(
     ride: Models.Ride,
     offer: any
-  ): CancelResponse {
+  ): Promise<CancelResponse> {
     /**
      * Creates a pendencie if the payment method is money
      */
-    if (ride.payMethod === 1) {
+    if (ride.payMethod === PAYMETHOD.MONEY) {
       const pendencie = await this.createPendencie(ride);
 
       /**
@@ -157,19 +159,17 @@ export class Common extends EventEmitter {
         pendencie,
       });
 
-      /**
-       * Acknowledgment to voyager
-       */
       return { status: "ok", pendencie };
     }
 
-    // stripe api, request payment
+    // TODO stripe api, request payment
+
     return { status: "ok" };
   }
   private async handleDriverNoSafeCancel(
     ride: Models.Ride,
     offer: any
-  ): CancelResponse {
+  ): Promise<CancelResponse> {
     const pendencie = await this.createPendencie(ride);
 
     /**
@@ -180,23 +180,25 @@ export class Common extends EventEmitter {
       pendencie,
     });
 
-    /**
-     * Acknowledgment to driver
-     */
     return { status: "ok", pendencie };
   }
 
   private createPendencie(ride: Models.Ride) {
     const affected =
-      this.socket.connection.mode === 1 ? ride.driver : ride.voyager;
+      this.socket.connection.mode === CONNECTION_MODE.VOYAGER
+        ? ride.driver
+        : ride.voyager;
 
-    return util.retry(() =>
-      this.data.pendencies.create({
-        issuer: this.socket.connection._id,
-        affected,
-        amount: PRICE_OF_CANCELATION_OUT_OF_SAFE_TIME,
-        ride: ride._id,
-      })
+    return util.retry(
+      () =>
+        this.data.pendencies.create({
+          issuer: this.socket.connection._id,
+          affected,
+          amount: CANCELATION_FARE,
+          ride: ride._id,
+        }),
+      3,
+      500
     );
   }
 }
