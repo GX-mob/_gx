@@ -69,6 +69,7 @@ export default class StandardAuthController {
     request: FastifyRequest<{ Body: IIdentifyBodySchema }>,
     reply: FastifyReply
   ) {
+    console.log(request.body);
     const { password, phones, firstName, avatar } = (
       await this.getUser(request.body.id)
     ).user;
@@ -208,6 +209,7 @@ export default class StandardAuthController {
    */
   /** */
   private async getUser(id: string | IIdentifyBodySchema["id"]) {
+    console.log("#######", id);
     const { value: contact, field } = util.isValidContact(id);
     const user = await this.data.users.get({ [field]: contact });
 

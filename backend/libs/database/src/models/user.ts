@@ -18,7 +18,7 @@
 import { Document, Schema, Types, model } from "mongoose";
 import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { emailRegex, internationalMobilePhoneRegex } from "../../helpers/util";
+import { emailRegex, internationalMobilePhoneRegex } from "@app/util";
 import shortid from "shortid";
 
 export interface User {
@@ -43,10 +43,6 @@ export interface User {
 }
 
 export interface UserDocument extends User, Document {}
-
-export interface UserModel extends UserDocument {
-  compareCredential(plain: string): Promise<boolean>;
-}
 
 export const UserSchema: Schema = new Schema(
   {
@@ -74,9 +70,9 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter((phone) => internationalMobilePhoneRegex.test(phone))
+          v.filter(phone => internationalMobilePhoneRegex.test(phone))
             .length === v.length,
-        message: (props) => `${props.value} has an invalid mobile phone`,
+        message: props => `${props.value} has an invalid mobile phone`,
       },
       required: true,
       unique: true,
@@ -90,8 +86,8 @@ export const UserSchema: Schema = new Schema(
          */
         validator: (v: string[]) =>
           v.length === 0 || // empty
-          v.filter((email) => emailRegex.test(email)).length === v.length,
-        message: (props) => `${props.value} has an invalid email`,
+          v.filter(email => emailRegex.test(email)).length === v.length,
+        message: props => `${props.value} has an invalid email`,
       },
       default: [],
     },
@@ -104,11 +100,16 @@ export const UserSchema: Schema = new Schema(
     password: Buffer,
     ["2fa"]: String,
   },
-  { collection: "users" }
+  { collection: "users" },
 );
 
-UserSchema.pre<UserDocument>("updateOne", async function () {
+UserSchema.pre<UserDocument>("updateOne", function() {
   this.set({ updatedAt: new Date() });
 });
 
-export const UserModel = Connections.Users.model<UserModel>("User", UserSchema);
+export const UserModel = Connections.Users.model<UserDocument>(
+  "User",
+  UserSchema,
+);
+
+export const USER_MODEL_PROVIDER = "USER_MODEL_PROVIDER";

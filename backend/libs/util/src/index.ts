@@ -15,16 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import logger from "./logger";
+
+import pino from "pino";
 import HttpError from "http-errors";
 import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
 
 const securePassword = new SecurePassword();
 
+const dest = pino.destination({ sync: false });
+
+const logger = pino(
+  /* istanbul ignore next */
+  process.env.NODE_ENV !== "production"
+    ? {
+        prettyPrint: {
+          levelFirst: true,
+        },
+        prettifier: require("pino-pretty"),
+      }
+    : {},
+  dest,
+);
+
+export default logger;
+
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {
-  promise.catch((error) => logger.error(error));
+  promise.catch(error => logger.error(error));
 };
 
 type RegexGlobalsObject = {
@@ -67,11 +85,11 @@ type ContactResultObject = {
  * properties makes full number and validate it,
  * else validates contact like as email
  * @param value Object or string to verify and parse
- * @throws HttpError.UnprocessableEntity: invalid-email | invalid-idd | invalid-phone
+ * @throws Error: invalid-email | invalid-idd | invalid-phone
  * @return {object} { contact: string, type: "email" | "phone" }
  */
 export function parseContact(
-  value: PhoneContactObject | string
+  value: PhoneContactObject | string,
 ): ContactResultObject {
   if (typeof value === "string") {
     if (!emailRegex.test(value)) {
@@ -102,21 +120,17 @@ export function parseContact(
  * Validates a contact
  *
  * @param {stirng | PhoneContactObject} value
- * @throws HttpError.UnprocessableEntity: invalid-contact
+ * @throws HttpError.UnprocessableEntity: invalid-email | invalid-idd | invalid-phone
  * @return {object} { value: string, type: "email" | "phone" }
  */
 export function isValidContact(
-  value: PhoneContactObject | string
+  value: PhoneContactObject | string,
 ): ContactResultObject {
-  const check = parseContact(value);
-
-  if ((check as ContactErrorResult).error) {
-    throw new HttpError.UnprocessableEntity(
-      (check as ContactErrorResult).error
-    );
+  try {
+    return parseContact(value);
+  } catch (error) {
+    throw new HttpError.UnprocessableEntity(error.message);
   }
-
-  return check as ContactResultObject;
 }
 
 /**
@@ -125,7 +139,7 @@ export function isValidContact(
  */
 export function hashPassword(password: string | Buffer): Promise<Buffer> {
   return securePassword.hash(
-    typeof password === "string" ? Buffer.from(password) : password
+    typeof password === "string" ? Buffer.from(password) : password,
   );
 }
 
@@ -148,7 +162,7 @@ export async function assertPassword(
     to: Buffer;
     be: boolean;
   },
-  errorMsg: string
+  errorMsg: string,
 ): Promise<Buffer | void> {
   const passwordValue = Buffer.from(value);
   const result = await securePassword.verify(passwordValue, to);
@@ -179,19 +193,19 @@ export async function retry<T>(
   fn: () => Promise<T>,
   retriesLeft: number = 3,
   interval: number = 1000,
-  exponential: boolean = false
+  exponential: boolean = false,
 ): Promise<T> {
   try {
     const val = await fn();
     return val;
   } catch (error) {
     if (retriesLeft) {
-      await new Promise((r) => setTimeout(r, interval));
+      await new Promise(r => setTimeout(r, interval));
       return retry(
         fn,
         retriesLeft - 1,
         exponential ? interval * 2 : interval,
-        exponential
+        exponential,
       );
     } else throw new Error(`Max retries reached for function ${fn.name}`);
   }

@@ -5,7 +5,9 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "NODE_ENV=production node ./dist/bin/index.js"
+    "start": "NODE_ENV=production node ./dist/bin/index.js",
+    "test": "NODE_ENV=test jest --runInBand --forceExit --detectOpenHandles",
+    "lint": "eslint '*/**/*.{js,ts,tsx}' --quiet --fix"
   },
   "author": "Fernando",
   "license": "AGPL-3.0",

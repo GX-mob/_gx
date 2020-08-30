@@ -1,47 +1,26 @@
-/**
- * GX - Corridas
- * Copyright (C) 2020  Fernando Costa
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-import { FastifyInstanceToken, Inject, Service } from "fastify-decorators";
-import { Redis } from "ioredis";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import IORedis, { Redis } from "ioredis";
 import schemapack, { SchemaObject, Parser } from "schemapack";
-import { FastifyInstance } from "fastify";
-import { ChildProcessWithoutNullStreams } from "child_process";
+import { DEFAULT_TTL, LINK_PREFIX, SEPARATOR } from "./constants";
 
 type setOptions = {
   ex?: number;
   link?: string[];
 };
 
-/**
- * Cache abstraction
- * First encode/decode by pre built schemapack with fallback to JSON serialization
- */
-@Service()
+@Injectable()
 export class CacheService {
-  @Inject(FastifyInstanceToken)
-  public instance!: FastifyInstance;
-
-  private linkPrefix = "__linked@";
-  private separator = ":::";
-
-  public redis: Redis = this.instance.redis;
-  public defaultLifetime = String(15 * 60 * 1000);
+  private defaultLifetime = String(DEFAULT_TTL);
+  public redis: Redis;
   public schemas: { [k: string]: Parser } = {};
-  private schemasStructure: { [k: string]: any } = {};
+
+  constructor(private configService: ConfigService<{ REDIS_URI: string }>) {
+    this.redis =
+      process.env.NODE_ENV === "prodution"
+        ? new IORedis(this.configService.get("REDIS_URI"))
+        : new (require("ioredis-mock"))();
+  }
 
   /**
    * Build schema serialization
@@ -49,7 +28,6 @@ export class CacheService {
    * @param structure schema structure
    */
   buildSchema<T = any>(name: string, structure: SchemaObject): Parser<T> {
-    this.schemasStructure[name] = structure;
     return (this.schemas[name] = schemapack.build<T>(structure));
   }
 
@@ -80,7 +58,7 @@ export class CacheService {
 
   private key(namespace: string, key: string) {
     key = this.sanitizeKey(key);
-    return `${namespace}${this.separator}${key}`;
+    return `${namespace}${SEPARATOR}${key}`;
   }
 
   private sanitizeKey(key: any) {
@@ -88,12 +66,12 @@ export class CacheService {
   }
 
   private isLink(value: any) {
-    return typeof value === "string" && value.startsWith(this.linkPrefix);
+    return typeof value === "string" && value.startsWith(LINK_PREFIX);
   }
 
   private getParentKey(value: string): [string, string] {
-    const parentKey = value.replace(this.linkPrefix, "");
-    const [namespace, key] = parentKey.split(this.separator);
+    const parentKey = value.replace(LINK_PREFIX, "");
+    const [namespace, key] = parentKey.split(SEPARATOR);
     return [namespace, key];
   }
 
@@ -111,7 +89,7 @@ export class CacheService {
 
     value =
       ns in this.schemas
-        ? this.schemas[ns].encode(this.sanitizeValue(ns, value))
+        ? this.schemas[ns].encode(value)
         : JSON.stringify(value);
 
     const ex = options.ex ? String(options.ex) : this.defaultLifetime;
@@ -123,23 +101,13 @@ export class CacheService {
     return this.redis
       .multi([
         ["set", parentKey, value, "PX", ex],
-        ...options.link.map((childKey) => [
+        ...options.link.map(childKey => [
           "set",
           this.key(ns, childKey),
-          `${this.linkPrefix}${parentKey}`,
+          `${LINK_PREFIX}${parentKey}`,
         ]),
       ])
       .exec();
-  }
-
-  sanitizeValue(ns: string, value: any) {
-    const sanitized: { [k: string]: any } = {};
-
-    for (const prop in this.schemasStructure[ns]) {
-      sanitized[prop] = value[prop];
-    }
-
-    return sanitized;
   }
 
   /**

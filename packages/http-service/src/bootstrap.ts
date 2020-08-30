@@ -1,3 +1,4 @@
+// TODO fastify-decorators > peer-dependency
 /**
  * GX - Corridas
  * Copyright (C) 2020  Fernando Costa
@@ -26,14 +27,16 @@ import fastifyRedis from "fastify-redis";
 import { logger } from "./helpers";
 import DatabasesConnections from "./database";
 import { Redis } from "ioredis";
+import { bootstrap } from "fastify-decorators";
 
 type Service = {
   redis: string | Redis;
+  controllers?: any[];
   options?: FastifyServerOptions;
 };
 
 export default function instanceBootstrap(service: Service): FastifyInstance {
-  const { redis, options } = service;
+  const { redis, controllers, options } = service;
 
   const instance: FastifyInstance = fastify(
     options ? { ...options, logger } : { logger }
@@ -57,6 +60,10 @@ export default function instanceBootstrap(service: Service): FastifyInstance {
   //instance.register(fastifySwagger, {
   //  exposeRoute: process.env.NODE_ENV === "development",
   //});
+
+  if (controllers) {
+    instance.register(bootstrap, { controllers });
+  }
 
   instance.decorateRequest("session", "");
 
