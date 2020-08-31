@@ -88,6 +88,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/helpers/tsconfig.lib.json"
       }
+    },
+    "contact-verification": {
+      "type": "library",
+      "root": "libs/contact-verification",
+      "entryFile": "index",
+      "sourceRoot": "libs/contact-verification/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/contact-verification/tsconfig.lib.json"
+      }
     }
   }
 }

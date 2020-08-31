@@ -15,13 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import mongoose, { Document, Schema } from "mongoose";
+import { Document, Schema } from "mongoose";
 import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import {
-  emailRegex,
-  internationalMobilePhoneRegex,
-} from "libs/helpers/src/util";
+import { util } from "@app/helpers";
 import shortid from "shortid";
 
 export interface User {
@@ -75,7 +72,7 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter(phone => internationalMobilePhoneRegex.test(phone))
+          v.filter(phone => util.internationalMobilePhoneRegex.test(phone))
             .length === v.length,
         message: props => `${props.value} has an invalid mobile phone`,
       },
@@ -91,7 +88,7 @@ export const UserSchema: Schema = new Schema(
          */
         validator: (v: string[]) =>
           v.length === 0 || // empty
-          v.filter(email => emailRegex.test(email)).length === v.length,
+          v.filter(email => util.emailRegex.test(email)).length === v.length,
         message: props => `${props.value} has an invalid email`,
       },
       default: [],

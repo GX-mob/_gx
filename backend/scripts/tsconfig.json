@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "outDir": "../dist/scripts"
+  },
+  "include": ["setup-dev-database.ts", "../libs/**"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

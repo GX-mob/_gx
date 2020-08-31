@@ -5,6 +5,7 @@ import PngQuant from "pngquant";
 import JpegTran from "jpegtran";
 import { PassThrough } from "stream";
 import FileType from "file-type";
+import StorageMock from "./mock/gcp-storage.mock";
 
 export type AbstractionBucket = {
   bucket: Bucket;
@@ -42,8 +43,7 @@ export class StorageService {
       return;
     }
 
-    const StorageMock = require("./mock/gcp-storage.mock").default; //eslint-disable-line
-    this.client = new StorageMock();
+    this.client = (new StorageMock() as unknown) as Storage;
   }
 
   setDefaultsBuckets() {

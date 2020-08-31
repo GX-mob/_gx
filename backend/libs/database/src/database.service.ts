@@ -14,6 +14,14 @@ const options = {
   autoIndex: process.env.NODE_ENV !== "production",
 };
 
+export async function connect(DATABASE_URI: string) {
+  await Promise.all([
+    Connections.Users.openUri(DATABASE_URI, options),
+    Connections.Sessions,
+    Connections.Rides,
+  ]);
+}
+
 @Injectable()
 export class DatabaseService {
   public userModel = UserModel;
@@ -26,11 +34,7 @@ export class DatabaseService {
   }
 
   private async connect(DATABASE_URI: string) {
-    await Promise.all([
-      Connections.Users.openUri(DATABASE_URI, options),
-      Connections.Sessions,
-      Connections.Rides,
-    ]);
+    connect(DATABASE_URI);
   }
 
   private createConnectionLogger() {}
