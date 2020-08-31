@@ -22,12 +22,15 @@
   },
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.11",
+    "@google-cloud/storage": "^5.3.0",
     "@nestjs/common": "^7.0.0",
     "@nestjs/config": "^0.5.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/mongoose": "^7.0.2",
     "@nestjs/platform-express": "^7.0.0",
     "@nestjs/platform-fastify": "^7.4.3",
+    "file-type": "^15.0.0",
+    "google-polyline": "^1.0.3",
     "http-errors": "^1.8.0",
     "ioredis": "^4.17.3",
     "mongoose": "^5.10.2",
@@ -38,7 +41,8 @@
     "rxjs": "^6.5.4",
     "schemapack": "^1.4.2",
     "secure-password": "^4.0.0",
-    "shortid": "^2.2.15"
+    "shortid": "^2.2.15",
+    "spherical-geometry-js": "^2.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.0.0",
@@ -57,6 +61,7 @@
     "eslint-plugin-import": "^2.20.1",
     "ioredis-mock": "^4.21.3",
     "jest": "26.4.2",
+    "pino-pretty": "^4.2.0",
     "prettier": "^1.19.1",
     "supertest": "^4.0.2",
     "ts-jest": "26.2.0",
@@ -92,7 +97,13 @@
       "@app/database/(.*)": "<rootDir>/libs/database/src/$1",
       "@app/database": "<rootDir>/libs/database/src",
       "@app/util/(.*)": "<rootDir>/libs/util/src/$1",
-      "@app/util": "<rootDir>/libs/util/src"
+      "@app/util": "<rootDir>/libs/util/src",
+      "@app/storage/(.*)": "<rootDir>/libs/storage/src/$1",
+      "@app/storage": "<rootDir>/libs/storage/src",
+      "@app/session/(.*)": "<rootDir>/libs/session/src/$1",
+      "@app/session": "<rootDir>/libs/session/src",
+      "@app/helpers/(.*)": "<rootDir>/libs/helpers/src/$1",
+      "@app/helpers": "<rootDir>/libs/helpers/src"
     }
   }
 }

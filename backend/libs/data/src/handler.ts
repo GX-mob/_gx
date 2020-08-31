@@ -1,6 +1,6 @@
 import mongoose, { DocumentQuery, Document } from "mongoose";
 import { CacheService } from "@app/cache";
-import { handleRejectionByUnderHood } from "@app/util";
+import { util } from "@app/helpers";
 
 export type Settings<Model> = {
   namespace: string;
@@ -73,7 +73,7 @@ export class Handler<Model, Create> {
         link: this.mountLinkingKeys(data),
       },
     );
-    handleRejectionByUnderHood(promise);
+    util.handleRejectionByUnderHood(promise);
   }
 
   /**

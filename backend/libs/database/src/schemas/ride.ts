@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import mongoose, { Document, Schema } from "mongoose";
-import Connections from "../connections";
 import shortid from "shortid";
-import { User, UserModel } from "./user";
-import { Pendencie, PendencieModel } from "./pendencie";
+import Connections from "../connections";
+import { Pendencie, PendencieModel, PendencieDocument } from "./pendencie";
+import { UserModel, UserDocument } from "./user";
 
 function hasProp(obj: any, prop: string) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
@@ -103,7 +103,7 @@ type TRoute = {
 export interface Ride {
   _id: any;
   pid: string;
-  voyager: User["_id"];
+  voyager: any;
   route: {
     start: RoutePoint;
     waypoints?: RoutePoint[];
@@ -148,11 +148,13 @@ export interface Ride {
   area: string;
   subArea: string;
   status: "created" | "running" | "completed" | "canceled";
-  driver?: User["_id"];
+  driver?: any;
   pendencies?: Pendencie[];
 }
 
 export interface RideDocument extends Ride, Document {}
+
+export const RIDE_MODEL_PROVIDER = "RIDE_MODEL_PROVIDER";
 
 export const RideSchema: Schema = new Schema(
   {
@@ -174,7 +176,7 @@ export const RideSchema: Schema = new Schema(
     pendencies: {
       type: Array,
       of: Schema.Types.ObjectId,
-      ref: PendencieModel,
+      ref: "Pendencie",
     },
   },
   { collection: "rides" },
@@ -184,5 +186,3 @@ export const RideModel = Connections.Rides.model<RideDocument>(
   "Ride",
   RideSchema,
 );
-
-export const RIDE_MODEL_PROVIDER = "RIDE_MODEL_PROVIDER";

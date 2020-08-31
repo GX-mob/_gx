@@ -3,7 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { CacheService } from "./cache.service";
 
 @Module({
-  imports: [ConfigModule.forRoot()],
+  imports: [ConfigModule],
   providers: [CacheService],
   exports: [CacheService],
 })

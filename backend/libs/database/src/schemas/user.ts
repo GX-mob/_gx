@@ -15,10 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Document, Schema, Types, model } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { emailRegex, internationalMobilePhoneRegex } from "@app/util";
+import {
+  emailRegex,
+  internationalMobilePhoneRegex,
+} from "libs/helpers/src/util";
 import shortid from "shortid";
 
 export interface User {
@@ -43,6 +46,8 @@ export interface User {
 }
 
 export interface UserDocument extends User, Document {}
+
+export const USER_MODEL_PROVIDER = "USER_MODEL_PROVIDER";
 
 export const UserSchema: Schema = new Schema(
   {
@@ -108,8 +113,6 @@ UserSchema.pre<UserDocument>("updateOne", function() {
 });
 
 export const UserModel = Connections.Users.model<UserDocument>(
-  "User",
+  "Users",
   UserSchema,
 );
-
-export const USER_MODEL_PROVIDER = "USER_MODEL_PROVIDER";

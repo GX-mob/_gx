@@ -1,53 +1,41 @@
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import mongoose from "mongoose";
-import {
-  DatabaseService,
-  User,
-  UserModel,
-  Session,
-  SessionModel,
-  Ride,
-  RideModel,
-  Pendencie,
-  PendencieModel,
-} from "@app/database";
+import { DatabaseService, User, Session, Ride, Pendencie } from "@app/database";
 import { CacheService } from "@app/cache";
 import { Handler, Settings } from "./handler";
 
 @Injectable()
 export class DataService {
-  public users = this.create<User, Omit<User, "pid" | "averageEvaluation">>(
-    UserModel,
-    {
-      namespace: "users",
-      linkingKeys: ["pid", "phones", "emails", "cpf"],
-    },
-  );
-  public sessions = this.create<Session, Omit<Session, "active">>(
-    SessionModel,
-    {
-      namespace: "sessions",
-      autoPopulate: ["user"],
-    },
-  );
-  public rides = this.create<Ride, Omit<Ride, "pid" | "status">>(RideModel, {
-    namespace: "rides",
-    linkingKeys: ["pid"],
-    autoPopulate: ["voyager", "driver", "pendencies"],
-  });
-
-  public pendencies = this.create<Pendencie, Omit<Pendencie, "resolved">>(
-    PendencieModel,
-    {
-      namespace: "pendencies",
-      linkingKeys: ["issuer", "affected"],
-    },
-  );
+  public users: Handler<User, Omit<User, "pid" | "averageEvaluation">>;
+  public sessions: Handler<Session, Omit<Session, "active">>;
+  public rides: Handler<Ride, Omit<Ride, "pid" | "status">>;
+  public pendencies: Handler<Pendencie, Omit<Pendencie, "resolved">>;
 
   constructor(
-    @Inject(DatabaseService) private databaseService: DatabaseService,
-    @Inject(CacheService) private cache: CacheService,
-  ) {}
+    private databaseService: DatabaseService,
+    private cache: CacheService,
+  ) {
+    this.users = this.create(this.databaseService.userModel, {
+      namespace: "users",
+      linkingKeys: ["pid", "phones", "emails", "cpf"],
+    });
+
+    this.sessions = this.create(this.databaseService.sessionModel, {
+      namespace: "sessions",
+      autoPopulate: ["user"],
+    });
+
+    this.rides = this.create(this.databaseService.rideModel, {
+      namespace: "rides",
+      linkingKeys: ["pid"],
+      autoPopulate: ["voyager", "driver", "pendencies"],
+    });
+
+    this.pendencies = this.create(this.databaseService.pendencieModel, {
+      namespace: "pendencies",
+      linkingKeys: ["issuer", "affected"],
+    });
+  }
 
   /**
    *

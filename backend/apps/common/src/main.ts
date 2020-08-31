@@ -1,9 +1,10 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
+import { logger } from "@app/helpers";
 
 const FastifyAdapterInstance = new FastifyAdapter({
-  logger: { level: "info" },
+  logger,
 });
 
 async function bootstrap() {

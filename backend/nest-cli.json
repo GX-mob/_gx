@@ -4,7 +4,7 @@
   "monorepo": true,
   "root": "apps/common",
   "compilerOptions": {
-    "webpack": true,
+    "webpack": false,
     "tsConfigPath": "apps/common/tsconfig.app.json"
   },
   "projects": {
@@ -60,6 +60,33 @@
       "sourceRoot": "libs/util/src",
       "compilerOptions": {
         "tsConfigPath": "libs/util/tsconfig.lib.json"
+      }
+    },
+    "storage": {
+      "type": "library",
+      "root": "libs/storage",
+      "entryFile": "index",
+      "sourceRoot": "libs/storage/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/storage/tsconfig.lib.json"
+      }
+    },
+    "session": {
+      "type": "library",
+      "root": "libs/session",
+      "entryFile": "index",
+      "sourceRoot": "libs/session/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/session/tsconfig.lib.json"
+      }
+    },
+    "helpers": {
+      "type": "library",
+      "root": "libs/helpers",
+      "entryFile": "index",
+      "sourceRoot": "libs/helpers/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/helpers/tsconfig.lib.json"
       }
     }
   }

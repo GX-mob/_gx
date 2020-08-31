@@ -16,29 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import pino from "pino";
 import HttpError from "http-errors";
 import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
+import logger from "../logger";
 
 const securePassword = new SecurePassword();
-
-const dest = pino.destination({ sync: false });
-
-const logger = pino(
-  /* istanbul ignore next */
-  process.env.NODE_ENV !== "production"
-    ? {
-        prettyPrint: {
-          levelFirst: true,
-        },
-        prettifier: require("pino-pretty"),
-      }
-    : {},
-  dest,
-);
-
-export default logger;
 
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {

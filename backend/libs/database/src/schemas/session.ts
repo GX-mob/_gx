@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 import Connections from "../connections";
-import { User, UserModel } from "./user";
+import { User } from "./user";
+import { UserModel, UserDocument } from "./user";
 
 export interface Session {
   _id: Types.ObjectId | any;
@@ -29,6 +30,8 @@ export interface Session {
 }
 
 export interface SessionDocument extends Session, Document {}
+
+export const SESSION_MODEL_PROVIDER = "SESSION_MODEL_PROVIDER";
 
 export const SessionSchema: Schema = new Schema(
   {
@@ -45,5 +48,3 @@ export const SessionModel = Connections.Sessions.model<SessionDocument>(
   "Session",
   SessionSchema,
 );
-
-export const SESSION_MODEL_PROVIDER = "SESSION_MODEL_PROVIDER";
