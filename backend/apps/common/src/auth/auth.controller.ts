@@ -19,41 +19,36 @@ import {
   Controller,
   Get,
   Param,
-  UnprocessableEntityException,
   Body,
   Request,
   Response,
   Post,
+  NotFoundException,
+  UnprocessableEntityException,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { DataService } from "@app/data";
-import { User } from "@app/database";
-import { ContactVerificationService } from "@app/contact-verification";
-import { SessionService } from "@app/session";
-import { SignInPasswordDto, SignInCodeDto } from "./dto";
+import { SignInPasswordDto, SignInCodeDto } from "./auth.dto";
 import { util } from "@app/helpers";
+import { AuthService } from "./auth.service";
+import { EXCEPTIONS_MESSAGES } from "./constants";
 
 @Controller("auth")
 export class AuthController {
-  constructor(
-    private readonly data: DataService,
-    private readonly verify: ContactVerificationService,
-    private readonly session: SessionService,
-  ) {}
+  constructor(private readonly service: AuthService) {}
 
   @Get(":phone")
   async identify(@Param("phone") phone: string, @Response() res: FastifyReply) {
     const { password, phones, firstName, avatar } = await this.getUser(phone);
 
     if (!password) {
-      await this.requestVerify(phones[0]);
-      res.code(202).send({
+      await this.service.createVerification(phones[0]);
+      res.code(202);
+
+      return {
         firstName,
         avatar,
         last4: phones[0].slice(phones[0].length - 4),
-      });
-
-      return;
+      };
     }
 
     return {
@@ -63,22 +58,13 @@ export class AuthController {
   }
 
   private async getUser(phone: string) {
-    console.log("#######", phone);
-    const user = await this.data.users.get({ phones: phone });
+    const user = await this.service.getUser(phone);
 
     if (!user) {
-      throw new UnprocessableEntityException("user-not-found");
+      throw new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
     }
 
     return user;
-  }
-
-  private async requestVerify(id: string) {
-    if (process.env.NODE_ENV === "development") {
-      return Promise.resolve();
-    }
-
-    return this.verify.request(id);
   }
 
   @Post("sign-in")
@@ -90,46 +76,40 @@ export class AuthController {
     const { phone, password } = body;
     const user = await this.getUser(phone);
 
-    await util.assertPassword(
-      {
-        value: password,
-        to: user.password as Buffer,
-        be: true,
-      },
-      "wrong-password",
-    );
+    const result = await util.assertPassword({
+      value: password,
+      to: user.password as Buffer,
+      be: true,
+    });
 
-    if (!user["2fa"]) {
-      const { token } = await this.createSession(user, request);
-
-      reply.code(201).send({ token });
-      return;
+    if (!result) {
+      throw new UnprocessableEntityException(
+        EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
+      );
     }
 
-    await this.requestVerify(user["2fa"]);
+    if (!user["2fa"]) {
+      const { token } = await this.service.createSession(user, request);
+
+      reply.code(201);
+      return { token };
+    }
+
+    await this.service.createVerification(user["2fa"]);
 
     reply.code(202);
 
     if (util.emailRegex.test(user["2fa"])) {
       const [name, domain] = user["2fa"].split("@");
 
-      reply.send({
+      return {
         target: `${name.slice(0, 3).padEnd(name.length, "*")}@${domain}`,
-      });
-      return;
+      };
     }
 
-    reply.send({
+    return {
       target: user["2fa"].slice(user["2fa"].length - 4),
-    });
-  }
-
-  private async createSession(user: User, request: FastifyRequest) {
-    return this.session.create(
-      user,
-      request.headers["user-agent"] as string,
-      util.getClientIp(request.raw),
-    );
+    };
   }
 
   @Post("code")
@@ -143,23 +123,24 @@ export class AuthController {
 
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
-        const { token } = await this.createSession(user, request);
+        const { token } = await this.service.createSession(user, request);
 
-        reply.code(201).send({ token });
-        return;
+        reply.code(201);
+        return { token };
       }
 
-      throw new UnprocessableEntityException("wrong-code");
+      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
     }
 
-    const valid = await this.verify.verify(phone, code);
+    const valid = await this.service.checkVerification(phone, code);
 
     if (!valid) {
-      throw new UnprocessableEntityException("wrong-code");
+      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
     }
 
-    const { token } = await this.createSession(user, request);
+    const { token } = await this.service.createSession(user, request);
 
-    reply.code(201).send({ token });
+    reply.code(201);
+    return { token };
   }
 }

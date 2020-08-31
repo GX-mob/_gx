@@ -25,7 +25,7 @@ const securePassword = new SecurePassword();
 
 /* istanbul ignore next */
 export const handleRejectionByUnderHood = (promise: Promise<any>) => {
-  promise.catch(error => logger.error(error));
+  promise.catch((error) => logger.error(error));
 };
 
 type RegexGlobalsObject = {
@@ -133,20 +133,17 @@ export function hashPassword(password: string | Buffer): Promise<Buffer> {
  * @param config.be Result expected
  * @param errorMsg Error message if expectation fail
  * @throws Http.UnprocessableEntity: wrong-password
- * @returns {Promise<Buffer | void>} Buffer of new improved password hash `if needed`
+ * @returns {Promise<Buffer | boolean>} Buffer if it was necessary to rehash or the verification result
  */
-export async function assertPassword(
-  {
-    value,
-    to,
-    be,
-  }: {
-    value: string;
-    to: Buffer;
-    be: boolean;
-  },
-  errorMsg: string,
-): Promise<Buffer | void> {
+export async function assertPassword({
+  value,
+  to,
+  be,
+}: {
+  value: string;
+  to: Buffer;
+  be: boolean;
+}): Promise<Buffer | boolean> {
   const passwordValue = Buffer.from(value);
   const result = await securePassword.verify(passwordValue, to);
 
@@ -154,12 +151,14 @@ export async function assertPassword(
     (be && result === SecurePassword.INVALID) ||
     (!be && result === SecurePassword.VALID)
   ) {
-    throw new HttpError.UnprocessableEntity(errorMsg);
+    return false;
   }
 
   if (result === SecurePassword.VALID_NEEDS_REHASH) {
     return hashPassword(passwordValue);
   }
+
+  return true;
 }
 /**
  * Retries the given function until it succeeds given a number of retries and an interval between them. They are set
@@ -183,7 +182,7 @@ export async function retry<T>(
     return val;
   } catch (error) {
     if (retriesLeft) {
-      await new Promise(r => setTimeout(r, interval));
+      await new Promise((r) => setTimeout(r, interval));
       return retry(
         fn,
         retriesLeft - 1,

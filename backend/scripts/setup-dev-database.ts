@@ -1,25 +1,15 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
+import {
+  connect,
+  UserModel,
+  RideModel,
+} from "../dist/apps/common/libs/database/src";
 import chalk from "chalk";
-import { connect, UserModel, RideModel } from "../libs/database/src";
 import faker from "faker";
+import { log } from "./util";
 
-function log(title: string, content: string, formatTitle = true) {
-  if (!title && !content) {
-    return (title: string) => (content: string) =>
-      log(title, content, typeof title === "undefined");
-  }
-
-  if (!content) {
-    return console.log(title);
-  }
-
-  console.log(formatTitle ? chalk.bold.inverse(` ${title} `) : title, content);
-}
-
-async function start() {
+export async function startDatabase() {
   if (!process.env.DATABASE_URI) {
-    // const startMongo = (await prompts.mongo.run({}))[0] === "Yes";
-
     log("MongoDB", chalk`{yellow Starting Server}`);
 
     const mongoServer = new MongoMemoryServer();
@@ -30,12 +20,12 @@ async function start() {
     );
     log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
     log("MongoDB", chalk`{yellow Seeding...}`);
-    await seed();
+    await seedDatabase();
     log("MongoDB", chalk`{yellow Seeded.}`);
   }
 }
 
-async function seed() {
+export async function seedDatabase() {
   await connect(process.env.DATABASE_URI as string);
 
   log("MongoDB", chalk`{yellow Seeding users...}`);
@@ -112,5 +102,3 @@ async function seed() {
     });
   }
 }
-
-start();

@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { AppService } from "./app.service";
 import { CacheModule } from "@app/cache";
 import { ContactVerificationModule } from "@app/contact-verification";
 import { DataModule } from "@app/data";
 import { SessionModule } from "@app/session";
 import { StorageModule } from "@app/storage";
 import { AuthController } from "./auth/auth.controller";
+import { AuthService } from "./auth/auth.service";
 
 @Module({
   imports: [
@@ -21,6 +21,6 @@ import { AuthController } from "./auth/auth.controller";
     StorageModule,
   ],
   controllers: [AuthController],
-  providers: [AppService],
+  providers: [AuthService],
 })
 export class AppModule {}

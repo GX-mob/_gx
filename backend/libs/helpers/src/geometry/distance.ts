@@ -4,8 +4,10 @@ import {
   LatLngLike,
   computeDistanceBetween,
 } from "spherical-geometry-js";
-import { decode } from "google-polyline";
-import { Path, DecodedPath } from "../types";
+const { decode } = require("google-polyline");
+
+type Coord = [number, number];
+type Path = Coord[];
 
 /**
  * Calculates the distance between 2 points
@@ -16,7 +18,7 @@ import { Path, DecodedPath } from "../types";
 export function calculate(
   latLng1: LatLngLike,
   latLng2: LatLngLike,
-  km: boolean = false
+  km: boolean = false,
 ) {
   const distance = computeDistanceBetween(latLng1, latLng2);
 
@@ -25,27 +27,29 @@ export function calculate(
 
 /**
  * Calculates the path length in meters
- * @param {Path} path
+ * @param {Path} workPath
  * @param {number} start Start point
  * @param {number} limit Limit point
  * @return {number} Distance in meters
  */
-export function path(path: Path, start: number = 0, limit?: number): number {
-  if (typeof path === "string") {
-    path = decode(path);
-  }
+export function path(
+  path: string | Path,
+  start: number = 0,
+  limit?: number,
+): number {
+  const workPath = typeof path === "string" ? decode(path) : path;
 
   let distance = 0;
   let last;
 
-  const maxIterate = limit || path.length;
+  const maxIterate = limit || workPath.length;
 
   for (let count = start; count < maxIterate; ++count) {
-    if (last) distance += calculate(last, path[count]);
+    if (last) distance += calculate(last, workPath[count]);
 
     // if (limit && count === maxIterate) break;
 
-    last = path[count];
+    last = workPath[count];
   }
 
   return distance;
@@ -59,9 +63,9 @@ export function path(path: Path, start: number = 0, limit?: number): number {
  */
 export function workDistanceRoutePoints(
   target: "long" | "prox" | "next",
-  route: DecodedPath,
+  route: Path,
   from?: LatLngLike,
-  callback?: (point: LatLng) => void
+  callback?: (point: LatLng) => void,
 ): number {
   let idx: number = 0;
   let lastDistance = target === "prox" ? 9e3 : 0;
@@ -126,10 +130,10 @@ type PercurredDistance = {
  * @return {PercurredDistance} PercurredDistance Object
  */
 export function percurredDistance(
-  Path: DecodedPath,
-  point: LatLngLike
+  Path: Path,
+  point: LatLngLike,
 ): PercurredDistance {
-  let internalRouteArr: DecodedPath = [];
+  let internalRouteArr: Path = [];
 
   const now = convertLatLng(point);
 
@@ -144,13 +148,13 @@ export function percurredDistance(
 
   let selectedToNext = calculate(
     internalRouteArr[idx],
-    internalRouteArr[nextIdx]
+    internalRouteArr[nextIdx],
   );
   let nowToNext = calculate(now, internalRouteArr[nextIdx]);
 
   let isBefore = nowToNext > selectedToNext;
 
-  let routeToCalculate: DecodedPath = [];
+  let routeToCalculate: Path = [];
 
   let initCount = idx;
 

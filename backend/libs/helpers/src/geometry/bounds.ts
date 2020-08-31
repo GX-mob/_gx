@@ -4,8 +4,10 @@ import {
   workDistanceRoutePoints,
   percurredDistance,
 } from "./distance";
-import { decode } from "google-polyline";
-import { Coord, Path } from "../types";
+const { decode } = require("google-polyline");
+
+type Coord = [number, number];
+type Path = Coord[];
 
 /**
  * Get bound of coordinates
@@ -15,7 +17,7 @@ import { Coord, Path } from "../types";
  */
 export function latLngBounds(
   latLng1: LatLngLike,
-  latLng2: LatLngLike
+  latLng2: LatLngLike,
 ): LatLngBounds {
   const latlng1 = convertLatLng(latLng1);
   const latlng2 = convertLatLng(latLng2);
@@ -33,7 +35,7 @@ export function latLngBounds(
 
   return new LatLngBounds(
     latLngLiterals[boundsKeyA],
-    latLngLiterals[boundsKeyB]
+    latLngLiterals[boundsKeyB],
   );
 }
 
@@ -43,35 +45,37 @@ export function latLngBounds(
  * @return {LatLngBounds} The bounds
  */
 export function boundsOfPath(path: Path): LatLngBounds {
-  if (typeof path === "string") path = decode(path);
+  const workPath = typeof path === "string" ? decode(path) : path;
 
-  return latLngBounds(path[0], path[path.length - 1]);
+  return latLngBounds(workPath[0], workPath[path.length - 1]);
 }
 
 /**
  * Return LatLngBounds running progress of path
- * @param {Path} path
+ * @param {Path} workPath
  * @param {LatLngLike} runnerPosition
  * @return {LatLngBounds} The bounds
  */
 export function boundsOfRunningPath(
-  path: Path,
-  runnerPosition?: LatLngLike
+  path: string | Path,
+  runnerPosition?: LatLngLike,
 ): LatLngBounds {
-  path = typeof path === "string" ? decode(path) : path;
+  const workPath = typeof path === "string" ? decode(path) : path;
 
-  let mostDistanceRouteIdx = workDistanceRoutePoints("long", path);
+  let mostDistanceRouteIdx = workDistanceRoutePoints("long", workPath);
 
   let boundingCoordsA: Coord;
 
   if (runnerPosition) {
-    let { idx } = percurredDistance(path, runnerPosition);
+    let { idx } = percurredDistance(workPath, runnerPosition);
 
     boundingCoordsA =
-      mostDistanceRouteIdx > idx ? path[mostDistanceRouteIdx] : path[idx];
-  } else boundingCoordsA = path[0];
+      mostDistanceRouteIdx > idx
+        ? workPath[mostDistanceRouteIdx]
+        : workPath[idx];
+  } else boundingCoordsA = workPath[0];
 
-  let boundingCoordsB = path[path.length - 1];
+  let boundingCoordsB = workPath[workPath.length - 1];
 
   return latLngBounds(boundingCoordsA, boundingCoordsB);
 }

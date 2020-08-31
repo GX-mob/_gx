@@ -21,8 +21,6 @@ export class TwilioService {
     const TWILIO_TOKEN = this.configService.get("TWILIO_TOKEN");
     const TWILIO_EDGE = this.configService.get("TWILIO_EDGE");
     const TWILIO_VSID = this.configService.get("TWILIO_VSID");
-    console.log("asid", TWILIO_ASID);
-    console.log("token", TWILIO_TOKEN);
 
     this.client = Twilio(TWILIO_ASID, TWILIO_TOKEN, {
       edge: TWILIO_EDGE,
