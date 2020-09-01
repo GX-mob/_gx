@@ -18,8 +18,6 @@
       "@app/cache/*": ["libs/cache/src/*"],
       "@app/data": ["libs/data/src"],
       "@app/data/*": ["libs/data/src/*"],
-      "@app/database": ["libs/database/src"],
-      "@app/database/*": ["libs/database/src/*"],
       "@app/storage": ["libs/storage/src"],
       "@app/storage/*": ["libs/storage/src/*"],
       "@app/session": ["libs/session/src"],
@@ -27,7 +25,9 @@
       "@app/helpers": ["libs/helpers/src"],
       "@app/helpers/*": ["libs/helpers/src/*"],
       "@app/contact-verification": ["libs/contact-verification/src"],
-      "@app/contact-verification/*": ["libs/contact-verification/src/*"]
+      "@app/contact-verification/*": ["libs/contact-verification/src/*"],
+      "@app/repository": ["libs/repository/src"],
+      "@app/repository/*": ["libs/repository/src/*"]
     }
   }
 }

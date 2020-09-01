@@ -37,24 +37,25 @@ export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @Get(":phone")
-  async identify(@Param("phone") phone: string, @Response() res: FastifyReply) {
+  async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
     const { password, phones, firstName, avatar } = await this.getUser(phone);
 
     if (!password) {
       await this.service.createVerification(phones[0]);
       res.code(202);
-
-      return {
+      res.send({
         firstName,
         avatar,
         last4: phones[0].slice(phones[0].length - 4),
-      };
+      });
+      return;
     }
 
-    return {
+    res.send({
       firstName,
       avatar,
-    };
+    });
+    return;
   }
 
   private async getUser(phone: string) {
@@ -92,7 +93,8 @@ export class AuthController {
       const { token } = await this.service.createSession(user, request);
 
       reply.code(201);
-      return { token };
+      reply.send({ token });
+      return;
     }
 
     await this.service.createVerification(user["2fa"]);
@@ -101,15 +103,15 @@ export class AuthController {
 
     if (util.emailRegex.test(user["2fa"])) {
       const [name, domain] = user["2fa"].split("@");
-
-      return {
+      reply.send({
         target: `${name.slice(0, 3).padEnd(name.length, "*")}@${domain}`,
-      };
+      });
+      return;
     }
-
-    return {
+    reply.send({
       target: user["2fa"].slice(user["2fa"].length - 4),
-    };
+    });
+    return;
   }
 
   @Post("code")
@@ -126,7 +128,8 @@ export class AuthController {
         const { token } = await this.service.createSession(user, request);
 
         reply.code(201);
-        return { token };
+        reply.send({ token });
+        return;
       }
 
       throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
@@ -141,6 +144,7 @@ export class AuthController {
     const { token } = await this.service.createSession(user, request);
 
     reply.code(201);
-    return { token };
+    reply.send({ token });
+    return;
   }
 }

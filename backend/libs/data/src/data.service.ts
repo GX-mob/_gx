@@ -1,6 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import mongoose from "mongoose";
-import { DatabaseService, User, Session, Ride, Pendencie } from "@app/database";
+import {
+  DatabaseService,
+  User,
+  Session,
+  Ride,
+  Pendencie,
+} from "@app/repository";
 import { CacheService } from "@app/cache";
 import { Handler, Settings } from "./handler";
 

@@ -38,6 +38,7 @@ describe("CatsController", () => {
 
   const fastifyResponseMock = {
     code: jest.fn(),
+    send: jest.fn(),
   };
 
   beforeEach(() => {
@@ -58,12 +59,11 @@ describe("CatsController", () => {
       const result = null;
       dataServiceMock.users.get.mockResolvedValue(result);
 
-      try {
-        await authController.identify("foo", fastifyResponseMock as any);
-      } catch (error) {
-        expect(error instanceof NotFoundException).toBeTruthy();
-        expect(error.message).toBe(EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
-      }
+      await expect(
+        authController.identify(fastifyResponseMock as any, "foo"),
+      ).rejects.toStrictEqual(
+        new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
+      );
     });
 
     it("should return user data", async () => {
@@ -74,10 +74,9 @@ describe("CatsController", () => {
         avatar: "https://",
       };
       dataServiceMock.users.get.mockResolvedValue(result);
+      await authController.identify(fastifyResponseMock as any, "foo");
 
-      expect(
-        await authController.identify("foo", fastifyResponseMock as any),
-      ).toMatchObject({
+      expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
         firstName: result.firstName,
         avatar: result.avatar,
       });
@@ -90,10 +89,9 @@ describe("CatsController", () => {
         avatar: "https://",
       };
       dataServiceMock.users.get.mockResolvedValue(result);
+      await authController.identify(fastifyResponseMock as any, "foo");
 
-      expect(
-        await authController.identify("foo", fastifyResponseMock as any),
-      ).toMatchObject({
+      expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
         firstName: result.firstName,
         avatar: result.avatar,
       });
@@ -115,16 +113,15 @@ describe("CatsController", () => {
       signInPasswordDto.phone = phone;
       signInPasswordDto.password = "wrong";
 
-      try {
-        await authController.signIn(
+      await expect(
+        authController.signIn(
           fastifyRequestMock,
           fastifyResponseMock as any,
           signInPasswordDto,
-        );
-      } catch (error) {
-        expect(error instanceof UnprocessableEntityException).toBeTruthy();
-        expect(error.message).toBe(EXCEPTIONS_MESSAGES.WRONG_PASSWORD);
-      }
+        ),
+      ).rejects.toStrictEqual(
+        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
+      );
     });
 
     it("should authorize ", async () => {
@@ -145,20 +142,19 @@ describe("CatsController", () => {
       signInPasswordDto.phone = phone;
       signInPasswordDto.password = password;
 
-      const response = await authController.signIn(
+      await authController.signIn(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInPasswordDto,
       );
 
-      expect(response.token).toBe(token);
+      expect(fastifyResponseMock.send.mock.calls[0][0].token).toBe(token);
       expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(201);
     });
 
     it("should response 2fa request", async () => {
       const phone = "+5592088444444";
       const password = "123";
-      const token = "foo";
       const result = {
         password: await securePassword.hash(Buffer.from(password)),
         phones: [phone],
@@ -179,13 +175,15 @@ describe("CatsController", () => {
       signInPasswordDto.phone = phone;
       signInPasswordDto.password = password;
 
-      const response = await authController.signIn(
+      await authController.signIn(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInPasswordDto,
       );
 
-      expect(response.target).toBe(phone.slice(phone.length - 4));
+      expect(fastifyResponseMock.send.mock.calls[0][0].target).toBe(
+        phone.slice(phone.length - 4),
+      );
       expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
     });
 
@@ -205,16 +203,15 @@ describe("CatsController", () => {
       signInCodeDto.phone = phone;
       signInCodeDto.code = "wrong";
 
-      try {
-        await authController.code(
+      await expect(
+        authController.code(
           fastifyRequestMock,
           fastifyResponseMock as any,
           signInCodeDto,
-        );
-      } catch (error) {
-        expect(error instanceof UnprocessableEntityException).toBeTruthy();
-        expect(error.message).toBe(EXCEPTIONS_MESSAGES.WRONG_CODE);
-      }
+        ),
+      ).rejects.toStrictEqual(
+        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE),
+      );
     });
   });
 });

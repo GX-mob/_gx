@@ -36,6 +36,4 @@ export class DatabaseService {
   private async connect(DATABASE_URI: string) {
     connect(DATABASE_URI);
   }
-
-  private createConnectionLogger() {}
 }

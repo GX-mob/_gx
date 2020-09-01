@@ -4,7 +4,7 @@ import { CacheModule } from "@app/cache";
 import { SessionService } from "./session.service";
 
 @Module({
-  imports: [DataModule, CacheModule],
+  imports: [CacheModule, DataModule],
   providers: [SessionService],
   exports: [SessionService],
 })

@@ -4,7 +4,7 @@ import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "@app/data";
 import { CacheService } from "@app/cache";
-import { User, Session } from "@app/database";
+import { User, Session } from "@app/repository";
 import { util } from "@app/helpers";
 import HttpError from "http-errors";
 
@@ -118,7 +118,7 @@ export class SessionService {
   }
 
   public hasPermission(session: Session, roles: string[]) {
-    return !!roles.find(role =>
+    return !!roles.find((role) =>
       (session.user.roles as string[]).includes(role),
     );
   }

@@ -137,7 +137,7 @@ export class Handler<Model, Create> {
     }
 
     const clean = this.settings.linkingKeys.filter(
-      key => !this.isEmpty(data[key]),
+      (key) => !this.isEmpty(data[key]),
     );
 
     return clean.reduce<string[]>((final, key) => {
@@ -151,7 +151,7 @@ export class Handler<Model, Create> {
       if (Array.isArray(value)) {
         return [
           ...final,
-          ...value.map(value => JSON.stringify({ [key]: value })),
+          ...value.map((value) => JSON.stringify({ [key]: value })),
         ];
       }
 

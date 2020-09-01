@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { Injectable } from "@nestjs/common";
-import { User } from "@app/database";
+import { User } from "@app/repository";
 import { ContactVerificationService } from "@app/contact-verification";
 import { DataService } from "@app/data";
 import { SessionService } from "@app/session";

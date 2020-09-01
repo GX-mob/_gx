@@ -27,6 +27,7 @@
     "@nestjs/common": "^7.4.4",
     "@nestjs/config": "^0.5.0",
     "@nestjs/core": "^7.4.4",
+    "@nestjs/platform-express": "^7.4.4",
     "@nestjs/platform-fastify": "^7.4.4",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
@@ -68,6 +69,7 @@
     "faker": "^5.1.0",
     "ioredis-mock": "^4.21.3",
     "jest": "26.4.2",
+    "jest-runner-groups": "^2.0.1",
     "mongodb-memory-server": "^6.6.7",
     "pino-pretty": "^4.2.0",
     "prettier": "^2.1.1",
@@ -101,8 +103,6 @@
       "@app/cache": "<rootDir>/libs/cache/src",
       "@app/data/(.*)": "<rootDir>/libs/data/src/$1",
       "@app/data": "<rootDir>/libs/data/src",
-      "@app/database/(.*)": "<rootDir>/libs/database/src/$1",
-      "@app/database": "<rootDir>/libs/database/src",
       "@app/storage/(.*)": "<rootDir>/libs/storage/src/$1",
       "@app/storage": "<rootDir>/libs/storage/src",
       "@app/session/(.*)": "<rootDir>/libs/session/src/$1",
@@ -110,7 +110,9 @@
       "@app/helpers/(.*)": "<rootDir>/libs/helpers/src/$1",
       "@app/helpers": "<rootDir>/libs/helpers/src",
       "@app/contact-verification/(.*)": "<rootDir>/libs/contact-verification/src/$1",
-      "@app/contact-verification": "<rootDir>/libs/contact-verification/src"
+      "@app/contact-verification": "<rootDir>/libs/contact-verification/src",
+      "@app/repository/(.*)": "<rootDir>/libs/repository/src/$1",
+      "@app/repository": "<rootDir>/libs/repository/src"
     }
   }
 }
