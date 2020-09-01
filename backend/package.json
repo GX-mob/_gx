@@ -94,6 +94,7 @@
     },
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
+    "runner": "groups",
     "roots": [
       "<rootDir>/apps/",
       "<rootDir>/libs/"
@@ -101,8 +102,8 @@
     "moduleNameMapper": {
       "@app/cache/(.*)": "<rootDir>/libs/cache/src/$1",
       "@app/cache": "<rootDir>/libs/cache/src",
-      "@app/data/(.*)": "<rootDir>/libs/data/src/$1",
-      "@app/data": "<rootDir>/libs/data/src",
+      "^@app/data/(.*)$": "<rootDir>/libs/data/src/$1",
+      "^@app/data$": "<rootDir>/libs/data/src",
       "@app/storage/(.*)": "<rootDir>/libs/storage/src/$1",
       "@app/storage": "<rootDir>/libs/storage/src",
       "@app/session/(.*)": "<rootDir>/libs/session/src/$1",
@@ -111,8 +112,8 @@
       "@app/helpers": "<rootDir>/libs/helpers/src",
       "@app/contact-verification/(.*)": "<rootDir>/libs/contact-verification/src/$1",
       "@app/contact-verification": "<rootDir>/libs/contact-verification/src",
-      "@app/repository/(.*)": "<rootDir>/libs/repository/src/$1",
-      "@app/repository": "<rootDir>/libs/repository/src"
+      "^@app/database/(.*)$": "<rootDir>/libs/database/src/$1",
+      "^@app/database$": "<rootDir>/libs/database/src"
     }
   }
 }

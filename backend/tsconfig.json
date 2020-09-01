@@ -26,8 +26,8 @@
       "@app/helpers/*": ["libs/helpers/src/*"],
       "@app/contact-verification": ["libs/contact-verification/src"],
       "@app/contact-verification/*": ["libs/contact-verification/src/*"],
-      "@app/repository": ["libs/repository/src"],
-      "@app/repository/*": ["libs/repository/src/*"]
+      "@app/database": ["libs/database/src"],
+      "@app/database/*": ["libs/database/src/*"]
     }
   }
 }

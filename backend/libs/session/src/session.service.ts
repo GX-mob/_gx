@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Types } from "mongoose";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "@app/data";
 import { CacheService } from "@app/cache";
-import { User, Session } from "@app/repository";
+import { User, Session } from "@app/database";
 import { util } from "@app/helpers";
 import HttpError from "http-errors";
 
@@ -18,11 +19,19 @@ const sign = promisify<string | Buffer | object, Secret, SignOptions, string>(
 @Injectable()
 export class SessionService {
   private tokenNamespace = "token";
-  private keyid = process.env.AUTH_KID as string;
-  private publicKey = process.env.AUTH_PUBLIC_KEY as string;
-  private privateKey = process.env.AUTH_PRIVATE_KEY as string;
+  private keyid: string;
+  private publicKey: string;
+  private privateKey: string;
 
-  constructor(private data: DataService, private cache: CacheService) {}
+  constructor(
+    private configService: ConfigService,
+    private data: DataService,
+    private cache: CacheService,
+  ) {
+    this.keyid = this.configService.get("AUTH_KID") as string;
+    this.publicKey = this.configService.get("AUTH_PUBLIC_KEY") as string;
+    this.privateKey = this.configService.get("AUTH_PRIVATE_KEY") as string;
+  }
 
   /**
    * @param user_id
@@ -47,13 +56,6 @@ export class SessionService {
   }
 
   private signToken(data: any): Promise<string> {
-    if (!this.privateKey) {
-      throw new Error(
-        "This service does not have the private key," +
-          " isn't allowed to sign an authentication token",
-      );
-    }
-
     return sign({ ...data }, this.privateKey, {
       algorithm: "ES256",
       keyid: this.keyid,

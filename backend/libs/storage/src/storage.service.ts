@@ -5,7 +5,7 @@ import PngQuant from "pngquant";
 import JpegTran from "jpegtran";
 import { PassThrough } from "stream";
 import FileType from "file-type";
-import StorageMock from "./mock/gcp-storage.mock";
+import { GoogleStorageService } from "./google-storage.service";
 
 export type AbstractionBucket = {
   bucket: Bucket;
@@ -21,7 +21,7 @@ export type AbstractionBucket = {
   }>;
 };
 
-type UploadStreamOptions = {
+export type UploadStreamOptions = {
   filename: string;
   public: boolean;
   compress?: boolean;
@@ -29,21 +29,15 @@ type UploadStreamOptions = {
   errorHandler?(error: Error): void;
 };
 
-type CompressibleMIME = "image/png" | "image/jpg" | "image/jpeg";
+export type CompressibleMIME = "image/png" | "image/jpg" | "image/jpeg";
 
 @Injectable()
 export class StorageService {
-  readonly client: Storage;
+  private readonly client: Storage;
   readonly buckets: { [name: string]: AbstractionBucket } = {};
-  constructor() {
-    /* istanbul ignore next */
-    if (process.env.NODE_ENV === "production") {
-      this.client = new Storage();
-      this.setDefaultsBuckets();
-      return;
-    }
-
-    this.client = (new StorageMock() as unknown) as Storage;
+  constructor(private readonly googleStorageService: GoogleStorageService) {
+    this.client = googleStorageService.client;
+    this.setDefaultsBuckets();
   }
 
   setDefaultsBuckets() {
@@ -129,7 +123,7 @@ export class StorageService {
         const compressor = this.createCompressor(mime);
         const compressing = saveReadable.pipe(compressor);
 
-        saveReadable.on("error", err => compressing.destroy(err));
+        saveReadable.on("error", (err) => compressing.destroy(err));
         compressing.pipe(storageWritableStream);
         break;
     }
@@ -185,9 +179,6 @@ export class StorageService {
    */
   delete(bucket: string, url: string) {
     const fileName = url.split("/").pop() as string;
-    return this.client
-      .bucket(bucket)
-      .file(fileName)
-      .delete();
+    return this.client.bucket(bucket).file(fileName).delete();
   }
 }

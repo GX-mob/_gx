@@ -16,11 +16,11 @@ async function start() {
   process.stdin.pipe(child.stdin);
 
   child.stdout.on("data", (data) => {
-    log(chalk`${data.slice(0, -1)}`);
+    log(chalk`${data}`);
   });
 
   child.stderr.on("data", (data) => {
-    log(chalk`${data.slice(0, -1)}`);
+    log(chalk`${data}`);
   });
 }
 

@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import IORedis, { Redis } from "ioredis";
+import { Redis } from "ioredis";
 import schemapack, { SchemaObject, Parser } from "schemapack";
 import { DEFAULT_TTL, LINK_PREFIX, SEPARATOR } from "./constants";
+import { RedisService } from "./redis.service";
 
-type setOptions = {
+export type setOptions = {
   ex?: number;
   link?: string[];
 };
@@ -15,11 +15,8 @@ export class CacheService {
   public redis: Redis;
   public schemas: { [k: string]: Parser } = {};
 
-  constructor(private configService: ConfigService<{ REDIS_URI: string }>) {
-    this.redis =
-      process.env.NODE_ENV === "prodution"
-        ? new IORedis(this.configService.get("REDIS_URI"))
-        : new (require("ioredis-mock"))();
+  constructor(private redisService: RedisService) {
+    this.redis = this.redisService.client;
   }
 
   /**
@@ -101,7 +98,7 @@ export class CacheService {
     return this.redis
       .multi([
         ["set", parentKey, value, "PX", ex],
-        ...options.link.map(childKey => [
+        ...options.link.map((childKey) => [
           "set",
           this.key(ns, childKey),
           `${LINK_PREFIX}${parentKey}`,

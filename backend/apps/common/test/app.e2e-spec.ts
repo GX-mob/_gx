@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
-import { UserModel } from "@app/repository";
+import { UserModel } from "@app/database";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 describe("AppController (e2e)", () => {
