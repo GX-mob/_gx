@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import mongoose, { Document, Schema, Types } from "mongoose";
+import { Document, Schema, Types } from "mongoose";
 import Connections from "../connections";
 import { User } from "./user";
-import { UserModel, UserDocument } from "./user";
+import { UserModel } from "./user";
 
 export interface Session {
   _id: Types.ObjectId | any;

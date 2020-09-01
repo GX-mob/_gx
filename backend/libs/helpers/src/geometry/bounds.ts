@@ -4,10 +4,7 @@ import {
   workDistanceRoutePoints,
   percurredDistance,
 } from "./distance";
-const { decode } = require("google-polyline");
-
-type Coord = [number, number];
-type Path = Coord[];
+import { decode, Coord, Path } from "google-polyline";
 
 /**
  * Get bound of coordinates

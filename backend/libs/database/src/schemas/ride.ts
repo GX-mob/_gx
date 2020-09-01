@@ -18,8 +18,8 @@
 import mongoose, { Document, Schema } from "mongoose";
 import shortid from "shortid";
 import Connections from "../connections";
-import { Pendencie, PendencieModel, PendencieDocument } from "./pendencie";
-import { UserModel, UserDocument } from "./user";
+import { Pendencie } from "./pendencie";
+import { UserModel } from "./user";
 
 function hasProp(obj: any, prop: string) {
   return Object.prototype.hasOwnProperty.call(obj, prop);

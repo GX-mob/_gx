@@ -4,10 +4,7 @@ import {
   LatLngLike,
   computeDistanceBetween,
 } from "spherical-geometry-js";
-const { decode } = require("google-polyline");
-
-type Coord = [number, number];
-type Path = Coord[];
+import { decode, Path } from "google-polyline";
 
 /**
  * Calculates the distance between 2 points
