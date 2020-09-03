@@ -8,6 +8,9 @@ export const EXCEPTIONS_MESSAGES = {
   PHONE_NOT_VERIFIED: "phone-not-verified",
   INVALID_CPF: "invalid-cpf",
   CPF_REGISTRED: "cpf-already-registred",
+  REMOVE_CONTACT_NOT_ALLOWED: "remove-contact-not-allowed",
+  PASSWORD_REQUIRED: "password-required",
+  UNCHANGED_DATA: "unchanged-data",
 };
 
 export const CACHE_NAMESPACES = {

@@ -1,4 +1,9 @@
-import { IsNotEmpty, IsString, ValidateIf } from "class-validator";
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumberString,
+  ValidateIf,
+} from "class-validator";
 
 export class UpdateProfileDto {
   @ValidateIf((o) => !o.lastName)
@@ -10,4 +15,40 @@ export class UpdateProfileDto {
   @IsNotEmpty()
   @IsString()
   lastName!: string;
+}
+
+export class ContactVerifyRequestDto {
+  @IsNotEmpty()
+  @IsString()
+  contact!: string;
+}
+
+export class ConfirmContactVerificationDto {
+  @IsNotEmpty()
+  @IsString()
+  contact!: string;
+
+  @IsNotEmpty()
+  @IsNumberString()
+  code!: string;
+}
+
+export class UpdatePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  current!: string;
+
+  @IsNotEmpty()
+  @IsNumberString()
+  new!: string;
+}
+
+export class Enable2FADto {
+  @IsNotEmpty()
+  @IsString()
+  target!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  password!: string;
 }

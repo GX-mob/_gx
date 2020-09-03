@@ -20,6 +20,7 @@ import HttpError from "http-errors";
 import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
 import logger from "../logger";
+import { UnprocessableEntityException } from "@nestjs/common";
 
 const securePassword = new SecurePassword();
 
@@ -103,17 +104,20 @@ export function parseContact(
  * Validates a contact
  *
  * @param {stirng | PhoneContactObject} value
- * @throws HttpError.UnprocessableEntity: invalid-email | invalid-idd | invalid-phone
+ * @throws UnprocessableEntityException("invalid-contact")
  * @return {object} { value: string, type: "email" | "phone" }
  */
-export function isValidContact(
-  value: PhoneContactObject | string,
-): ContactResultObject {
-  try {
-    return parseContact(value);
-  } catch (error) {
-    throw new HttpError.UnprocessableEntity(error.message);
+export function isValidContact(value: string): ContactResultObject {
+  const isValidMobilePhoneNumber = internationalMobilePhoneRegex.test(value);
+
+  if (!isValidMobilePhoneNumber && !emailRegex.test(value)) {
+    throw new UnprocessableEntityException("invalid-contact");
   }
+
+  return {
+    field: isValidMobilePhoneNumber ? "phones" : "emails",
+    value,
+  };
 }
 
 /**
