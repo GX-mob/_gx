@@ -27,21 +27,28 @@ import {
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { SignInPasswordDto, SignInCodeDto } from "./auth.dto";
+import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import { util } from "@app/helpers";
-import { AuthService } from "./auth.service";
-import { EXCEPTIONS_MESSAGES } from "./constants";
+import { User } from "@app/database";
+import { DataService } from "@app/data";
+import { ContactVerificationService } from "@app/contact-verification";
+import { SessionService } from "@app/session";
+import { EXCEPTIONS_MESSAGES } from "../constants";
 
-@Controller("auth")
-export class AuthController {
-  constructor(private readonly service: AuthService) {}
+@Controller("sign-in")
+export class SignInController {
+  constructor(
+    private readonly data: DataService,
+    private readonly contactVerification: ContactVerificationService,
+    private readonly session: SessionService,
+  ) {}
 
   @Get(":phone")
   async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
     const { password, phones, firstName, avatar } = await this.getUser(phone);
 
     if (!password) {
-      await this.service.createVerification(phones[0]);
+      await this.contactVerification.request(phones[0]);
       res.code(202);
       res.send({
         firstName,
@@ -59,7 +66,7 @@ export class AuthController {
   }
 
   private async getUser(phone: string) {
-    const user = await this.service.getUser(phone);
+    const user = await this.data.users.get({ phones: phone });
 
     if (!user) {
       throw new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
@@ -90,26 +97,35 @@ export class AuthController {
     }
 
     if (!user["2fa"]) {
-      const { token } = await this.service.createSession(user, request);
+      const { token } = await this.createSession(user, request);
 
       reply.code(201);
       reply.send({ token });
       return;
     }
 
-    await this.service.createVerification(user["2fa"]);
+    await this.contactVerification.request(user["2fa"]);
 
     reply.code(202);
 
-    if (util.emailRegex.test(user["2fa"])) {
+    const isEmail = util.emailRegex.test(user["2fa"]);
+
+    if (isEmail) {
       const [name, domain] = user["2fa"].split("@");
+      const hiddenEmail = `${name
+        .slice(0, 3)
+        .padEnd(name.length, "*")}@${domain}`;
+
       reply.send({
-        target: `${name.slice(0, 3).padEnd(name.length, "*")}@${domain}`,
+        target: hiddenEmail,
       });
       return;
     }
+
+    const last4PhoneNumbers = user["2fa"].slice(user["2fa"].length - 4);
+
     reply.send({
-      target: user["2fa"].slice(user["2fa"].length - 4),
+      target: last4PhoneNumbers,
     });
     return;
   }
@@ -123,28 +139,24 @@ export class AuthController {
     const { phone, code } = body;
     const user = await this.getUser(phone);
 
-    if (process.env.NODE_ENV === "development") {
-      if ("000000" === code) {
-        const { token } = await this.service.createSession(user, request);
-
-        reply.code(201);
-        reply.send({ token });
-        return;
-      }
-
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
-    }
-
-    const valid = await this.service.checkVerification(phone, code);
+    const valid = await this.contactVerification.verify(phone, code);
 
     if (!valid) {
       throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
     }
 
-    const { token } = await this.service.createSession(user, request);
+    const { token } = await this.createSession(user, request);
 
     reply.code(201);
     reply.send({ token });
     return;
+  }
+
+  private createSession(user: User, request: FastifyRequest) {
+    return this.session.create(
+      user,
+      request.headers["user-agent"] as string,
+      util.getClientIp(request.raw),
+    );
   }
 }

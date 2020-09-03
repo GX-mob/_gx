@@ -1,18 +1,21 @@
+/**
+ * Sign-in Controller
+ *
+ * @group unit/controllers/sign-in
+ */
 import {
   NotFoundException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { AuthController } from "./auth.controller";
-import { AuthService } from "./auth.service";
-import { SignInPasswordDto, SignInCodeDto } from "./auth.dto";
+import { SignInController } from "./sign-in.controller";
+import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import SecurePassword from "secure-password";
-import { EXCEPTIONS_MESSAGES } from "./constants";
+import { EXCEPTIONS_MESSAGES } from "../constants";
 
-describe("CatsController", () => {
+describe("SignInController", () => {
   const securePassword = new SecurePassword();
 
-  let authController: AuthController;
-  let authService: AuthService;
+  let signInController: SignInController;
 
   const dataServiceMock = {
     users: {
@@ -42,12 +45,11 @@ describe("CatsController", () => {
   };
 
   beforeEach(() => {
-    authService = new AuthService(
+    signInController = new SignInController(
       dataServiceMock as any,
       verifyServiceMock as any,
       sessionServiceMock as any,
     );
-    authController = new AuthController(authService);
   });
 
   afterEach(() => {
@@ -60,7 +62,7 @@ describe("CatsController", () => {
       dataServiceMock.users.get.mockResolvedValue(result);
 
       await expect(
-        authController.identify(fastifyResponseMock as any, "foo"),
+        signInController.identify(fastifyResponseMock as any, "foo"),
       ).rejects.toStrictEqual(
         new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
       );
@@ -74,7 +76,7 @@ describe("CatsController", () => {
         avatar: "https://",
       };
       dataServiceMock.users.get.mockResolvedValue(result);
-      await authController.identify(fastifyResponseMock as any, "foo");
+      await signInController.identify(fastifyResponseMock as any, "foo");
 
       expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
         firstName: result.firstName,
@@ -89,7 +91,7 @@ describe("CatsController", () => {
         avatar: "https://",
       };
       dataServiceMock.users.get.mockResolvedValue(result);
-      await authController.identify(fastifyResponseMock as any, "foo");
+      await signInController.identify(fastifyResponseMock as any, "foo");
 
       expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
         firstName: result.firstName,
@@ -114,7 +116,7 @@ describe("CatsController", () => {
       signInPasswordDto.password = "wrong";
 
       await expect(
-        authController.signIn(
+        signInController.signIn(
           fastifyRequestMock,
           fastifyResponseMock as any,
           signInPasswordDto,
@@ -142,7 +144,7 @@ describe("CatsController", () => {
       signInPasswordDto.phone = phone;
       signInPasswordDto.password = password;
 
-      await authController.signIn(
+      await signInController.signIn(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInPasswordDto,
@@ -175,7 +177,7 @@ describe("CatsController", () => {
       signInPasswordDto.phone = phone;
       signInPasswordDto.password = password;
 
-      await authController.signIn(
+      await signInController.signIn(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInPasswordDto,
@@ -204,7 +206,7 @@ describe("CatsController", () => {
       signInCodeDto.code = "wrong";
 
       await expect(
-        authController.code(
+        signInController.code(
           fastifyRequestMock,
           fastifyResponseMock as any,
           signInCodeDto,

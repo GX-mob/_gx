@@ -11,6 +11,10 @@ export class ContactVerificationService {
    * @returns {Promise<string>} The id of request
    */
   public async request(to: string): Promise<string> {
+    if (process.env.NODE_ENV === "development") {
+      return "";
+    }
+
     const channel = this.checkChannel(to);
 
     const { sid } = await this.twilio.verify.verifications.create({
@@ -40,6 +44,14 @@ export class ContactVerificationService {
    * @return {Promise} Promise
    */
   public async verify(target: string, code: string): Promise<boolean> {
+    if (process.env.NODE_ENV === "development") {
+      if ("000000" === code) {
+        return true;
+      }
+
+      return false;
+    }
+
     this.checkChannel(target);
 
     const { status } = await this.twilio.verify.verificationChecks.create({

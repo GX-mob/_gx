@@ -6,8 +6,7 @@ import { DatabaseModule } from "@app/database";
 import { DataModule } from "@app/data";
 import { SessionModule } from "@app/session";
 import { StorageModule } from "@app/storage";
-import { AuthController } from "./auth/auth.controller";
-import { AuthService } from "./auth/auth.service";
+import { SignInController } from "./sign-in/sign-in.controller";
 
 @Module({
   imports: [
@@ -22,7 +21,7 @@ import { AuthService } from "./auth/auth.service";
     SessionModule,
     StorageModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService],
+  controllers: [SignInController],
+  providers: [],
 })
 export class AppModule {}
