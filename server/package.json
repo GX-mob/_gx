@@ -31,6 +31,7 @@
     "@nestjs/platform-fastify": "^7.4.4",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
+    "fastify-multipart": "^3.1.0",
     "file-type": "^15.0.0",
     "google-polyline": "^1.0.3",
     "http-errors": "^1.8.0",
@@ -113,7 +114,9 @@
       "@app/contact-verification/(.*)": "<rootDir>/libs/contact-verification/src/$1",
       "@app/contact-verification": "<rootDir>/libs/contact-verification/src",
       "^@app/database/(.*)$": "<rootDir>/libs/database/src/$1",
-      "^@app/database$": "<rootDir>/libs/database/src"
+      "^@app/database$": "<rootDir>/libs/database/src",
+      "@app/auth/(.*)": "<rootDir>/libs/auth/src/$1",
+      "@app/auth": "<rootDir>/libs/auth/src"
     }
   }
 }

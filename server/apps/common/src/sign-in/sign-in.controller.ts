@@ -75,7 +75,7 @@ export class SignInController {
     return user;
   }
 
-  @Post("sign-in")
+  @Post()
   async signIn(
     @Request() request: FastifyRequest,
     @Response() reply: FastifyReply,

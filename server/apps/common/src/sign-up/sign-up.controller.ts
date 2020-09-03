@@ -45,7 +45,7 @@ export class SignUpController {
     readonly session: SessionService,
   ) {}
 
-  @Get("verify/phone/:number")
+  @Get("verify/:number")
   async phoneVerificationRequest(
     @Response() reply: FastifyReply,
     @Param() phone: string,
@@ -67,7 +67,7 @@ export class SignUpController {
     reply.send();
   }
 
-  @Post("check/phone")
+  @Post("check")
   async phoneVerificationCheck(
     @Response() reply: FastifyReply,
     @Body() body: PhoneVerificationCheckDto,
