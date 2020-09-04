@@ -5,14 +5,14 @@ import { StorageModule } from "@app/storage";
 
 import { AccountProfileController } from "./profile.controller";
 import { AccountContactController } from "./contact.controller";
-import { SecurityController } from "./security.controller";
+import { AccountSecurityController } from "./security.controller";
 
 @Module({
   imports: [SessionModule, DataModule, StorageModule],
   controllers: [
     AccountProfileController,
     AccountContactController,
-    SecurityController,
+    AccountSecurityController,
   ],
 })
 export class AccountManagementModule {}

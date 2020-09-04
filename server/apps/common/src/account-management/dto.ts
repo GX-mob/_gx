@@ -52,7 +52,9 @@ export class Enable2FADto {
   @IsNotEmpty()
   @IsString()
   target!: string;
+}
 
+export class Disable2FADto {
   @IsNotEmpty()
   @IsString()
   password!: string;

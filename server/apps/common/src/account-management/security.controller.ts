@@ -9,11 +9,11 @@ import { User } from "@app/database";
 import { DataService } from "@app/data";
 import { util } from "@app/helpers";
 import { AuthorizedRequest } from "@app/auth";
-import { UpdatePasswordDto, Enable2FADto } from "./dto";
+import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
 import { EXCEPTIONS_MESSAGES } from "../constants";
 
 @Controller("account/secutiry")
-export class SecurityController {
+export class AccountSecurityController {
   constructor(readonly data: DataService) {}
 
   @Patch("password")
@@ -72,7 +72,11 @@ export class SecurityController {
 
     const { value: contact } = util.isValidContact(body.target);
 
-    this.hasContact(contact, user);
+    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
+      throw new UnprocessableEntityException(
+        EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT,
+      );
+    }
 
     await this.data.users.update({ _id: user._id }, { "2fa": contact });
   }
@@ -80,7 +84,7 @@ export class SecurityController {
   @Patch("2fa/disable")
   async disable2FA(
     @Request() request: AuthorizedRequest,
-    @Body() body: Enable2FADto,
+    @Body() body: Disable2FADto,
   ) {
     const { user } = request.session;
 
@@ -105,12 +109,6 @@ export class SecurityController {
       throw new UnprocessableEntityException(
         EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED,
       );
-    }
-  }
-
-  private hasContact(contact: string, user: User) {
-    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
-      throw new UnprocessableEntityException("not-own-contact");
     }
   }
 }

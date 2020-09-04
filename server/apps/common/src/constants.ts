@@ -14,6 +14,7 @@ export const EXCEPTIONS_MESSAGES = {
   PASSWORD_REQUIRED: "password-required",
   UNCHANGED_DATA: "unchanged-data",
   CONTACT_ALREADY_REGISTRED: "contact-already-registred",
+  NOT_OWN_CONTACT: "not-own-contact",
 };
 
 export const CACHE_NAMESPACES = {
