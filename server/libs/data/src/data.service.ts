@@ -6,7 +6,10 @@ import { Handler, Settings } from "./handler";
 
 @Injectable()
 export class DataService {
-  public users: Handler<User, Omit<User, "pid" | "averageEvaluation">>;
+  public users: Handler<
+    User,
+    Omit<User, "pid" | "averageEvaluation" | "emails">
+  >;
   public sessions: Handler<Session, Omit<Session, "active">>;
   public rides: Handler<Ride, Omit<Ride, "pid" | "status">>;
   public pendencies: Handler<Pendencie, Omit<Pendencie, "resolved">>;

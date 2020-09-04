@@ -34,7 +34,7 @@ export interface User {
   birth: Date;
   averageEvaluation: number;
   avatar?: string;
-  emails?: string | string[];
+  emails: string | string[];
   createdAt?: Date;
   updatedAt?: Date;
   roles?: string[];
@@ -72,9 +72,9 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter(phone => util.internationalMobilePhoneRegex.test(phone))
+          v.filter((phone) => util.internationalMobilePhoneRegex.test(phone))
             .length === v.length,
-        message: props => `${props.value} has an invalid mobile phone`,
+        message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,
       unique: true,
@@ -88,8 +88,8 @@ export const UserSchema: Schema = new Schema(
          */
         validator: (v: string[]) =>
           v.length === 0 || // empty
-          v.filter(email => util.emailRegex.test(email)).length === v.length,
-        message: props => `${props.value} has an invalid email`,
+          v.filter((email) => util.emailRegex.test(email)).length === v.length,
+        message: (props) => `${props.value} has an invalid email`,
       },
       default: [],
     },
@@ -105,7 +105,7 @@ export const UserSchema: Schema = new Schema(
   { collection: "users" },
 );
 
-UserSchema.pre<UserDocument>("updateOne", function() {
+UserSchema.pre<UserDocument>("updateOne", function () {
   this.set({ updatedAt: new Date() });
 });
 

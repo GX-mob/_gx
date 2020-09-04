@@ -23,6 +23,7 @@ describe("DataService", () => {
     lastName: "Last",
     cpf: "123.456.789-09",
     phones: ["+5582988888888", "+5582988444445"],
+    emails: [],
     birth: new Date("06/13/1994"),
     roles: ["voyager"],
   };

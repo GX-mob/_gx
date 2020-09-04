@@ -38,6 +38,7 @@ describe("AppController (e2e)", () => {
       lastName: "Last",
       cpf: "123.456.789-09",
       phones: ["+5582988888888"],
+      emails: [],
       birth: new Date("06/13/1994"),
       pid: "1321312",
       averageEvaluation: 0,

@@ -9,12 +9,12 @@ export class UpdateProfileDto {
   @ValidateIf((o) => !o.lastName)
   @IsNotEmpty()
   @IsString()
-  firstName!: string;
+  firstName?: string;
 
   @ValidateIf((o) => !o.firstName)
   @IsNotEmpty()
   @IsString()
-  lastName!: string;
+  lastName?: string;
 }
 
 export class ContactVerifyRequestDto {
@@ -33,6 +33,11 @@ export class ConfirmContactVerificationDto {
   code!: string;
 }
 
+export class RemoveContactDto {
+  @IsNotEmpty()
+  @IsString()
+  contact!: string;
+}
 export class UpdatePasswordDto {
   @IsNotEmpty()
   @IsString()

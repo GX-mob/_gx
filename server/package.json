@@ -54,6 +54,7 @@
     "@nestjs/cli": "^7.0.0",
     "@nestjs/schematics": "^7.0.0",
     "@nestjs/testing": "^7.4.4",
+    "@types/busboy": "^0.2.3",
     "@types/express": "^4.17.3",
     "@types/faker": "^4.1.12",
     "@types/ioredis": "^4.17.3",
@@ -94,6 +95,14 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "coverageDirectory": "./coverage",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__fixtures__/",
+      "/__tests__/",
+      "/(__)?mock(s__)?/",
+      "/__jest__/",
+      ".?.min.js"
+    ],
     "testEnvironment": "node",
     "runner": "groups",
     "roots": [

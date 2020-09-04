@@ -26,6 +26,10 @@ export type UploadStreamOptions = {
   public: boolean;
   compress?: boolean;
   acceptMIME: string[];
+  /**
+   * To catch internal stream errors.
+   * @param {Error} error
+   */
   errorHandler?(error: Error): void;
 };
 
@@ -37,37 +41,6 @@ export class StorageService {
   readonly buckets: { [name: string]: AbstractionBucket } = {};
   constructor(private readonly googleStorageService: GoogleStorageService) {
     this.client = googleStorageService.client;
-    this.setDefaultsBuckets();
-  }
-
-  setDefaultsBuckets() {
-    this.bucket("gx-mob-avatars");
-  }
-
-  /**
-   * @param bucket_name
-   * @param prefix_url Used to make the public url of an item
-   * @default "https://storage.googleapis.com/"
-   */
-  bucket(
-    name: string,
-    prefix_url = "https://storage.googleapis.com/",
-  ): AbstractionBucket {
-    if (name in this.buckets) {
-      throw new Error(
-        `Trying to configure a bucket already configured: ${name}`,
-      );
-    }
-
-    this.buckets[name] = {
-      bucket: this.client.bucket(name),
-      publicUrl: prefix_url,
-      getPublicUrl: (filename: string) => `${prefix_url}/${name}/${filename}`,
-      upload: (readableStream, options) =>
-        this.uploadStream(name, readableStream, options),
-    };
-
-    return this.buckets[name];
   }
 
   /**
@@ -80,7 +53,7 @@ export class StorageService {
     readable: Readable,
     options: UploadStreamOptions,
   ) {
-    const { bucket, getPublicUrl } = this.buckets[bucket_name];
+    const bucket = this.client.bucket(bucket_name);
     const { filename, compress = true, errorHandler, acceptMIME } = options;
 
     if (errorHandler) {
@@ -109,7 +82,6 @@ export class StorageService {
     const response = {
       bucketFile,
       storageWritableStream,
-      publicUrl: getPublicUrl(filename),
     };
 
     if (!compress) {

@@ -9,9 +9,9 @@ import {
   Response,
   Body,
   UseInterceptors,
-  SerializeOptions,
   ClassSerializerInterceptor,
-  BadRequestException,
+  SerializeOptions,
+  NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
 import { DataService } from "@app/data";
@@ -20,10 +20,13 @@ import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
-
+import { User } from "@app/database";
+import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../constants";
+import { Logger } from "pino";
 @Controller("account/profile")
 @UseGuards(AuthGuard)
-export class ProfileController {
+export class AccountProfileController {
+  logger: Logger = logger;
   constructor(readonly data: DataService, readonly storage: StorageService) {}
 
   @Get()
@@ -31,7 +34,7 @@ export class ProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  async getHandler(@Request() req: AuthorizedRequest) {
+  getHandler(@Request() req: AuthorizedRequest): User {
     return new UserEntity(req.session.user);
   }
 
@@ -52,7 +55,7 @@ export class ProfileController {
     @Response() reply: FastifyReply,
   ) {
     if (!request.isMultipart()) {
-      throw new BadRequestException("must-be-multipart");
+      throw new NotAcceptableException();
     }
 
     const { user } = request.session;
@@ -68,22 +71,26 @@ export class ProfileController {
     ) => {
       if (handling) return;
       handling = true;
+      const fileExtension = filename.split(".").pop() as string;
+      const fileName = `${user._id}.${Date.now()}.${fileExtension}`;
+      url = `${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/${fileName}`;
 
       try {
-        const fileExtension = filename.split(".").pop() as string;
-        const fileName = `${user._id}.${Date.now()}.${fileExtension}`;
-
-        url = (
-          await this.storage.uploadStream("gx-mob-avatars", readalbe, {
+        await this.storage.uploadStream(
+          STORAGE_BUCKETS.USERS_AVATARTS,
+          readalbe,
+          {
             filename: fileName,
             public: true,
             compress: true,
             acceptMIME: ["image/jpeg", "image/png"],
+            // Due to upload works under the hood, this is for log purpose only,
+            // don't letting user wait any internal stream error alert.
             errorHandler: (err) => {
-              error = err;
+              this.logger.error(err);
             },
-          })
-        ).publicUrl;
+          },
+        );
       } catch (err) {
         error = err;
       }
@@ -91,12 +98,16 @@ export class ProfileController {
 
     request.multipart(handler, () => {
       if (error) {
-        logger.error(error);
+        this.logger.error(error);
         reply.send(new InternalServerErrorException());
+        return;
       }
 
       if (user.avatar) {
-        const remove = this.storage.delete("gx-mob-avatars", user.avatar);
+        const remove = this.storage.delete(
+          STORAGE_BUCKETS.USERS_AVATARTS,
+          user.avatar,
+        );
         util.handleRejectionByUnderHood(remove);
       }
 

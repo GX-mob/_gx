@@ -15,9 +15,6 @@ import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
 describe("StorageService", () => {
   let service: StorageService;
 
-  let bucket: AbstractionBucket;
-  const bucketPublicUrl = "https://test.com";
-
   const jpegBuffer = readFileSync(join(__dirname, "mock", "mock.jpeg"));
   const pngBuffer = readFileSync(join(__dirname, "mock", "mock.png"));
 
@@ -43,33 +40,7 @@ describe("StorageService", () => {
     expect(service).toBeDefined();
   });
 
-  it("registry a bucket", () => {
-    const bucketDefaultPublicUrl = service.bucket("default");
-    bucket = service.bucket("test", bucketPublicUrl);
-
-    expect(bucket.publicUrl).toBe(bucketPublicUrl);
-    expect(bucketDefaultPublicUrl.publicUrl).toBe(
-      "https://storage.googleapis.com/",
-    );
-    expect(typeof bucket.getPublicUrl).toBe("function");
-    expect(typeof bucket.upload).toBe("function");
-  });
-
-  it("throw error due to attemp configure a bucket already configured", () => {
-    service.bucket("test");
-    expect(() => service.bucket("test")).toThrow(
-      "Trying to configure a bucket already configured: test",
-    );
-  });
-
-  it("should return the public url of an item", () => {
-    expect(bucket.getPublicUrl("avatar.jpeg")).toBe(
-      `${bucketPublicUrl}/test/avatar.jpeg`,
-    );
-  });
-
   it("set stream errorHandler", async (done) => {
-    service.bucket("test");
     const stream = createReadableFrom(pngBuffer);
     setTimeout(() => stream.destroy(new Error("test")), 20);
 
@@ -92,7 +63,7 @@ describe("StorageService", () => {
     readable.stop();
 
     try {
-      await bucket.upload(readable, {
+      await service.uploadStream("test", readable, {
         filename: "avatar.jpg",
         public: true,
         compress: true,
@@ -105,7 +76,6 @@ describe("StorageService", () => {
 
   it("should throw error due to non-acceptable mime type", async () => {
     try {
-      service.bucket("test");
       const image = createReadableFrom(pngBuffer);
       await service.uploadStream("test", image, {
         filename: "avatar.png",
@@ -147,8 +117,6 @@ describe("StorageService", () => {
   });
 
   it("should upload and don't compress", async (done) => {
-    service.bucket("test");
-
     const image = createReadableFrom(pngBuffer);
     const { bucketFile } = await service.uploadStream("test", image, {
       filename: "avatar.png",
@@ -166,8 +134,6 @@ describe("StorageService", () => {
   });
 
   it("should upload", async (done) => {
-    service.bucket("test");
-
     const image = createReadableFrom(pngBuffer);
     const { bucketFile } = await service.uploadStream("test", image, {
       filename: "avatar.png",

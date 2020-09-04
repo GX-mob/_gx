@@ -25,28 +25,28 @@ export class SecurityController {
     const { current, new: newPassword } = body;
 
     if (!user.password) {
-      this.requestContactVerification();
+      const password = await util.hashPassword(newPassword);
 
-      return { next: "code" };
+      await this.data.users.model.updateOne({ _id: user._id }, { password });
+
+      return;
     }
 
-    const matchCurrentPassword = await util.assertPassword({
-      value: current,
-      to: user.password as Buffer,
-      be: true,
-    });
+    const currentPasswordCompare = await util.assertPassword(
+      current,
+      user.password,
+    );
 
-    if (!matchCurrentPassword) {
+    if (!currentPasswordCompare) {
       throw new UnprocessableEntityException(
         EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
       );
     }
 
-    const matchToCurrentPassword = await util.assertPassword({
-      value: newPassword,
-      to: user.password as Buffer,
-      be: false,
-    });
+    const matchToCurrentPassword = await util.assertPassword(
+      newPassword,
+      user.password,
+    );
 
     if (matchToCurrentPassword) {
       throw new UnprocessableEntityException(
@@ -58,7 +58,7 @@ export class SecurityController {
 
     await this.data.users.model.updateOne({ _id: user._id }, { password });
 
-    return { next: "ok" };
+    return;
   }
 
   @Patch("2fa/enable")
@@ -86,11 +86,10 @@ export class SecurityController {
 
     this.passwordRequired(user);
 
-    const matchPassword = await util.assertPassword({
-      value: body.password,
-      to: user.password as Buffer,
-      be: true,
-    });
+    const matchPassword = await util.assertPassword(
+      body.password,
+      user.password as Buffer,
+    );
 
     if (!matchPassword) {
       throw new UnprocessableEntityException(
@@ -110,14 +109,8 @@ export class SecurityController {
   }
 
   private hasContact(contact: string, user: User) {
-    if (
-      !user.phones.includes(contact) &&
-      user.emails &&
-      !user.emails.includes(contact)
-    ) {
+    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
       throw new UnprocessableEntityException("not-own-contact");
     }
   }
-
-  private requestContactVerification() {}
 }

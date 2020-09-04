@@ -84,11 +84,7 @@ export class SignInController {
     const { phone, password } = body;
     const user = await this.getUser(phone);
 
-    const result = await util.assertPassword({
-      value: password,
-      to: user.password as Buffer,
-      be: true,
-    });
+    const result = await util.assertPassword(password, user.password as Buffer);
 
     if (!result) {
       throw new UnprocessableEntityException(

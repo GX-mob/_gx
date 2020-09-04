@@ -15,9 +15,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     private sessionService: SessionService,
     private reflector: Reflector,
-  ) {
-    console.log("asdasd");
-  }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<string[]>("roles", context.getHandler());

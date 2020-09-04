@@ -65,6 +65,7 @@ describe("SignUpController", () => {
     jest.resetAllMocks();
   });
 
+  // TODO organized by method
   describe("phoneVerificationRequest", () => {
     it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.PHONE_REGISTRED}')`, async () => {
       dataServiceMock.users.get.mockResolvedValue({});

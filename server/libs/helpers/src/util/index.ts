@@ -57,7 +57,7 @@ export type PhoneContactObject = {
   number: string;
 };
 
-type ContactResultObject = {
+export type ContactResultObject = {
   value: string;
   field: "emails" | "phones";
 };
@@ -139,30 +139,20 @@ export function hashPassword(password: string | Buffer): Promise<Buffer> {
  * @throws Http.UnprocessableEntity: wrong-password
  * @returns {Promise<Buffer | boolean>} Buffer if it was necessary to rehash or the verification result
  */
-export async function assertPassword({
-  value,
-  to,
-  be,
-}: {
-  value: string;
-  to: Buffer;
-  be: boolean;
-}): Promise<Buffer | boolean> {
+export async function assertPassword(
+  value: string,
+  to: Buffer,
+): Promise<Buffer | boolean | void> {
   const passwordValue = Buffer.from(value);
   const result = await securePassword.verify(passwordValue, to);
 
-  if (
-    (be && result === SecurePassword.INVALID) ||
-    (!be && result === SecurePassword.VALID)
-  ) {
-    return false;
+  if (result === SecurePassword.INVALID || result === SecurePassword.VALID) {
+    return result === SecurePassword.VALID;
   }
 
   if (result === SecurePassword.VALID_NEEDS_REHASH) {
     return hashPassword(passwordValue);
   }
-
-  return true;
 }
 /**
  * Retries the given function until it succeeds given a number of retries and an interval between them. They are set

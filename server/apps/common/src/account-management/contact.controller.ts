@@ -13,12 +13,16 @@ import { AuthGuard, AuthorizedRequest } from "@app/auth";
 import { DataService } from "@app/data";
 import { ContactVerificationService } from "@app/contact-verification";
 import { util } from "@app/helpers";
-import { ContactVerifyRequestDto, ConfirmContactVerificationDto } from "./dto";
+import {
+  ContactVerifyRequestDto,
+  ConfirmContactVerificationDto,
+  RemoveContactDto,
+} from "./dto";
 import { EXCEPTIONS_MESSAGES } from "../constants";
 
 @Controller("account/contact")
 @UseGuards(AuthGuard)
-export class ContactController {
+export class AccountContactController {
   constructor(
     readonly data: DataService,
     readonly verify: ContactVerificationService,
@@ -27,7 +31,15 @@ export class ContactController {
   @Get("verify")
   @HttpCode(202)
   async verifiContactRequest(@Body() body: ContactVerifyRequestDto) {
-    const { value } = util.isValidContact(body.contact);
+    const { field, value } = util.isValidContact(body.contact);
+
+    const user = await this.data.users.get({ [field]: value });
+
+    if (user) {
+      throw new UnprocessableEntityException(
+        EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED,
+      );
+    }
 
     await this.verify.request(value);
 
@@ -60,7 +72,7 @@ export class ContactController {
   @Delete()
   async removeContact(
     @Request() request: AuthorizedRequest,
-    @Body() body: ConfirmContactVerificationDto,
+    @Body() body: RemoveContactDto,
   ) {
     const { user } = request.session;
     const { field, value } = util.isValidContact(body.contact);
@@ -70,7 +82,7 @@ export class ContactController {
      * the second factor authentication
      */
     if (
-      [...user.phones, ...(user.emails || [])].length === 1 ||
+      [...user.phones, ...user.emails].length === 1 ||
       user["2fa"] === value
     ) {
       throw new UnprocessableEntityException(
@@ -78,13 +90,11 @@ export class ContactController {
       );
     }
 
-    const updated = [...(user[field] || [])];
+    const updated = [...user[field]];
     const index = updated.indexOf(value);
 
     updated.splice(index, 1);
 
     await this.data.users.update({ _id: user._id }, { [field]: updated });
-
-    return;
   }
 }
