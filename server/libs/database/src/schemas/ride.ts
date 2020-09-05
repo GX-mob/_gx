@@ -17,13 +17,10 @@
  */
 import mongoose, { Document, Schema } from "mongoose";
 import shortid from "shortid";
+import { util } from "@app/helpers";
 import Connections from "../connections";
 import { Pendencie } from "./pendencie";
 import { UserModel } from "./user";
-
-function hasProp(obj: any, prop: string) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
 
 class Route extends mongoose.SchemaType {
   constructor(key: any, options: any) {
@@ -38,10 +35,10 @@ class Route extends mongoose.SchemaType {
     }
 
     if (
-      !hasProp(route, "start") ||
-      !hasProp(route, "path") ||
-      !hasProp(route, "distance") ||
-      !hasProp(route, "end")
+      !util.hasProp(route, "start") ||
+      !util.hasProp(route, "path") ||
+      !util.hasProp(route, "distance") ||
+      !util.hasProp(route, "end")
     ) {
       throw new Error(
         'Route object must have "start", "path", "end" and "distance" props',
@@ -59,7 +56,7 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("start", route.start);
     this.checkPoint("end", route.end);
 
-    if (hasProp(route, "waypoints")) {
+    if (util.hasProp(route, "waypoints")) {
       for (let i = 0; i < (route.waypoints as RoutePoint[]).length; ++i)
         this.checkPoint(
           `waypoints[${i}]`,
@@ -72,9 +69,9 @@ class Route extends mongoose.SchemaType {
 
   checkPoint(name: string, point: RoutePoint) {
     if (
-      !hasProp(point, "coord") ||
-      !hasProp(point, "primary") ||
-      !hasProp(point, "secondary")
+      !util.hasProp(point, "coord") ||
+      !util.hasProp(point, "primary") ||
+      !util.hasProp(point, "secondary")
     ) {
       throw new Error(
         `"${name}" object must have "coord", "primary" and "secondary" props`,

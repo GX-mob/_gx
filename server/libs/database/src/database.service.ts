@@ -7,6 +7,7 @@ import { UserModel } from "./schemas/user";
 import { SessionModel } from "./schemas/session";
 import { RideModel } from "./schemas/ride";
 import { PendencieModel } from "./schemas/pendencie";
+import { PriceModel } from "./schemas/prices";
 
 const options: ConnectionOptions = {
   useNewUrlParser: true,
@@ -18,10 +19,11 @@ const options: ConnectionOptions = {
 
 @Injectable()
 export class DatabaseService {
-  public userModel = UserModel;
-  public sessionModel = SessionModel;
-  public rideModel = RideModel;
-  public pendencieModel = PendencieModel;
+  readonly userModel = UserModel;
+  readonly sessionModel = SessionModel;
+  readonly rideModel = RideModel;
+  readonly pendencieModel = PendencieModel;
+  readonly priceModel = PriceModel;
   readonly connections = [
     Connections.Configuration,
     Connections.Users,

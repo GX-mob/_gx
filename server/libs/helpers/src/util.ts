@@ -133,3 +133,12 @@ export async function retry<T>(
       );
   }
 }
+
+/**
+ * Check if object has own property securely
+ * @param obj
+ * @param prop
+ */
+export function hasProp(obj: any, prop: string) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}

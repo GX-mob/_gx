@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { SignInModule } from "./sign-in/sign-in.module";
 import { SignUpModule } from "./sign-up/sign-up.module";
 import { AccountManagementModule } from "./account-management/account-management.module";
@@ -14,5 +14,6 @@ import { AccountManagementModule } from "./account-management/account-management
     SignUpModule,
     AccountManagementModule,
   ],
+  providers: [ConfigService],
 })
 export class AppModule {}
