@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { TwilioService } from "./twilio.service";
 import { util } from "@app/helpers";
+import validator from "validator";
 
 @Injectable()
 export class ContactVerificationService {
@@ -26,9 +27,9 @@ export class ContactVerificationService {
   }
 
   checkChannel(target: string): string {
-    const emailVerify = util.emailRegex.test(target);
+    const emailVerify = validator.isEmail(target);
 
-    if (!emailVerify && !util.internationalMobilePhoneRegex.test(target)) {
+    if (!emailVerify && !validator.isMobilePhone(target)) {
       throw new Error(
         "Verification target must be an email or mobile phone number",
       );

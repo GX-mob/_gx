@@ -48,7 +48,8 @@
     "secure-password": "^4.0.0",
     "shortid": "^2.2.15",
     "spherical-geometry-js": "^2.0.0",
-    "twilio": "^3.49.0"
+    "twilio": "^3.49.0",
+    "validator": "^13.1.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.0.0",

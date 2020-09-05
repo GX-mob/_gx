@@ -34,6 +34,7 @@ import { DataService } from "@app/data";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
 import { EXCEPTIONS_MESSAGES } from "../constants";
+import validator from "validator";
 
 @Controller("sign-in")
 export class SignInController {
@@ -104,7 +105,7 @@ export class SignInController {
 
     reply.code(202);
 
-    const isEmail = util.emailRegex.test(user["2fa"]);
+    const isEmail = validator.isEmail(user["2fa"]);
 
     if (isEmail) {
       const [name, domain] = user["2fa"].split("@");

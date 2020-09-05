@@ -43,10 +43,10 @@ export function latLngBounds(
  * @param {Path} path
  * @return {LatLngBounds} The bounds
  */
-export function boundsOfPath(path: Path): LatLngBounds {
+export function boundsOfPath(path: string | Path): LatLngBounds {
   const workPath = typeof path === "string" ? decode(path) : path;
 
-  return latLngBounds(workPath[0], workPath[path.length - 1]);
+  return latLngBounds(workPath[0], workPath[workPath.length - 1]);
 }
 
 /**

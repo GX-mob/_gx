@@ -20,6 +20,7 @@ import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import { util } from "@app/helpers";
 import shortid from "shortid";
+import validator from "validator";
 
 export interface User {
   _id: any;
@@ -72,8 +73,8 @@ export const UserSchema: Schema = new Schema(
          * Validate all mobile phone numbers in the list
          */
         validator: (v: string[]) =>
-          v.filter((phone) => util.internationalMobilePhoneRegex.test(phone))
-            .length === v.length,
+          v.filter((phone) => validator.isMobilePhone(phone)).length ===
+          v.length,
         message: (props) => `${props.value} has an invalid mobile phone`,
       },
       required: true,
@@ -88,7 +89,7 @@ export const UserSchema: Schema = new Schema(
          */
         validator: (v: string[]) =>
           v.length === 0 || // empty
-          v.filter((email) => util.emailRegex.test(email)).length === v.length,
+          v.filter((email) => validator.isEmail(email)).length === v.length,
         message: (props) => `${props.value} has an invalid email`,
       },
       default: [],

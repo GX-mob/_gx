@@ -1,3 +1,8 @@
+/**
+ * Data Service
+ *
+ * @group unit/services/database
+ */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { DatabaseService } from "./database.service";

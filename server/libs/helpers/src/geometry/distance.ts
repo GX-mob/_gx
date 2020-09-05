@@ -27,8 +27,8 @@ export function calculate(
 /**
  * Calculates the path length in meters
  * @param {Path} workPath
- * @param {number} start Start point
- * @param {number} limit Limit point
+ * @param {number} start Start index point
+ * @param {number} limit Limit index point
  * @return {number} Distance in meters
  */
 export function path(

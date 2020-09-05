@@ -15,41 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-import HttpError from "http-errors";
 import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
-import logger from "../logger";
+import logger from "./logger";
 import { UnprocessableEntityException } from "@nestjs/common";
+import { Logger } from "pino";
+import validator from "validator";
 
-const securePassword = new SecurePassword();
+export const securePassword = new SecurePassword();
 
-/* istanbul ignore next */
-export const handleRejectionByUnderHood = (promise: Promise<any>) => {
-  promise.catch((error) => logger.error(error));
-};
-
-type RegexGlobalsObject = {
-  [k: string]: {
-    mobilePhone: RegExp;
-  };
-};
-
-const i18nRegex: RegexGlobalsObject = {
-  BR: {
-    mobilePhone: /^(\+?[1-9]{2,3})?[1-9]{2}9[6-9][0-9]{3}[0-9]{4}$/,
-  },
-};
-
-const IDD_CC_REFS: { [k: string]: string } = {
-  "+55": "BR",
+export const handleRejectionByUnderHood = (
+  promise: Promise<unknown>,
+  loggerInstance: Logger = logger,
+) => {
+  promise.catch((error) => loggerInstance.error(error));
 };
 
 /**
  * General regexes
  */
-export const emailRegex = /^[a-z0-9.]+@[a-z0-9]+\.[a-z]+(\.[a-z]+)?$/i;
-export const internationalMobilePhoneRegex = /\+(9[976]\d|8[987530]\d|6[987]\d|5[90]\d|42\d|3[875]\d|2[98654321]\d|9[8543210]|8[6421]|6[6543210]|5[87654321]|4[987654310]|3[9643210]|2[70]|7|1)\d{1,14}$/;
 export const passwordRegex = /^(?=.*\\d)(?=.*[a-z]).{5,}$/;
 
 export type PhoneContactObject = {
@@ -63,59 +47,21 @@ export type ContactResultObject = {
 };
 
 /**
- * Parses contact object
- *
- * If value is an object with `cc` and `number`
- * properties makes full number and validate it,
- * else validates contact like as email
- * @param value Object or string to verify and parse
- * @throws Error: invalid-email | invalid-idd | invalid-phone
- * @return {object} { contact: string, type: "email" | "phone" }
- */
-export function parseContact(
-  value: PhoneContactObject | string,
-): ContactResultObject {
-  if (typeof value === "string") {
-    if (!emailRegex.test(value)) {
-      throw new Error("invalid-email");
-    }
-
-    return { value, field: "emails" };
-  }
-  const { cc, number } = value;
-  const CC_ISO3166 = IDD_CC_REFS[cc];
-
-  if (!CC_ISO3166) {
-    throw new Error("invalid-idd");
-  }
-
-  const { mobilePhone } = i18nRegex[CC_ISO3166];
-
-  value = `${cc}${number}`;
-
-  if (!mobilePhone.test(value)) {
-    throw new Error("invalid-phone");
-  }
-
-  return { value, field: "phones" };
-}
-
-/**
  * Validates a contact
  *
- * @param {stirng | PhoneContactObject} value
+ * @param {stirng} value
  * @throws UnprocessableEntityException("invalid-contact")
  * @return {object} { value: string, type: "email" | "phone" }
  */
 export function isValidContact(value: string): ContactResultObject {
-  const isValidMobilePhoneNumber = internationalMobilePhoneRegex.test(value);
+  const isMobilePhone = validator.isMobilePhone(value);
 
-  if (!isValidMobilePhoneNumber && !emailRegex.test(value)) {
+  if (!isMobilePhone && !validator.isEmail(value)) {
     throw new UnprocessableEntityException("invalid-contact");
   }
 
   return {
-    field: isValidMobilePhoneNumber ? "phones" : "emails",
+    field: isMobilePhone ? "phones" : "emails",
     value,
   };
 }
@@ -132,26 +78,24 @@ export function hashPassword(password: string | Buffer): Promise<Buffer> {
 
 /**
  * Compare password
- * @param config.value Plain text value
- * @param config.to Hash value
- * @param config.be Result expected
- * @param errorMsg Error message if expectation fail
- * @throws Http.UnprocessableEntity: wrong-password
+ * @param value Plain text value
+ * @param to Hashed password
  * @returns {Promise<Buffer | boolean>} Buffer if it was necessary to rehash or the verification result
  */
 export async function assertPassword(
   value: string,
   to: Buffer,
-): Promise<Buffer | boolean | void> {
+): Promise<Buffer | boolean> {
   const passwordValue = Buffer.from(value);
   const result = await securePassword.verify(passwordValue, to);
 
-  if (result === SecurePassword.INVALID || result === SecurePassword.VALID) {
-    return result === SecurePassword.VALID;
-  }
-
-  if (result === SecurePassword.VALID_NEEDS_REHASH) {
-    return hashPassword(passwordValue);
+  switch (result) {
+    case SecurePassword.VALID:
+      return true;
+    case SecurePassword.VALID_NEEDS_REHASH:
+      return hashPassword(passwordValue);
+    default:
+      return false;
   }
 }
 /**
@@ -183,6 +127,9 @@ export async function retry<T>(
         exponential ? interval * 2 : interval,
         exponential,
       );
-    } else throw new Error(`Max retries reached for function ${fn.name}`);
+    } else
+      throw new Error(
+        `Max retries reached for function ${fn.name}, last error: ${error.message}`,
+      );
   }
 }
