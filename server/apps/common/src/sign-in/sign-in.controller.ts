@@ -108,13 +108,8 @@ export class SignInController {
     const isEmail = validator.isEmail(user["2fa"]);
 
     if (isEmail) {
-      const [name, domain] = user["2fa"].split("@");
-      const hiddenEmail = `${name
-        .slice(0, 3)
-        .padEnd(name.length, "*")}@${domain}`;
-
       reply.send({
-        target: hiddenEmail,
+        target: util.hideEmail(user["2fa"]),
       });
       return;
     }

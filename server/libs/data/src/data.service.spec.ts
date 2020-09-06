@@ -4,6 +4,7 @@
  * @group unit/services/data
  */
 import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { DatabaseModule, User, UserModel, Session } from "@app/database";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { DataService } from "./data.service";
@@ -47,8 +48,15 @@ describe("DataService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [DatabaseModule, CacheModule],
-      providers: [DataService],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ".development.env",
+        }),
+        DatabaseModule,
+        CacheModule,
+      ],
+      providers: [ConfigService, DataService],
     })
       .overrideProvider(RedisService)
       .useValue({ client: new IORedisMock() })

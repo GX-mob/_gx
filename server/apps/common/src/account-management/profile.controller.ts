@@ -71,6 +71,7 @@ export class AccountProfileController {
     ) => {
       if (handling) return;
       handling = true;
+
       const fileExtension = filename.split(".").pop() as string;
       const fileName = `${user._id}.${Date.now()}.${fileExtension}`;
       url = `${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/${fileName}`;

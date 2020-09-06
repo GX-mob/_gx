@@ -17,7 +17,7 @@ export default class MockStorage {
   }
 }
 
-class MockBucket {
+export class MockBucket {
   name: string;
   files: { [path: string]: MockFile };
 
@@ -31,7 +31,7 @@ class MockBucket {
   }
 }
 
-class MockFile {
+export class MockFile {
   path: string;
   contents: Buffer;
   metadata: any;

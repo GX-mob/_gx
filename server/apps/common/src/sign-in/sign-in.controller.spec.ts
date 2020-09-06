@@ -11,6 +11,7 @@ import { SignInController } from "./sign-in.controller";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import SecurePassword from "secure-password";
 import { EXCEPTIONS_MESSAGES } from "../constants";
+import { util } from "@app/helpers";
 
 describe("SignInController", () => {
   const securePassword = new SecurePassword();
@@ -56,162 +57,224 @@ describe("SignInController", () => {
     jest.resetAllMocks();
   });
 
-  it(`should throw NotFoundException('${EXCEPTIONS_MESSAGES.USER_NOT_FOUND}')`, async () => {
-    const result = null;
-    dataServiceMock.users.get.mockResolvedValue(result);
+  describe("identify", () => {
+    it(`should throw NotFoundException('${EXCEPTIONS_MESSAGES.USER_NOT_FOUND}')`, async () => {
+      const result = null;
+      dataServiceMock.users.get.mockResolvedValue(result);
 
-    await expect(
-      signInController.identify(fastifyResponseMock as any, "foo"),
-    ).rejects.toStrictEqual(
-      new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
-    );
-  });
+      await expect(
+        signInController.identify(fastifyResponseMock as any, "foo"),
+      ).rejects.toStrictEqual(
+        new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
+      );
+    });
 
-  it("should return user data", async () => {
-    const result = {
-      password: Buffer.from("foo"),
-      phones: ["+5592088444444"],
-      firstName: "Foo",
-      avatar: "https://",
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
-    await signInController.identify(fastifyResponseMock as any, "foo");
+    it("should return user data", async () => {
+      const result = {
+        password: Buffer.from("foo"),
+        phones: ["+5592088444444"],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+      await signInController.identify(fastifyResponseMock as any, "foo");
 
-    expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
-      firstName: result.firstName,
-      avatar: result.avatar,
+      expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
+        firstName: result.firstName,
+        avatar: result.avatar,
+      });
+    });
+
+    it("should return user data and request a 2fa", async () => {
+      const result = {
+        phones: ["+5592088444444"],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+      await signInController.identify(fastifyResponseMock as any, "foo");
+
+      expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
+        firstName: result.firstName,
+        avatar: result.avatar,
+      });
+      expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
     });
   });
 
-  it("should return user data and request a 2fa", async () => {
-    const result = {
-      phones: ["+5592088444444"],
-      firstName: "Foo",
-      avatar: "https://",
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
-    await signInController.identify(fastifyResponseMock as any, "foo");
+  describe("signIn", () => {
+    it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}')`, async () => {
+      const phone = "+5592088444444";
+      const result = {
+        password: await securePassword.hash(Buffer.from("123")),
+        phones: [phone],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
 
-    expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
-      firstName: result.firstName,
-      avatar: result.avatar,
+      const signInPasswordDto = new SignInPasswordDto();
+
+      signInPasswordDto.phone = phone;
+      signInPasswordDto.password = "wrong";
+
+      await expect(
+        signInController.signIn(
+          fastifyRequestMock,
+          fastifyResponseMock as any,
+          signInPasswordDto,
+        ),
+      ).rejects.toStrictEqual(
+        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
+      );
     });
-    expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
-  });
 
-  it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}')`, async () => {
-    const phone = "+5592088444444";
-    const result = {
-      password: await securePassword.hash(Buffer.from("123")),
-      phones: [phone],
-      firstName: "Foo",
-      avatar: "https://",
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
+    it("should authorize ", async () => {
+      const phone = "+5592088444444";
+      const password = "123";
+      const token = "foo";
+      const result = {
+        password: await securePassword.hash(Buffer.from(password)),
+        phones: [phone],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+      sessionServiceMock.create.mockResolvedValue({ token });
 
-    const signInPasswordDto = new SignInPasswordDto();
+      const signInPasswordDto = new SignInPasswordDto();
 
-    signInPasswordDto.phone = phone;
-    signInPasswordDto.password = "wrong";
+      signInPasswordDto.phone = phone;
+      signInPasswordDto.password = password;
 
-    await expect(
-      signInController.signIn(
+      await signInController.signIn(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInPasswordDto,
-      ),
-    ).rejects.toStrictEqual(
-      new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
-    );
+      );
+
+      expect(fastifyResponseMock.send.mock.calls[0][0].token).toBe(token);
+      expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(201);
+    });
+
+    it("should response 2fa request", async () => {
+      const phone = "+5592088444444";
+      const password = "123";
+      const result = {
+        password: await securePassword.hash(Buffer.from(password)),
+        phones: [phone],
+        firstName: "Foo",
+        avatar: "https://",
+        "2fa": phone,
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+
+      const signInPasswordDto = new SignInPasswordDto();
+
+      signInPasswordDto.phone = phone;
+      signInPasswordDto.password = password;
+
+      await signInController.signIn(
+        fastifyRequestMock,
+        fastifyResponseMock as any,
+        signInPasswordDto,
+      );
+
+      expect(fastifyResponseMock.send.mock.calls[0][0].target).toBe(
+        phone.slice(phone.length - 4),
+      );
+      expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
+    });
+
+    it("should response 2fa request, email field", async () => {
+      const phone = "+5592088444444";
+      const email = "valid@email.com";
+      const password = "123";
+      const result = {
+        password: await securePassword.hash(Buffer.from(password)),
+        phones: [phone],
+        emails: [email],
+        firstName: "Foo",
+        avatar: "https://",
+        "2fa": email,
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+
+      const signInPasswordDto = new SignInPasswordDto();
+
+      signInPasswordDto.phone = phone;
+      signInPasswordDto.password = password;
+
+      await signInController.signIn(
+        fastifyRequestMock,
+        fastifyResponseMock as any,
+        signInPasswordDto,
+      );
+
+      expect(fastifyResponseMock.send.mock.calls[0][0].target).toBe(
+        util.hideEmail(email),
+      );
+      expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
+    });
   });
 
-  it("should authorize ", async () => {
-    const phone = "+5592088444444";
-    const password = "123";
-    const token = "foo";
-    const result = {
-      password: await securePassword.hash(Buffer.from(password)),
-      phones: [phone],
-      firstName: "Foo",
-      avatar: "https://",
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
-    sessionServiceMock.create.mockResolvedValue({ token });
+  describe("code", () => {
+    it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_CODE}')`, async () => {
+      const phone = "+5592088444444";
+      const result = {
+        password: await securePassword.hash(Buffer.from("123")),
+        phones: [phone],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
 
-    const signInPasswordDto = new SignInPasswordDto();
+      const signInCodeDto = new SignInCodeDto();
 
-    signInPasswordDto.phone = phone;
-    signInPasswordDto.password = password;
+      signInCodeDto.phone = phone;
+      signInCodeDto.code = "wrong";
 
-    await signInController.signIn(
-      fastifyRequestMock,
-      fastifyResponseMock as any,
-      signInPasswordDto,
-    );
+      await expect(
+        signInController.code(
+          fastifyRequestMock,
+          fastifyResponseMock as any,
+          signInCodeDto,
+        ),
+      ).rejects.toStrictEqual(
+        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE),
+      );
+    });
 
-    expect(fastifyResponseMock.send.mock.calls[0][0].token).toBe(token);
-    expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(201);
-  });
+    it("should authorize", async () => {
+      const phone = "+5592088444444";
+      const code = "123";
+      const token = "foo";
+      const result = {
+        phones: [phone],
+        firstName: "Foo",
+        avatar: "https://",
+      };
+      dataServiceMock.users.get.mockResolvedValue(result);
+      verifyServiceMock.verify.mockResolvedValue(true);
+      sessionServiceMock.create.mockResolvedValue({ token });
+      const signInCodeDto = new SignInCodeDto();
 
-  it("should response 2fa request", async () => {
-    const phone = "+5592088444444";
-    const password = "123";
-    const result = {
-      password: await securePassword.hash(Buffer.from(password)),
-      phones: [phone],
-      firstName: "Foo",
-      avatar: "https://",
-      "2fa": phone,
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
+      signInCodeDto.phone = phone;
+      signInCodeDto.code = code;
 
-    const fastifyRequestMock: any = {
-      headers: {
-        "user-agent": "foo",
-      },
-      raw: { headers: { "x-client-ip": "127.0.0.1" } },
-    };
-    const signInPasswordDto = new SignInPasswordDto();
-
-    signInPasswordDto.phone = phone;
-    signInPasswordDto.password = password;
-
-    await signInController.signIn(
-      fastifyRequestMock,
-      fastifyResponseMock as any,
-      signInPasswordDto,
-    );
-
-    expect(fastifyResponseMock.send.mock.calls[0][0].target).toBe(
-      phone.slice(phone.length - 4),
-    );
-    expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(202);
-  });
-
-  it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_CODE}')`, async () => {
-    const phone = "+5592088444444";
-    const result = {
-      password: await securePassword.hash(Buffer.from("123")),
-      phones: [phone],
-      firstName: "Foo",
-      avatar: "https://",
-    };
-    dataServiceMock.users.get.mockResolvedValue(result);
-
-    const fastifyRequestMock: any = {};
-    const signInCodeDto = new SignInCodeDto();
-
-    signInCodeDto.phone = phone;
-    signInCodeDto.code = "wrong";
-
-    await expect(
-      signInController.code(
+      await signInController.code(
         fastifyRequestMock,
         fastifyResponseMock as any,
         signInCodeDto,
-      ),
-    ).rejects.toStrictEqual(
-      new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE),
-    );
+      );
+
+      const verifyCalls = verifyServiceMock.verify.mock.calls;
+
+      expect(verifyCalls[0][0]).toBe(phone);
+      expect(verifyCalls[0][1]).toBe(code);
+
+      expect(fastifyResponseMock.send.mock.calls[0][0].token).toBe(token);
+      expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(201);
+    });
   });
 });

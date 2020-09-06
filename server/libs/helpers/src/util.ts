@@ -142,3 +142,17 @@ export async function retry<T>(
 export function hasProp(obj: any, prop: string) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
+
+/**
+ * Hide email
+ */
+export function hideEmail(
+  email: string,
+  visibleCharsCount: number = 3,
+): string {
+  const [name, domain] = email.split("@");
+  const hiddenEmail = `${name
+    .slice(0, visibleCharsCount)
+    .padEnd(name.length, "*")}@${domain}`;
+  return hiddenEmail;
+}

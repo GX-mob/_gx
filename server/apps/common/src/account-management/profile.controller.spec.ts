@@ -184,7 +184,7 @@ describe("AccountProfileController", () => {
     it("should catch stream error", async (done) => {
       const user = mockUser();
       const error = new Error("stream");
-      const readable = createReadableFrom(jpegBuffer);
+      const readable = createReadableFrom(pngBuffer);
 
       readable.destroy(error);
 
@@ -213,6 +213,33 @@ describe("AccountProfileController", () => {
           "string",
         );
         storageServiceMock.uploadStream = jest.fn();
+        done();
+      };
+
+      await profileController.uploadAvatar(
+        fastifyRequestMock,
+        fastifyResponseMock as any,
+      );
+    });
+
+    it("should handle a unique file", async (done) => {
+      const user = mockUser();
+      const error = new Error("stream");
+      const readable = createReadableFrom(jpegBuffer);
+      const readable2 = createReadableFrom(pngBuffer);
+
+      fastifyRequestMock.isMultipart = () => true;
+      fastifyRequestMock.session.user = user;
+
+      fastifyRequestMock.multipart = async (handler: any, finish: any) => {
+        await handler("photo", readable, "myphoto.jpeg");
+        handler("photo2", readable2, "myphoto.png");
+        finish();
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        // catch internal stream errors
+        expect(storageServiceMock.uploadStream).toHaveBeenCalledTimes(1);
         done();
       };
 

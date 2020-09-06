@@ -11,6 +11,10 @@ import { GoogleStorageService } from "./google-storage.service";
 import StorageMock from "./mock/gcp-storage.mock";
 //@ts-ignore
 import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
+import {
+  STORAGE_PREFIX_URLS,
+  STORAGE_BUCKETS,
+} from "apps/common/src/constants";
 
 describe("StorageService", () => {
   let service: StorageService;
@@ -18,10 +22,10 @@ describe("StorageService", () => {
   const jpegBuffer = readFileSync(join(__dirname, "mock", "mock.jpeg"));
   const pngBuffer = readFileSync(join(__dirname, "mock", "mock.png"));
 
-  function createReadableFrom(buffer: Buffer) {
+  function createReadableFrom(buffer: Buffer, stop: boolean = true) {
     const readable = new ReadableStreamBuffer();
-    readable.put(buffer);
-    readable.stop();
+    readable.put(Buffer.from(buffer));
+    stop && readable.stop();
     return readable;
   }
 
@@ -41,8 +45,9 @@ describe("StorageService", () => {
   });
 
   it("set stream errorHandler", async (done) => {
-    const stream = createReadableFrom(pngBuffer);
-    setTimeout(() => stream.destroy(new Error("test")), 20);
+    const stream = createReadableFrom(pngBuffer, false);
+
+    setTimeout(() => stream.destroy(new Error("test")), 100);
 
     service.uploadStream("test", stream, {
       filename: "avatar.png",
@@ -68,6 +73,7 @@ describe("StorageService", () => {
         public: true,
         compress: true,
         acceptMIME: ["image/png", "image/jpeg"],
+        errorHandler(error) {},
       });
     } catch (e) {
       expect(e.message).toBe("Cannot detect the MIME type");
@@ -82,6 +88,7 @@ describe("StorageService", () => {
         public: true,
         compress: true,
         acceptMIME: ["image/jpeg"],
+        errorHandler(error) {},
       });
     } catch (e) {
       expect(e.message).toBe(
@@ -123,6 +130,7 @@ describe("StorageService", () => {
       public: true,
       compress: false,
       acceptMIME: ["image/jpeg", "image/png"],
+      errorHandler(error) {},
     });
 
     (bucketFile as any).writable.on("finish", () => {
@@ -140,6 +148,7 @@ describe("StorageService", () => {
       public: true,
       compress: true,
       acceptMIME: ["image/jpeg", "image/png"],
+      errorHandler(error) {},
     });
 
     (bucketFile as any).writable.on("finish", () => {

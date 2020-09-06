@@ -4,7 +4,7 @@ import { util } from "@app/helpers";
 
 @Injectable()
 export class RidesService {
-  private areas: { [area: string]: Price } = {};
+  readonly areas: { [area: string]: Price } = {};
 
   constructor(readonly database: DatabaseService) {
     this.init();
@@ -21,6 +21,7 @@ export class RidesService {
     if (!prices.length) {
       throw new Error("Empty rides types list");
     }
+
     prices.forEach((price) => {
       this.areas[price.area] = price;
     });
@@ -34,9 +35,6 @@ export class RidesService {
         case "insert":
           const { fullDocument } = data;
           this.areas[fullDocument.area] = fullDocument;
-          break;
-        case "delete":
-          delete this.areas[fullDocument.area];
           break;
       }
     });
@@ -65,8 +63,6 @@ export class RidesService {
       subArea && areaPrices.subAreas[subArea]
         ? areaPrices.subAreas[subArea]
         : areaPrices.general;
-
-    if (!response) return;
 
     if (typeof rideType !== "undefined") {
       return response.find((price) => price.type === rideType);

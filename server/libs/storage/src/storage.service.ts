@@ -30,7 +30,7 @@ export type UploadStreamOptions = {
    * To catch internal stream errors.
    * @param {Error} error
    */
-  errorHandler?(error: Error): void;
+  errorHandler(error: Error): void;
 };
 
 export type CompressibleMIME = "image/png" | "image/jpg" | "image/jpeg";
@@ -56,11 +56,10 @@ export class StorageService {
     const bucket = this.client.bucket(bucket_name);
     const { filename, compress = true, errorHandler, acceptMIME } = options;
 
-    if (errorHandler) {
-      readable.on("error", errorHandler);
-    }
+    readable.on("error", errorHandler);
 
     const [saveReadable, mimeDetectReadable] = this.cloneReadable(readable);
+
     const mime = await this.getMIME(mimeDetectReadable);
 
     this.checkValidMime(mime, acceptMIME);
@@ -75,9 +74,7 @@ export class StorageService {
       resumable: false,
     });
 
-    if (errorHandler) {
-      storageWritableStream.on("error", errorHandler);
-    }
+    storageWritableStream.on("error", errorHandler);
 
     const response = {
       bucketFile,

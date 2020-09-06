@@ -5,11 +5,11 @@
  */
 import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { UserModel } from "@app/database";
 import { DataModule, DataService } from "@app/data";
 import { DatabaseService, Session } from "@app/database";
-import { CacheModule, CacheService } from "@app/cache";
+import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { SessionService } from "./session.service";
 
 describe("SessionService", () => {
@@ -60,6 +60,8 @@ describe("SessionService", () => {
       ],
       providers: [SessionService],
     })
+      .overrideProvider(RedisService)
+      .useValue({})
       .overrideProvider(DataService)
       .useValue(dataService)
       .overrideProvider(CacheService)
