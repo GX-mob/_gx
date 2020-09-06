@@ -102,7 +102,9 @@ describe("SignUpController", () => {
 
       expect(fastifyResponseMock.send).toBeCalled();
     });
+  });
 
+  describe("phoneVerificationCheck", () => {
     it(`should throw UnprocessableEntityException(${EXCEPTIONS_MESSAGES.WRONG_CODE})`, async () => {
       verifyServiceMock.verify.mockResolvedValue(false);
 
@@ -143,7 +145,9 @@ describe("SignUpController", () => {
       expect(fastifyResponseMock.code.mock.calls[0][0]).toBe(200);
       expect(fastifyResponseMock.send).toBeCalled();
     });
+  });
 
+  describe("signUp", () => {
     it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED}")`, async () => {
       const requestBody = new SignUpDto();
       requestBody.phone = "+5582988884444";
