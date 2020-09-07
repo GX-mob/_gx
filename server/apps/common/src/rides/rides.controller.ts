@@ -10,9 +10,10 @@ import {
   Body,
 } from "@nestjs/common";
 import { AuthGuard, AuthorizedRequest, Driver } from "@app/auth";
-import { DatabaseService, PriceDetail } from "@app/database";
+import { DatabaseService } from "@app/database";
 import { CacheService } from "@app/cache";
 import { DataService } from "@app/data";
+import { util } from "@app/helpers";
 import { RidesService } from "./rides.service";
 import { GetRidesPricesParams, CreateRideDto } from "./rides.dto";
 import { CACHE_NAMESPACES } from "../constants";
@@ -27,13 +28,19 @@ export class RidesController {
     readonly rideService: RidesService,
   ) {}
 
-  @Get("prices-status/:area/:subArea")
-  async getPricesStatusHandler(@Param() params: GetRidesPricesParams) {
+  @Get("prices-status/:area/:subArea?")
+  getPricesStatusHandler(@Param() params: GetRidesPricesParams) {
     const { area, subArea } = params;
+    const list = this.rideService.getRideStatusPrice(area, subArea);
 
-    const target = `${area}${subArea ? `/${subArea}` : ""}`;
+    const target = util.hasProp(
+      this.rideService.areas[area].subAreas,
+      subArea || "",
+    )
+      ? `${area}/${subArea}`
+      : area;
 
-    return { target, list: this.rideService.getRideStatusPrice(area, subArea) };
+    return { target, list };
   }
 
   @Driver()

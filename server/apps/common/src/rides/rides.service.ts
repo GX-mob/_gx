@@ -3,7 +3,11 @@ import { utcToZonedTime } from "date-fns-tz";
 import { DatabaseService, Price, PriceDetail, Ride } from "@app/database";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
-import { BUSINESS_TIME_HOURS, AMOUT_DECIMAL_ADJUST } from "../constants";
+import {
+  BUSINESS_TIME_HOURS,
+  AMOUT_DECIMAL_ADJUST,
+  LONG_RIDE,
+} from "../constants";
 
 @Injectable()
 export class RidesService {
@@ -113,12 +117,12 @@ export class RidesService {
   /**
    *
    * @param duration In minutes
-   * @param costs Fares of ride type
+   * @param price Fares of ride type
    * @param isBusinessTime
    */
   durationPrice(
     duration: number,
-    costs: PriceDetail,
+    price: PriceDetail,
     isBusinessTime: boolean,
   ): {
     total: number;
@@ -128,24 +132,24 @@ export class RidesService {
     /**
      * Default price multiplier
      */
-    let multipler = costs.perMinute;
+    let multipler = price.perMinute;
     let aditionalForLongRide = 0;
     let aditionalForOutBusinessTime = 0;
 
     /**
-     * Aditional multipler to rides long than 40 minutes.
+     * Aditional multipler to long rides
      */
-    if (duration > 40) {
-      multipler += costs.minuteMultipler;
-      aditionalForLongRide = duration * costs.minuteMultipler;
+    if (duration > LONG_RIDE.MINUTES) {
+      multipler += price.minuteMultipler;
+      aditionalForLongRide = duration * price.minuteMultipler;
     }
 
     /**
      * Aditional fare to non business time rides
      */
     if (!isBusinessTime) {
-      multipler += costs.overBusinessTimeMinuteAdd;
-      aditionalForOutBusinessTime = duration * costs.minuteMultipler;
+      multipler += price.overBusinessTimeMinuteAdd;
+      aditionalForOutBusinessTime = duration * price.minuteMultipler;
     }
 
     return {
@@ -178,11 +182,11 @@ export class RidesService {
     let aditionalForOutBusinessTime = 0;
 
     /**
-     * Aditional fare multiplier to rides longger than 10 km
+     * Aditional fare multiplier for long rides
      */
-    if (distance > 10000) {
+    if (distance > LONG_RIDE.DISTANCE_KM) {
       multipler += price.overBusinessTimeKmAdd;
-      aditionalForLongRide = distance * aditionalForLongRide;
+      aditionalForLongRide = distance * price.kilometerMultipler;
     }
 
     /**

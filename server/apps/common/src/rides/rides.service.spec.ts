@@ -9,65 +9,19 @@ import {
   DatabaseModule,
   DatabaseService,
   Price,
-  PriceDetail,
   TRoutePoint,
   RideTypes,
 } from "@app/database";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
-import { geometry } from "@app/helpers";
-import { utcToZonedTime } from "date-fns-tz";
-//@ts-ignore
-const { decode } = require("google-polyline");
+
+import { rideType1, prices, path } from "./__mocks__";
 
 describe("RideService", () => {
   let service: RidesService;
   const emitter = new EventEmitter();
 
   emitter.setMaxListeners(50);
-
-  const rideType1: PriceDetail = {
-    type: 1,
-    available: true,
-    perKilometer: 1.1,
-    perMinute: 0.3,
-    kilometerMultipler: 0.2,
-    minuteMultipler: 0.1,
-    overBusinessTimeKmAdd: 0.4,
-    overBusinessTimeMinuteAdd: 0.3,
-  };
-
-  const rideType2: PriceDetail = {
-    type: 2,
-    available: true,
-    perKilometer: 1.6,
-    perMinute: 0.5,
-    kilometerMultipler: 0.3,
-    minuteMultipler: 0.2,
-    overBusinessTimeKmAdd: 0.6,
-    overBusinessTimeMinuteAdd: 0.5,
-  };
-
-  const prices: Price[] = [
-    {
-      area: "AL",
-      currency: "BRL",
-      timezone: "America/Maceio",
-      general: [rideType1, rideType2],
-      subAreas: {
-        maceio: [rideType1, rideType2],
-      },
-    },
-    {
-      area: "PE",
-      currency: "BRL",
-      timezone: "America/Maceio",
-      general: [rideType1, rideType2],
-      subAreas: {
-        recife: [rideType1, rideType2],
-      },
-    },
-  ];
 
   const databaseServiceMock = {
     priceModel: {
@@ -77,14 +31,6 @@ describe("RideService", () => {
       watch: () => emitter,
     },
   };
-
-  const pathEncodedMock =
-    "_jn~Fh_}uOlIr@dNxCxIOxIgB|HmElEmE~BeI~BsHjAwIh@yHjAkLdDcHxCkDjCwBfFcApCIdDO~B?dDc@dD?";
-  const pathDecodedMock = decode(pathEncodedMock);
-  const pathDistance = geometry.distance.meterToKM(
-    geometry.distance.path(pathDecodedMock),
-  );
-  const pathDuration = 10;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -228,6 +174,7 @@ describe("RideService", () => {
   function priceCalculationTest(
     func: "distancePrice" | "durationPrice",
     value: number,
+    over: number,
   ) {
     describe(func, () => {
       it("should calculate", () => {
@@ -252,6 +199,28 @@ describe("RideService", () => {
           false,
         );
 
+        const costsType1OverOutBusiness = service[func](
+          value + over,
+          prices[0].general[0],
+          false,
+        );
+        const costsType2OverOutBusiness = service[func](
+          value + over,
+          prices[0].general[1],
+          false,
+        );
+
+        const costsType1OverInBusiness = service[func](
+          value + over,
+          prices[0].general[0],
+          true,
+        );
+        const costsType2OverInBusiness = service[func](
+          value + over,
+          prices[0].general[1],
+          true,
+        );
+
         expect(costsType1InBusiness).toMatchSnapshot();
         expect(costsType2InBusiness).toMatchSnapshot();
 
@@ -264,12 +233,30 @@ describe("RideService", () => {
         expect(
           costsType2InBusiness.total < costsType2OutBusiness.total,
         ).toBeTruthy();
+
+        expect(
+          costsType1OverOutBusiness.total > costsType1OutBusiness.total,
+        ).toBeTruthy();
+        expect(
+          costsType2OverOutBusiness.total > costsType2OutBusiness.total,
+        ).toBeTruthy();
+        expect(costsType1OverOutBusiness.aditionalForLongRide > 0).toBeTruthy();
+        expect(costsType2OverOutBusiness.aditionalForLongRide > 0).toBeTruthy();
+
+        expect(
+          costsType1OverInBusiness.total > costsType1InBusiness.total,
+        ).toBeTruthy();
+        expect(
+          costsType2OverInBusiness.total > costsType2InBusiness.total,
+        ).toBeTruthy();
+        expect(costsType1OverInBusiness.aditionalForLongRide > 0).toBeTruthy();
+        expect(costsType2OverInBusiness.aditionalForLongRide > 0).toBeTruthy();
       });
     });
   }
 
-  priceCalculationTest("distancePrice", pathDistance);
-  priceCalculationTest("durationPrice", pathDuration);
+  priceCalculationTest("distancePrice", path.distance, 10);
+  priceCalculationTest("durationPrice", path.duration, 40);
 
   describe("getRideCosts", () => {
     it("should calculate ", () => {
@@ -284,23 +271,24 @@ describe("RideService", () => {
       mockCreateRideDto.route = {
         start: point,
         end: point,
-        path: pathEncodedMock,
-        distance: pathDistance,
-        duration: pathDuration,
+        path: path.encoded,
+        distance: path.distance,
+        duration: path.duration,
       };
       mockCreateRideDto.area = "AL";
       mockCreateRideDto.subArea = "maceio";
       mockCreateRideDto.type = RideTypes.Normal;
 
+      const isBusinessTime = service.isBusinessTime(prices[0].timezone);
       const distancePrice = service.distancePrice(
-        pathDistance,
+        path.distance,
         prices[0].general[0],
-        false,
+        isBusinessTime,
       );
       const durationPrice = service.durationPrice(
-        pathDuration,
+        path.duration,
         prices[0].general[0],
-        false,
+        isBusinessTime,
       );
 
       const total = distancePrice.total + durationPrice.total;
