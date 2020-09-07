@@ -36,6 +36,7 @@
     "date-fns": "^2.16.1",
     "date-fns-tz": "^1.0.10",
     "eventemitter3": "^4.0.7",
+    "extensor": "^1.0.6",
     "fast-json-stringify": "^2.2.4",
     "fastify-multipart": "^3.2.0",
     "file-type": "^15.0.0",

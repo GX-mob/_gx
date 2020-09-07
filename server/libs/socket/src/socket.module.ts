@@ -1,10 +1,23 @@
-import { Module } from "@nestjs/common";
+import { Module, DynamicModule } from "@nestjs/common";
 import { SocketService } from "./socket.service";
 import { ConfigModule } from "@nestjs/config";
+import { ConfigOptions } from "./types";
+import { OPTIONS_KEY } from "./constants";
 
-@Module({
-  imports: [ConfigModule],
-  providers: [SocketService],
-  exports: [SocketService],
-})
-export class SocketModule {}
+@Module({})
+export class SocketModule {
+  static forRoot(options: ConfigOptions): DynamicModule {
+    return {
+      module: SocketModule,
+      imports: [ConfigModule],
+      providers: [
+        {
+          provide: OPTIONS_KEY,
+          useValue: options,
+        },
+        SocketService,
+      ],
+      exports: [SocketService],
+    };
+  }
+}

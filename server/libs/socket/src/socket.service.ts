@@ -1,117 +1,87 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Server } from "socket.io";
+import { Server, Adapter } from "socket.io";
+import redisIoAdapter from "socket.io-redis";
 import shortid from "shortid";
 import EventEmitter from "eventemitter3";
-import { DEFAULT_ACK_TIMEOUT } from "./constants";
-
-type ConfigOptions = {
-  /**
-   * List of events that are auto broadcasted to another server nodes
-   */
-  broadcastedEvents: string[];
-  ackTimeout: number;
-};
-
-type InternalEvent = {
-  event: string;
-  nodeId: string;
-  content: any;
-};
-
-type DispatchedEvent = {
-  id: number;
-  event: string;
-  data: any;
-  ack: unknown;
-};
-
-type Callback = (...args: any) => void;
+import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
+import { OPTIONS_KEY, SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
 
 @Injectable()
 export class SocketService {
+  /**
+   * Self node id to used prevent handling self emitted events
+   */
   readonly nodeId = shortid.generate();
   readonly nodesEmitter: EventEmitter = new EventEmitter();
-  private internalEmitter: EventEmitter = new EventEmitter();
   public server!: Server;
-  public options!: ConfigOptions;
+  private adapter!: Adapter;
 
-  constructor(readonly config: ConfigService) {}
+  constructor(
+    private config: ConfigService,
+    @Inject(OPTIONS_KEY) private options: ConfigOptions,
+  ) {}
 
-  configureServer(server: Server, options: ConfigOptions) {
-    this.options = options;
+  configureServer(server: Server) {
     this.server = server;
-    // server.nodeId = shortid.generate();
 
-    this.configureInternalEvents();
+    const redisUri = this.config.get("REDIS_URI") as string;
+    const redisAdapter = redisIoAdapter(redisUri);
+    server.adapter(redisAdapter);
+
+    this.adapter = server.of("/").adapter;
+
+    // TODO configure parser
+
+    this.registerServerEventsListener();
+    this.configureEventsMiddleware();
   }
 
-  configureInternalEvents() {
-    const { adapter } = this.server.of("/");
+  /**
+   * Register listener to broadcasted events
+   * @param event
+   * @param listener
+   */
+  protected on(
+    event: string,
+    listener: (
+      content: Omit<DispatchedEvent, "event">,
+      acknowledgment?: Callback,
+    ) => void,
+  ) {
+    this.nodesEmitter.on(event, listener);
+  }
 
+  private registerServerEventsListener() {
     /**
-     * Register event listener
+     * Register server events listener
      */
-    adapter.customHook = (packet: InternalEvent, cb: Callback) => {
+    this.adapter.customHook = (packet: ServerEvent, cb: Callback) => {
       const { event, nodeId, content } = packet;
 
+      // ignore self emited events
       if (nodeId === this.nodeId) {
         return cb(null);
       }
 
       switch (event) {
-        case "dispatchBroadcastedEvent":
+        case SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT:
           this.nodesEmitter.emit(content.event, content);
           return cb(true);
-        case "dispatchSocketEvent":
-          return this.handleDispatchedEvent(content, cb);
+        case SERVER_EVENTS.DISPATCHED_SOCKET_EVENT:
+          return this.handleDispatchedSocketEvent(content, cb);
       }
 
       cb(null);
     };
-
-    /**
-     * Setup event emitter
-     */
-
-    this.internalEmitter.on("dispatchBroadcastedEvent", (packet: any) => {
-      const event = this.createInternalEvent(
-        "dispatchBroadcastedEvent",
-        packet,
-      );
-
-      adapter.customRequest(event, (err, replies) => {});
-    });
-
-    this.internalEmitter.on(
-      "dispatchSocketEvent",
-      (content: any, callback: (data: any) => void) => {
-        const event = this.createInternalEvent("dispatchSocketEvent", content);
-
-        adapter.customRequest(event, (err, replies) => {
-          if (err) {
-          }
-
-          callback && callback(replies.find((value) => value));
-        });
-      },
-    );
   }
 
-  createInternalEvent(event: string, content: any): InternalEvent {
-    return {
-      nodeId: this.nodeId,
-      event,
-      content,
-    };
-  }
-
-  handleDispatchedEvent(content: DispatchedEvent, cb: Callback) {
-    const { id, event, data, ack } = content;
-    if (!(id in this.server.sockets.connected)) {
+  private handleDispatchedSocketEvent(content: DispatchedEvent, cb: Callback) {
+    const { socketId, event, data, ack } = content;
+    if (!(socketId in this.server.sockets.connected)) {
       return cb(null);
     }
-    const socket = this.server.sockets.connected[id];
+    const socket = this.server.sockets.connected[socketId];
 
     if (!ack) {
       socket.emit(event, data);
@@ -131,7 +101,87 @@ export class SocketService {
     });
   }
 
-  configureInternalEventsEmitter() {}
+  /**
+   * Emit event to socket.
+   *
+   * If this server has the socket connection, it self emits the event, otherwise,
+   * dispatch to the servers nodes and the one with the socket emits the event.
+   *
+   * @param {string} event
+   * @param {string} socketId
+   * @param {any} data
+   * @param {function | true} [ack] Acknowledgment
+   */
+  emit(socketId: string, event: string, data: any, callback?: Callback) {
+    const { connected } = this.server.sockets;
+    if (socketId in connected) {
+      return connected[socketId].emit(event, data, callback);
+    }
+
+    this.dispatchSocketEvent(socketId, event, data, callback);
+  }
+
+  private dispatchSocketEvent(
+    socketId: string,
+    event: string,
+    data: any,
+    callback?: Callback,
+  ) {
+    const serverEvent = this.createServerEvent(
+      SERVER_EVENTS.DISPATCHED_SOCKET_EVENT,
+      {
+        socketId,
+        event,
+        data,
+      },
+    );
+
+    this.adapter.customRequest(serverEvent, (err, replies) => {
+      if (err) {
+      }
+
+      callback && callback(replies.find((value) => value));
+    });
+  }
+
+  private createServerEvent(event: SERVER_EVENTS, content: any): ServerEvent {
+    return {
+      nodeId: this.nodeId,
+      event,
+      content,
+    };
+  }
+
+  /**
+   * Registry events middleware to broadcast configured events
+   */
+  private configureEventsMiddleware() {
+    this.server.use((socket, next) => {
+      socket.use((packet, next) => {
+        const [event, data] = packet;
+
+        if (this.options.broadcastedEvents.includes(event)) {
+          this.dispatchBroadcastedEvent({
+            socketId: socket.id,
+            event,
+            data,
+          });
+        }
+
+        next();
+      });
+      next();
+    });
+  }
+
+  private dispatchBroadcastedEvent(packet: any) {
+    const serverEvent = this.createServerEvent(
+      SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT,
+      packet,
+    );
+
+    this.adapter.customRequest(serverEvent, (err, replies) => {});
+  }
 }
 
 declare module "socket.io" {
@@ -141,38 +191,5 @@ declare module "socket.io" {
       callback?: (err: any, replies: any[]) => void,
     ): void;
     customHook: (data: any, callback: (data: any) => void) => void;
-  }
-
-  interface Server {
-    /**
-     * Self node id to prevent the handle of self emitted events
-     */
-    nodeId: string;
-    /**
-     * Private EventEmitter to internal events
-     */
-    internalEvents: EventEmitter;
-    /**
-     * Public EventEmitter to listen client events and emit events between server nodes
-     */
-    nodes: Pick<EventEmitter, "on"> & {
-      /**
-       * Emit event to socket.
-       *
-       * If this server has the socket connected, it self emits the event, otherwise,
-       * dispatch the request to the server nodes and the one with the socket emits the event.
-       *
-       * @param {string} event
-       * @param {string} socketId
-       * @param {any} data
-       * @param {function | true} [ack] Acknowledgment
-       */
-      emit: (
-        event: string,
-        socketId: string,
-        data: any,
-        ack?: ((data: any) => void) | true,
-      ) => Promise<unknown> | void;
-    };
   }
 }
