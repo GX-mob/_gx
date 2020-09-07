@@ -29,10 +29,13 @@
     "@nestjs/core": "^7.4.4",
     "@nestjs/platform-express": "^7.4.4",
     "@nestjs/platform-fastify": "^7.4.4",
+    "@nestjs/platform-socket.io": "^7.4.4",
+    "@nestjs/websockets": "^7.4.4",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
     "date-fns": "^2.16.1",
     "date-fns-tz": "^1.0.10",
+    "eventemitter3": "^4.0.7",
     "fast-json-stringify": "^2.2.4",
     "fastify-multipart": "^3.2.0",
     "file-type": "^15.0.0",
@@ -51,6 +54,7 @@
     "schemapack": "^1.4.2",
     "secure-password": "^4.0.0",
     "shortid": "^2.2.15",
+    "socket.io-redis": "^5.4.0",
     "spherical-geometry-js": "^2.0.0",
     "twilio": "^3.49.1",
     "validator": "^13.1.1"
@@ -66,6 +70,8 @@
     "@types/jest": "^26.0.13",
     "@types/mongoose": "^5.7.36",
     "@types/node": "^14.6.4",
+    "@types/socket.io": "^2.1.11",
+    "@types/socket.io-redis": "^1.0.26",
     "@types/supertest": "^2.0.8",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",
@@ -80,6 +86,7 @@
     "mongodb-memory-server": "^6.6.7",
     "pino-pretty": "^4.2.1",
     "prettier": "^2.1.1",
+    "socket.io-client": "^2.3.0",
     "stream-buffers": "^3.0.2",
     "supertest": "^4.0.2",
     "ts-jest": "^26.3.0",
@@ -130,7 +137,9 @@
       "^@app/database/(.*)$": "<rootDir>/libs/database/src/$1",
       "^@app/database$": "<rootDir>/libs/database/src",
       "@app/auth/(.*)": "<rootDir>/libs/auth/src/$1",
-      "@app/auth": "<rootDir>/libs/auth/src"
+      "@app/auth": "<rootDir>/libs/auth/src",
+      "@app/socket/(.*)": "<rootDir>/libs/socket/src/$1",
+      "@app/socket": "<rootDir>/libs/socket/src"
     }
   }
 }
