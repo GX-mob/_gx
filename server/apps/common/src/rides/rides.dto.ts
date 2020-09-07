@@ -13,6 +13,40 @@ import {
   IsArray,
 } from "class-validator";
 
+class Point implements TRoutePoint {
+  @IsArray()
+  coord!: [number, number];
+
+  @IsNotEmpty()
+  primary!: string;
+
+  @IsNotEmpty()
+  secondary!: string;
+
+  @IsNotEmpty()
+  district!: string;
+}
+
+class Route implements TRoute {
+  @ValidateNested()
+  start!: Point;
+
+  @ValidateNested()
+  waypoints?: Point[];
+
+  @ValidateNested()
+  end!: Point;
+
+  @IsNotEmpty()
+  path!: string;
+
+  @IsInt()
+  distance!: number;
+
+  @IsInt()
+  duration!: number;
+}
+
 export class GetRidesPricesParams {
   area!: string;
   subArea?: string;
@@ -36,38 +70,4 @@ export class CreateRideDto {
 
   @IsNotEmpty()
   subArea!: Ride["subArea"];
-}
-
-class Route implements TRoute {
-  @ValidateNested()
-  start!: Point;
-
-  @ValidateNested()
-  waypoints?: Point[];
-
-  @ValidateNested()
-  end!: Point;
-
-  @IsNotEmpty()
-  path!: string;
-
-  @IsInt()
-  distance!: number;
-
-  @IsInt()
-  duration!: number;
-}
-
-class Point implements TRoutePoint {
-  @IsArray()
-  coord!: [number, number];
-
-  @IsNotEmpty()
-  primary!: string;
-
-  @IsNotEmpty()
-  secondary!: string;
-
-  @IsNotEmpty()
-  district!: string;
 }

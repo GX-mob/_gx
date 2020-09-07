@@ -16,6 +16,7 @@ import {
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
 import { geometry } from "@app/helpers";
+import { utcToZonedTime } from "date-fns-tz";
 //@ts-ignore
 const { decode } = require("google-polyline");
 

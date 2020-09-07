@@ -7,7 +7,7 @@ import { RidesService } from "./rides.service";
 import { RidesController } from "./rides.controller";
 
 @Module({
-  imports: [DatabaseModule, DataModule, SessionModule],
+  imports: [CacheModule, DatabaseModule, DataModule, SessionModule],
   providers: [RidesService],
   controllers: [RidesController],
 })

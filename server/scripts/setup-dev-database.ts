@@ -1,4 +1,5 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
+
 import {
   DatabaseService,
   PriceDetail,
@@ -11,26 +12,34 @@ import chalk from "chalk";
 import faker from "faker";
 import { log } from "./util";
 
+export async function createReplSetServer() {
+  const mongoReplSetServer = new MongoMemoryReplSet({
+    replSet: { storageEngine: "wiredTiger" },
+  });
+
+  await mongoReplSetServer.waitUntilRunning();
+
+  return mongoReplSetServer.getUri();
+}
+
 export async function startDatabase() {
-  if (!process.env.DATABASE_URI) {
-    log("MongoDB", chalk`{yellow Starting Server}`);
+  log("MongoDB", chalk`{yellow Starting Server}`);
 
-    const mongoReplSetServer = new MongoMemoryReplSet({
-      replSet: { storageEngine: "wiredTiger" },
-    });
+  const mongoReplSetServer = new MongoMemoryReplSet({
+    replSet: { storageEngine: "wiredTiger" },
+  });
 
-    await mongoReplSetServer.waitUntilRunning();
+  await mongoReplSetServer.waitUntilRunning();
 
-    process.env.DATABASE_URI = await mongoReplSetServer.getUri();
-    log(
-      "MongoDB",
-      chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`,
-    );
-    log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
-    log("MongoDB", chalk`{yellow Seeding...}`);
-    await seedDatabase();
-    log("MongoDB", chalk`{yellow Seeded.}`);
-  }
+  process.env.DATABASE_URI = await mongoReplSetServer.getUri();
+
+  log("MongoDB", chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`);
+  log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
+  log("MongoDB", chalk`{yellow Seeding...}`);
+  await seedDatabase();
+  log("MongoDB", chalk`{yellow Seeded.}`);
+
+  return mongoReplSetServer;
 }
 
 export async function seedDatabase() {

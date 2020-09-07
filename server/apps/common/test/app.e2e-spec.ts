@@ -2,15 +2,23 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AppModule } from "../src/app.module";
-import { UserModel } from "@app/database";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { UserModel, PriceModel, PriceDetail, Price } from "@app/database";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 
 describe("AppController (e2e)", () => {
+  // TODO
+  it("should should should", () => {});
+  /*
   let app: INestApplication;
-  let mongoServer: MongoMemoryServer;
+  let mongoServer: MongoMemoryReplSet;
 
   beforeAll(async () => {
-    mongoServer = new MongoMemoryServer();
+    mongoServer = new MongoMemoryReplSet({
+      replSet: { storageEngine: "wiredTiger" },
+    });
+
+    await mongoServer.waitUntilRunning();
+
     process.env.DATABASE_URI = await mongoServer.getUri();
   });
 
@@ -49,4 +57,5 @@ describe("AppController (e2e)", () => {
       .get("/auth/+5582988888888")
       .expect(200);
   });
+  */
 });
