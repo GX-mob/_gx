@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Helper: util decimalAdjust ceil adjust 1`] = `1.235`;
+
+exports[`Helper: util decimalAdjust ceil adjust 2`] = `2.63`;
+
+exports[`Helper: util decimalAdjust ceil adjust 3`] = `3.4`;
+
+exports[`Helper: util decimalAdjust ceil adjust 4`] = `5`;
+
+exports[`Helper: util decimalAdjust floor adjust 1`] = `1.234`;
+
+exports[`Helper: util decimalAdjust floor adjust 2`] = `2.62`;
+
+exports[`Helper: util decimalAdjust floor adjust 3`] = `3.3`;
+
+exports[`Helper: util decimalAdjust floor adjust 4`] = `4`;
+
+exports[`Helper: util decimalAdjust round adjust 1`] = `1.235`;
+
+exports[`Helper: util decimalAdjust round adjust 2`] = `2.62`;
+
+exports[`Helper: util decimalAdjust round adjust 3`] = `3.3`;
+
+exports[`Helper: util decimalAdjust round adjust 4`] = `4`;

@@ -4,6 +4,7 @@ import {
   LatLngLike,
   computeDistanceBetween,
 } from "spherical-geometry-js";
+import { decimalAdjust } from "../util";
 import { Path } from "./types";
 //@ts-ignore
 const { decode } = require("google-polyline");
@@ -12,7 +13,6 @@ const { decode } = require("google-polyline");
  * Calculates the distance between 2 points
  * @param {LatLngLike} latLng1 Coordinate 1
  * @param {LatLngLike} latLng2 Coordinate 2
- * @param {Boolean} km if should return in kilometers
  */
 export function calculate(
   latLng1: LatLngLike,
@@ -21,7 +21,7 @@ export function calculate(
 ) {
   const distance = computeDistanceBetween(latLng1, latLng2);
 
-  return km ? distance : Math.round(distance * 1000);
+  return distance;
 }
 
 /**
@@ -45,8 +45,6 @@ export function path(
 
   for (let count = start; count < maxIterate; ++count) {
     if (last) distance += calculate(last, workPath[count]);
-
-    // if (limit && count === maxIterate) break;
 
     last = workPath[count];
   }
@@ -176,4 +174,12 @@ export function percurredDistance(
     isBefore,
     nextIdx: isBefore ? idx : idx + 1,
   };
+}
+
+/**
+ * 2345 => 2.345
+ * @param value
+ */
+export function meterToKM(value: number): number {
+  return decimalAdjust(value / 1000, -3);
 }

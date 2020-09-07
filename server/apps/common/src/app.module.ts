@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { SignInModule } from "./sign-in/sign-in.module";
 import { SignUpModule } from "./sign-up/sign-up.module";
 import { AccountManagementModule } from "./account-management/account-management.module";
-
+import { RidesModule } from "./rides/rides.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -13,6 +13,7 @@ import { AccountManagementModule } from "./account-management/account-management
     SignInModule,
     SignUpModule,
     AccountManagementModule,
+    RidesModule,
   ],
   providers: [ConfigService],
 })

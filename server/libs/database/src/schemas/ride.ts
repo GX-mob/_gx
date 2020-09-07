@@ -57,17 +57,17 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("end", route.end);
 
     if (util.hasProp(route, "waypoints")) {
-      for (let i = 0; i < (route.waypoints as RoutePoint[]).length; ++i)
+      for (let i = 0; i < (route.waypoints as TRoutePoint[]).length; ++i)
         this.checkPoint(
           `waypoints[${i}]`,
-          (route.waypoints as RoutePoint[])[i],
+          (route.waypoints as TRoutePoint[])[i],
         );
     }
 
     return route;
   }
 
-  checkPoint(name: string, point: RoutePoint) {
+  checkPoint(name: string, point: TRoutePoint) {
     if (
       !util.hasProp(point, "coord") ||
       !util.hasProp(point, "primary") ||
@@ -82,48 +82,71 @@ class Route extends mongoose.SchemaType {
 
 (mongoose.Schema.Types as any).Route = Route;
 
-type RoutePoint = {
+export type TRoutePoint = {
+  /**
+   * Latitude and longitude
+   */
   coord: [number, number];
+  /**
+   * Primary title
+   */
   primary: string;
+  /**
+   * Secondary title
+   */
   secondary: string;
+  /**
+   * Slug name of district
+   */
   district: string;
 };
 
-type TRoute = {
-  start: RoutePoint;
-  waypoints?: RoutePoint[];
-  end: RoutePoint;
+export type TRoute = {
+  start: TRoutePoint;
+  waypoints?: TRoutePoint[];
+  end: TRoutePoint;
   path: string;
   distance: number;
 };
+
+export enum RideTypes {
+  Normal = 1,
+  VIG = 2,
+}
+
+export enum RidePayMethods {
+  Money = 1,
+  CreditCard = 2,
+}
+
+export enum RideStatus {
+  CREATED,
+  RUNNING,
+  COMPLETED,
+  CANCELED,
+}
 
 export interface Ride {
   _id: any;
   pid: string;
   voyager: any;
-  route: {
-    start: RoutePoint;
-    waypoints?: RoutePoint[];
-    end: RoutePoint;
-    path: string;
-    distance: number;
-  };
+  route: TRoute;
   /**
    * * 1 = Normal
    * * 2 = VIG - Very important gx
    */
-  type: 1 | 2;
+  type: RideTypes;
   /**
    * * 1 = Money
    * * 2 = Credit card
    */
-  payMethod: 1 | 2;
+  payMethod: RidePayMethods;
   /**
    * Ride costs
    */
   costs: {
     /**
-     * Base costs, distance + duration
+     * Ride cost, distance + duration
      */
     base: number;
     distance: {
@@ -137,14 +160,14 @@ export interface Ride {
       aditionalForOutBusinessTime: number;
     };
     /**
-     * Total cost, base cost + pendencies value
+     * Total cost, ride costs + pendencies costs
      */
     total: number;
   };
   country: string;
   area: string;
   subArea: string;
-  status: "created" | "running" | "completed" | "canceled";
+  status: RideStatus;
   driver?: any;
   pendencies?: Pendencie[];
 }
@@ -167,8 +190,8 @@ export const RideSchema: Schema = new Schema(
     driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {
       type: String,
-      enum: ["created", "running", "completed"],
-      default: "created",
+      enum: Object.values(RideStatus),
+      default: RideStatus.CREATED,
     },
     pendencies: {
       type: Array,

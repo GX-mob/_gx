@@ -1,6 +1,9 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import {
   DatabaseService,
+  PriceDetail,
+  Price,
+  PriceModel,
   UserModel,
   RideModel,
 } from "../dist/apps/common/libs/database/src";
@@ -12,8 +15,13 @@ export async function startDatabase() {
   if (!process.env.DATABASE_URI) {
     log("MongoDB", chalk`{yellow Starting Server}`);
 
-    const mongoServer = new MongoMemoryServer();
-    process.env.DATABASE_URI = await mongoServer.getUri();
+    const mongoReplSetServer = new MongoMemoryReplSet({
+      replSet: { storageEngine: "wiredTiger" },
+    });
+
+    await mongoReplSetServer.waitUntilRunning();
+
+    process.env.DATABASE_URI = await mongoReplSetServer.getUri();
     log(
       "MongoDB",
       chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`,
@@ -29,6 +37,51 @@ export async function seedDatabase() {
   const db = new DatabaseService({ get: () => process.env.DATABASE_URI });
 
   await Promise.all(db.connections);
+
+  log("MongoDB", chalk`{yellow Seeding rides service configuration...}`);
+
+  const rideType1: PriceDetail = {
+    type: 1,
+    available: true,
+    perKilometer: 1.1,
+    perMinute: 0.3,
+    kilometerMultipler: 0.2,
+    minuteMultipler: 0.1,
+    overBusinessTimeKmAdd: 0.4,
+    overBusinessTimeMinuteAdd: 0.3,
+  };
+
+  const rideType2: PriceDetail = {
+    type: 2,
+    available: true,
+    perKilometer: 1.6,
+    perMinute: 0.5,
+    kilometerMultipler: 0.3,
+    minuteMultipler: 0.2,
+    overBusinessTimeKmAdd: 0.6,
+    overBusinessTimeMinuteAdd: 0.5,
+  };
+
+  const prices: Price[] = [
+    {
+      area: "AL",
+      currency: "BRL",
+      general: [rideType1, rideType2],
+      subAreas: {
+        maceio: [rideType1, rideType2],
+      },
+    },
+    {
+      area: "PE",
+      currency: "BRL",
+      general: [rideType1, rideType2],
+      subAreas: {
+        recife: [rideType1, rideType2],
+      },
+    },
+  ];
+
+  await Promise.all([PriceModel.create(prices)]);
 
   log("MongoDB", chalk`{yellow Seeding users...}`);
   // Create voyager user

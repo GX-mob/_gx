@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import { utcToZonedTime } from "date-fns-tz";
 import { DatabaseService, Price, PriceDetail, Ride } from "@app/database";
 import { util } from "@app/helpers";
+import { CreateRideDto } from "./rides.dto";
+import { BUSINESS_TIME_HOURS, AMOUT_DECIMAL_ADJUST } from "../constants";
 
 @Injectable()
 export class RidesService {
@@ -48,11 +51,11 @@ export class RidesService {
    * @param subArea
    * @returns {PriceDetail[] | PriceDetail | undefined} Price list, price for provided ride type or undefined
    */
-  getPrice(
+  getRideStatusPrice<T extends Ride["type"]>(
     area: string,
     subArea?: string,
-    rideType?: Ride["type"],
-  ): PriceDetail[] | PriceDetail | undefined {
+    rideType?: T,
+  ): PriceDetail | PriceDetail[] | undefined {
     if (!util.hasProp(this.areas, area) || !this.areas[area]) {
       return;
     }
@@ -69,5 +72,137 @@ export class RidesService {
     }
 
     return response;
+  }
+
+  getRideCosts(request: CreateRideDto) {
+    const { type, area, subArea } = request;
+
+    /**
+     * The costs of ride type
+     */
+    const timezone = this.areas[area].timezone;
+    const costs = this.getRideStatusPrice(area, subArea, type) as PriceDetail;
+    const isBusinessTime = this.isBusinessTime(timezone);
+
+    const duration = this.durationPrice(
+      request.route.duration,
+      costs,
+      isBusinessTime,
+    );
+    const distance = this.distancePrice(
+      request.route.distance,
+      costs,
+      isBusinessTime,
+    );
+
+    return { duration, distance };
+  }
+
+  isBusinessTime(timezone: string, date: Date = new Date()) {
+    const zonedDate = utcToZonedTime(date, timezone);
+    const hour = zonedDate.getHours();
+    const isSunday = zonedDate.getDay() === 0;
+
+    if (isSunday) {
+      return false;
+    }
+
+    return hour >= BUSINESS_TIME_HOURS.START && hour <= BUSINESS_TIME_HOURS.END;
+  }
+
+  /**
+   *
+   * @param duration In minutes
+   * @param costs Fares of ride type
+   * @param isBusinessTime
+   */
+  durationPrice(
+    duration: number,
+    costs: PriceDetail,
+    isBusinessTime: boolean,
+  ): {
+    total: number;
+    aditionalForLongRide: number;
+    aditionalForOutBusinessTime: number;
+  } {
+    /**
+     * Default price multiplier
+     */
+    let multipler = costs.perMinute;
+    let aditionalForLongRide = 0;
+    let aditionalForOutBusinessTime = 0;
+
+    /**
+     * Aditional multipler to rides long than 40 minutes.
+     */
+    if (duration > 40) {
+      multipler += costs.minuteMultipler;
+      aditionalForLongRide = duration * costs.minuteMultipler;
+    }
+
+    /**
+     * Aditional fare to non business time rides
+     */
+    if (!isBusinessTime) {
+      multipler += costs.overBusinessTimeMinuteAdd;
+      aditionalForOutBusinessTime = duration * costs.minuteMultipler;
+    }
+
+    return {
+      total: duration * multipler,
+      aditionalForLongRide,
+      aditionalForOutBusinessTime,
+    };
+  }
+
+  /**
+   *
+   * @param distance in KM
+   * @param costs Fares of ride type
+   * @param isBusinessTime
+   */
+  distancePrice(
+    distance: number,
+    price: PriceDetail,
+    isBusinessTime: boolean,
+  ): {
+    total: number;
+    aditionalForLongRide: number;
+    aditionalForOutBusinessTime: number;
+  } {
+    /**
+     * Default price multiplier
+     */
+    let multipler = price.perKilometer;
+    let aditionalForLongRide = 0;
+    let aditionalForOutBusinessTime = 0;
+
+    /**
+     * Aditional fare multiplier to rides longger than 10 km
+     */
+    if (distance > 10000) {
+      multipler += price.overBusinessTimeKmAdd;
+      aditionalForLongRide = distance * aditionalForLongRide;
+    }
+
+    /**
+     * Aditional fare to non business time rides
+     */
+    if (!isBusinessTime) {
+      multipler += price.overBusinessTimeKmAdd;
+      aditionalForOutBusinessTime = distance * price.overBusinessTimeKmAdd;
+    }
+
+    return {
+      total: util.decimalAdjust(multipler * distance, AMOUT_DECIMAL_ADJUST),
+      aditionalForLongRide: util.decimalAdjust(
+        aditionalForLongRide,
+        AMOUT_DECIMAL_ADJUST,
+      ),
+      aditionalForOutBusinessTime: util.decimalAdjust(
+        aditionalForOutBusinessTime,
+        AMOUT_DECIMAL_ADJUST,
+      ),
+    };
   }
 }

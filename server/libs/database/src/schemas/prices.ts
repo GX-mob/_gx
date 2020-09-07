@@ -28,13 +28,14 @@ export interface PriceDetail {
 export interface Price {
   area: string;
   currency: string;
+  timezone: string;
   general: PriceDetail[];
   subAreas: { [subArea: string]: PriceDetail[] };
 }
 
 export interface PriceDocument extends Price, Document {}
 
-const PriceDetailSchema: Schema = new Schema({
+const PriceDetailSchema = new Schema({
   type: { type: Number, enum: [1, 2], required: true },
   available: { type: Boolean, default: true },
   perKilometer: { type: Number, required: true },
@@ -45,12 +46,28 @@ const PriceDetailSchema: Schema = new Schema({
   overBusinessTimeMinuteAdd: { type: Number, required: true },
 });
 
-export const PriceSchema: Schema = new Schema(
+export const PriceSchema = new Schema(
   {
-    area: { type: String, unique: true },
+    area: { type: String, unique: true, required: true },
     currency: { type: String, required: true },
-    general: { type: PriceDetailSchema, required: true },
-    subAreas: { type: Map, of: PriceDetailSchema, default: {} },
+    timezone: { type: String, required: true },
+    general: {
+      type: [PriceDetailSchema],
+      required: true,
+      validate: {
+        validator(v: any[]) {
+          return Boolean(v.length);
+        },
+        message(props) {
+          return `${props.value} must have last one value.`;
+        },
+      },
+    },
+    subAreas: {
+      type: Map,
+      of: { type: [PriceDetailSchema] },
+      default: {},
+    },
   },
   { collection: "prices" },
 );

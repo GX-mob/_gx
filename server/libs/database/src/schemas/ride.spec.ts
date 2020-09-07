@@ -3,7 +3,7 @@
  *
  * @group unit/services/database/models/ride
  */
-import { RideModel } from "./ride";
+import { RideModel, RideTypes, RidePayMethods } from "./ride";
 
 describe("Model: Ride", () => {
   const mockRoutePoint = {
@@ -21,8 +21,8 @@ describe("Model: Ride", () => {
 
   let base = {
     voyager: "507f1f77bcf86cd799439011",
-    type: 1,
-    payMethod: 1,
+    type: RideTypes.Normal,
+    payMethod: RidePayMethods.Money,
   };
 
   it("should throw error due to empty required fields", (done) => {

@@ -149,10 +149,37 @@ export function hasProp(obj: any, prop: string) {
 export function hideEmail(
   email: string,
   visibleCharsCount: number = 3,
+  hiddenProvider?: number,
 ): string {
-  const [name, domain] = email.split("@");
+  let [name, domain] = email.split("@");
+
+  if (typeof hiddenProvider === "number") {
+    domain = domain.slice(0, hiddenProvider).padEnd(domain.length, "*");
+  }
+
   const hiddenEmail = `${name
     .slice(0, visibleCharsCount)
     .padEnd(name.length, "*")}@${domain}`;
   return hiddenEmail;
+}
+
+export function decimalAdjust(
+  value: number,
+  exp: number = 0,
+  type: "round" | "floor" | "ceil" = "round",
+): number {
+  if (exp === 0) {
+    return Math[type](value);
+  }
+
+  // Shift
+  const shiftValue = value.toString().split("e");
+  value = Math[type](
+    Number(shiftValue[0] + "e" + (shiftValue[1] ? +shiftValue[1] - exp : -exp)),
+  );
+  // Shift back
+  const shiftBack = value.toString().split("e");
+  return Number(
+    shiftBack[0] + "e" + (shiftBack[1] ? +shiftBack[1] + exp : exp),
+  );
 }

@@ -29,4 +29,12 @@ describe("Helpers/Geometry: Distance", () => {
       expect(distance.path(pathDecodedMock, 0, 5)).toMatchSnapshot();
     });
   });
+
+  describe("meterToKM", () => {
+    it("should convert", () => {
+      expect(distance.meterToKM(2345)).toBe(2.345);
+      expect(distance.meterToKM(2346)).toBe(2.346);
+      expect(distance.meterToKM(2347)).toBe(2.347);
+    });
+  });
 });

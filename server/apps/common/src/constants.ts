@@ -19,6 +19,7 @@ export const EXCEPTIONS_MESSAGES = {
 
 export const CACHE_NAMESPACES = {
   REGISTRY_VERIFICATIONS: "registryVerifications",
+  RIDE_READ_PERMISSIONS: "rideReadPermission",
 };
 
 export const STORAGE_BUCKETS = {
@@ -28,3 +29,9 @@ export const STORAGE_BUCKETS = {
 export const STORAGE_PREFIX_URLS = {
   USERS_AVATARTS: STORAGE_CONSTANTS.DEFAULT_URL_PREFIX,
 };
+
+// thanks branas
+export const BUSINESS_TIME_HOURS = { START: 9, END: 18 };
+
+// Facilitates payment ignoring cents of second decimal place
+export const AMOUT_DECIMAL_ADJUST = -1;

@@ -154,4 +154,68 @@ describe("Helper: util", () => {
       );
     });
   });
+
+  describe("hasProp", () => {
+    const obj = { foo: "bar" };
+    const unsecureObj = { foo: "bar", hasOwnProperty: (prop: string) => true };
+
+    it("should check over object", () => {
+      expect(util.hasProp(obj, "foo")).toBeTruthy();
+      expect(util.hasProp(obj, "bar")).toBeFalsy();
+    });
+
+    it("should check over unsecure object", () => {
+      // direct call, false positive
+      expect(unsecureObj.hasOwnProperty("not-have")).toBeTruthy();
+
+      expect(util.hasProp(unsecureObj, "not-have")).toBeFalsy();
+      expect(util.hasProp(unsecureObj, "hasOwnProperty")).toBeTruthy();
+      expect(util.hasProp(unsecureObj, "foo")).toBeTruthy();
+      expect(util.hasProp(unsecureObj, "bar")).toBeFalsy();
+    });
+  });
+
+  describe("hideEmail", () => {
+    const email = "valid@email.com";
+
+    it("should hide", () => {
+      expect(util.hideEmail(email)).toBe("val**@email.com");
+    });
+
+    it("should change default visible chars", () => {
+      expect(util.hideEmail(email, 2)).toBe("va***@email.com");
+    });
+
+    it("should hide provider", () => {
+      expect(util.hideEmail(email, 3, 2)).toBe("val**@em*******");
+    });
+  });
+
+  describe("decimalAdjust", () => {
+    const decimal1 = 1.2345123;
+    const decimal2 = 2.6246456;
+    const decimal3 = 3.3425212;
+    const decimal4 = 4.1645212;
+
+    it("round adjust", () => {
+      expect(util.decimalAdjust(decimal1, -3)).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal2, -2)).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal3, -1)).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal4)).toMatchSnapshot();
+    });
+
+    it("floor adjust", () => {
+      expect(util.decimalAdjust(decimal1, -3, "floor")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal2, -2, "floor")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal3, -1, "floor")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal4, 0, "floor")).toMatchSnapshot();
+    });
+
+    it("ceil adjust", () => {
+      expect(util.decimalAdjust(decimal1, -3, "ceil")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal2, -2, "ceil")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal3, -1, "ceil")).toMatchSnapshot();
+      expect(util.decimalAdjust(decimal4, 0, "ceil")).toMatchSnapshot();
+    });
+  });
 });
