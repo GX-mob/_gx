@@ -6,7 +6,7 @@
 import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { UserModel } from "@app/database";
+import { UserModel, USERS_ROLES } from "@app/database";
 import { DataModule, DataService } from "@app/data";
 import { DatabaseService, Session } from "@app/database";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
@@ -97,14 +97,16 @@ describe("SessionService", () => {
   });
 
   it("should check permission", () => {
-    const session1 = ({ user: { roles: ["voyager"] } } as unknown) as Session;
-    const session2 = ({
-      user: { roles: ["voyager", "driver"] },
+    const session1 = ({
+      user: { roles: [USERS_ROLES.VOYAGER] },
     } as unknown) as Session;
-    const group1 = ["voyager"];
-    const group2 = ["driver"];
-    const group3 = ["driver", "admin"];
-    const group4 = ["su"];
+    const session2 = ({
+      user: { roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER] },
+    } as unknown) as Session;
+    const group1 = [USERS_ROLES.VOYAGER];
+    const group2 = [USERS_ROLES.DRIVER];
+    const group3 = [USERS_ROLES.DRIVER, "admin"] as USERS_ROLES[];
+    const group4 = (["su"] as unknown) as USERS_ROLES[];
 
     expect(service.hasPermission(session1, group1)).toBeTruthy();
     expect(service.hasPermission(session1, group2)).toBeFalsy();

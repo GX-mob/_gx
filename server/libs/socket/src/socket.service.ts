@@ -1,7 +1,9 @@
 import { Injectable, Inject } from "@nestjs/common";
+import Redis from "ioredis";
 import { ConfigService } from "@nestjs/config";
 import { Server, Adapter } from "socket.io";
 import redisIoAdapter from "socket.io-redis";
+import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
 import EventEmitter from "eventemitter3";
 import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
@@ -13,32 +15,38 @@ export class SocketService {
    * Self node id to used prevent handling self emitted events
    */
   readonly nodeId = shortid.generate();
-  readonly nodesEmitter: EventEmitter = new EventEmitter();
+  readonly nodesEvents = new EventEmitter();
   public server!: Server;
+  public schemas!: ParsersList;
   private adapter!: Adapter;
+  private options!: ConfigOptions;
 
-  constructor(
-    private config: ConfigService,
-    @Inject(OPTIONS_KEY) private options: ConfigOptions,
-  ) {}
+  constructor(private config: ConfigService) {}
 
-  configureServer(server: Server) {
+  configureServer(server: Server, options: ConfigOptions) {
     this.server = server;
+    this.options = options;
+    this.schemas = options.parser.schemas;
 
-    const redisUri = this.config.get("REDIS_URI") as string;
-    const redisAdapter = redisIoAdapter(redisUri);
+    const redisAdapterConfigure =
+      typeof options.redis === "string"
+        ? {
+            pubClient: new Redis(options.redis),
+            subClient: new Redis(options.redis),
+          }
+        : options.redis;
+
+    const redisAdapter = redisIoAdapter(redisAdapterConfigure);
     server.adapter(redisAdapter);
 
     this.adapter = server.of("/").adapter;
-
-    // TODO configure parser
 
     this.registerServerEventsListener();
     this.configureEventsMiddleware();
   }
 
   /**
-   * Register listener to broadcasted events
+   * Register listener of broadcasted events
    * @param event
    * @param listener
    */
@@ -49,7 +57,7 @@ export class SocketService {
       acknowledgment?: Callback,
     ) => void,
   ) {
-    this.nodesEmitter.on(event, listener);
+    this.nodesEvents.on(event, listener);
   }
 
   private registerServerEventsListener() {
@@ -66,7 +74,7 @@ export class SocketService {
 
       switch (event) {
         case SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT:
-          this.nodesEmitter.emit(content.event, content);
+          this.nodesEvents.emit(content.event, content);
           return cb(true);
         case SERVER_EVENTS.DISPATCHED_SOCKET_EVENT:
           return this.handleDispatchedSocketEvent(content, cb);
@@ -104,8 +112,8 @@ export class SocketService {
   /**
    * Emit event to socket.
    *
-   * If this server has the socket connection, it self emits the event, otherwise,
-   * dispatch to the servers nodes and the one with the socket emits the event.
+   * If this node has the socket connection, it self emits the event, otherwise,
+   * dispatch to the others nodes and the one with the socket emits the event.
    *
    * @param {string} event
    * @param {string} socketId
@@ -187,7 +195,7 @@ export class SocketService {
 declare module "socket.io" {
   interface Adapter {
     customRequest(
-      data: any,
+      data: ServerEvent,
       callback?: (err: any, replies: any[]) => void,
     ): void;
     customHook: (data: any, callback: (data: any) => void) => void;

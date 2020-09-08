@@ -1,12 +1,14 @@
-import { ParserMapSchemas } from "extensor/dist/types";
+import { Redis } from "ioredis";
+import { parsers } from "extensor";
 
 export type ConfigOptions = {
   /**
    * List of events that are auto broadcasted to another server nodes
    */
   broadcastedEvents: string[];
-  ackTimeout: number;
-  schemas?: ParserMapSchemas;
+  redis: string | { pubClient: Redis; subClient: Redis };
+  ackTimeout?: number;
+  parser: ReturnType<typeof parsers.schemapack>;
 };
 
 export type ServerEvent = {

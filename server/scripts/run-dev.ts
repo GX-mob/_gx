@@ -7,7 +7,9 @@ import { startDatabase } from "./setup-dev-database";
 async function start() {
   await startDatabase();
 
-  const cmd = "NODE_ENV=development npm run start:dev";
+  const [, , application] = process.argv;
+
+  const cmd = `NODE_ENV=development nest start ${application} --watch`;
 
   const child = spawn(cmd, [], {
     shell: true,

@@ -8,7 +8,7 @@ import { Handler, Settings } from "./handler";
 export class DataService {
   public users: Handler<
     User,
-    Omit<User, "pid" | "averageEvaluation" | "emails">
+    Omit<User, "pid" | "averageEvaluation" | "emails" | "roles">
   >;
   public sessions: Handler<Session, Omit<Session, "active">>;
   public rides: Handler<Ride, Omit<Ride, "pid" | "status">>;

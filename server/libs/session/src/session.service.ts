@@ -5,7 +5,7 @@ import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { DataService } from "@app/data";
 import { CacheService } from "@app/cache";
-import { User, Session } from "@app/database";
+import { User, Session, USERS_ROLES } from "@app/database";
 import { util } from "@app/helpers";
 import HttpError from "http-errors";
 
@@ -119,10 +119,8 @@ export class SessionService {
     return session;
   }
 
-  public hasPermission(session: Session, roles: string[]) {
-    return !!roles.find((role) =>
-      (session.user.roles as string[]).includes(role),
-    );
+  public hasPermission(session: Session, roles: USERS_ROLES[]) {
+    return !!roles.find((role) => session.user.roles.includes(role));
   }
 
   async get(_id: Types.ObjectId) {

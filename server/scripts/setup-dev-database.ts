@@ -75,6 +75,7 @@ export async function seedDatabase() {
     {
       area: "AL",
       currency: "BRL",
+      timezone: "America/Maceio",
       general: [rideType1, rideType2],
       subAreas: {
         maceio: [rideType1, rideType2],
@@ -83,6 +84,7 @@ export async function seedDatabase() {
     {
       area: "PE",
       currency: "BRL",
+      timezone: "America/Maceio",
       general: [rideType1, rideType2],
       subAreas: {
         recife: [rideType1, rideType2],
@@ -132,7 +134,7 @@ export async function seedDatabase() {
       country: "BR",
       area: "AL",
       subArea: "Maceió",
-      status: "completed",
+      status: "COMPLETED",
       route: {
         start: {
           primary: "",

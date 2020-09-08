@@ -18,9 +18,13 @@
 import { Document, Schema } from "mongoose";
 import Connections from "../connections";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import { util } from "@app/helpers";
 import shortid from "shortid";
 import validator from "validator";
+
+export enum USERS_ROLES {
+  VOYAGER = "VOYAGER",
+  DRIVER = "DRIVER",
+}
 
 export interface User {
   _id: any;
@@ -38,7 +42,7 @@ export interface User {
   emails: string | string[];
   createdAt?: Date;
   updatedAt?: Date;
-  roles?: string[];
+  roles: USERS_ROLES[];
   password?: Buffer;
   ["2fa"]?: string;
 }
@@ -99,7 +103,7 @@ export const UserSchema: Schema = new Schema(
     createdAt: { type: Date, default: Date.now },
     updatedAt: Date,
     birth: { type: Date, required: true },
-    roles: { type: Array, of: String, default: ["voyager"] },
+    roles: { type: Array, of: String, default: USERS_ROLES.VOYAGER },
     password: Buffer,
     ["2fa"]: String,
   },
