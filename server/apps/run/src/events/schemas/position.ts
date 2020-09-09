@@ -1,4 +1,3 @@
-import EVENTS_MAP from "../events-map";
 import latLng, { LatLng } from "../common/lat-lng";
 
 /**
@@ -30,9 +29,4 @@ export const positionSchema = {
   kmh: "int16",
   ignore: ["string"],
   id: "string",
-};
-
-export default {
-  id: EVENTS_MAP.POSITION.ID,
-  schema: positionSchema,
 };

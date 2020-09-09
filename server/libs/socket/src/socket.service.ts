@@ -120,7 +120,7 @@ export class SocketService {
    * @param {any} data
    * @param {function | true} [ack] Acknowledgment
    */
-  emit(socketId: string, event: string, data: any, callback?: Callback) {
+  emit<T = any>(socketId: string, event: string, data: T, callback?: Callback) {
     const { connected } = this.server.sockets;
     if (socketId in connected) {
       return connected[socketId].emit(event, data, callback);

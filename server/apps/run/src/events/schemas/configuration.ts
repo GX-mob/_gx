@@ -1,5 +1,4 @@
 import { RidePayMethods, RideTypes } from "@app/database";
-import EVENTS_MAP from "../events-map";
 
 export type Configuration = {
   /**
@@ -28,9 +27,4 @@ export type Configuration = {
 export const configurationSchema = {
   payMethods: ["uint8"],
   types: ["uint8"],
-};
-
-export default {
-  id: EVENTS_MAP.CONFIGURATION.ID,
-  schema: configurationSchema,
 };

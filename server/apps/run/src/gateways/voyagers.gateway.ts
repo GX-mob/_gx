@@ -9,19 +9,18 @@ import { NAMESPACES } from "../constants";
 import { Common } from "./common";
 import { USERS_ROLES } from "@app/database";
 import { Socket } from "socket.io";
-import { Position } from "../schemas/events/position";
-import { State } from "../schemas/events/state";
+import { EVENTS, Position, State } from "../events";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
   public role = USERS_ROLES.VOYAGER;
 
-  @SubscribeMessage("state")
+  @SubscribeMessage(EVENTS.STATE)
   stateEvent(@MessageBody() state: State, @ConnectedSocket() client: Socket) {
     console.log(state, client.id);
   }
 
-  @SubscribeMessage("position")
+  @SubscribeMessage(EVENTS.POSITION)
   positionEvent(
     @MessageBody() position: Position,
     @ConnectedSocket() client: Socket,

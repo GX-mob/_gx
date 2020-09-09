@@ -1,6 +1,6 @@
 import { UserBasic } from "./user-basic";
-import { Position } from "../events/position";
-import { Configuration } from "../events/configuration";
+import { Position } from "../position";
+import { Configuration } from "../configuration";
 
 export type Driver = UserBasic & {
   position: Position;

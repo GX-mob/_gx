@@ -1,4 +1,4 @@
-import latLng, { LatLng } from "./lat-lng";
+import { latLngSchema, LatLng } from "./lat-lng";
 
 export type Location = {
   /**
@@ -19,9 +19,9 @@ export type Location = {
   latLng: LatLng;
 };
 
-export default {
+export const locationSchema = {
   main: "string",
   secondary: "string",
   district: "string",
-  latLng: latLng,
+  latLng: latLngSchema,
 };

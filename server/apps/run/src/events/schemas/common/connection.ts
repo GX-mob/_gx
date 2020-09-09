@@ -1,4 +1,4 @@
-import { Configuration } from "../events/configuration";
+import { Configuration } from "../configuration";
 import { UserBasic } from "./user-basic";
 import { Driver } from "./driver";
 import { Models } from "@gx-mob/http-service";

@@ -1,4 +1,3 @@
-import EVENTS_MAP from "../events-map";
 /**
  * User state event schema
  */
@@ -17,8 +16,3 @@ export type State = {
 };
 
 export const stateSchema = { state: "int8", id: "string" };
-
-export default {
-  id: EVENTS_MAP.STATE.ID,
-  schema: stateSchema,
-};

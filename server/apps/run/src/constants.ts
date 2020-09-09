@@ -4,12 +4,14 @@ export enum NAMESPACES {
 }
 
 export enum CACHE_NAMESPACES {
-  CONNECTIONS = "rides:connections",
+  CONNECTIONS = "ridesConnections",
+  OFFERS = "ridesOffers",
 }
 
-export enum CACHE_TTL {
-  CONNECTIONS = 1000 * 60 * 60 * 5, // 5 hours
-}
+export const CACHE_TTL = {
+  CONNECTIONS: 1000 * 60 * 60 * 5, // 5 hours
+  OFFERS: 1000 * 60 * 15, // 15 minutes
+};
 
 export enum MATCH {
   MAX_EXECUTION = 60 * 5, // 60 = Executes the algorithm during 1 minute
@@ -17,6 +19,9 @@ export enum MATCH {
 }
 
 export enum OFFER {
+  CREATE_RESPONSE_RIDE_NOT_FOUND = "ride-not-found",
+  CREATE_RESPONSE_OFFERING = "offering",
+
   DRIVER_RESPONSE_TIMEOUT = 13000, // 13 seconds
   INITIAL_RADIUS_SIZE = 1000,
   ADD_RADIUS_SIZE_EACH_ITERATION = 200,

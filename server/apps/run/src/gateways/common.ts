@@ -18,8 +18,8 @@ import { auth } from "extensor";
 import { OffersState } from "../states/offers.state";
 import { DriversState } from "../states/drivers.state";
 import { ConnectionDataService } from "../conn-data.service";
-
-import { DataModule, DataService } from "@app/data";
+import { DataModule } from "@app/data";
+import { EVENTS, State } from "../events";
 declare module "socket.io" {
   interface Socket {
     connection: Connection;
@@ -48,9 +48,6 @@ export class Common
 
   afterInit(server: Server) {
     auth.server(server, async ({ socket, data: { token, p2p } }) => {
-      console.log("@@@", socket.id, token);
-      if (token === "fooba") return true;
-
       const session = await this.sessionService.verify(
         token,
         socket.handshake.address,
@@ -79,8 +76,6 @@ export class Common
 
       await this.connectionData.set(pid, connection);
 
-      (socket as any).connection = connection;
-
       return true;
     });
   }
@@ -94,11 +89,16 @@ export class Common
   }
 
   positionEventHandler(position: Position, client: Socket) {
-    this.dispachToObervers(
-      "position",
-      client,
-      this.signObservableEvent(position, client),
-    );
+    this.dispachToObervers("position", client, position);
+  }
+
+  @SubscribeMessage(EVENTS.STATE)
+  stateEventHandler(
+    @MessageBody() state: State,
+    @ConnectedSocket() client: Socket,
+  ) {
+    //this.connectionState = state.state;
+    this.dispachToObervers("state", client, state);
   }
 
   dispachToObervers<T = any>(
@@ -108,12 +108,16 @@ export class Common
     considerP2P = true,
   ) {
     const { observers } = client.connection;
-    for (let i = 0; i < observers.length; ++i) {
-      if (considerP2P && observers[i].p2p) {
-        continue;
+
+    data = this.signObservableEvent(data, client);
+
+    observers.forEach((observer) => {
+      if (considerP2P && observer.p2p) {
+        return;
       }
-      this.socketService.emit(observers[i].socketId, event, data);
-    }
+
+      this.socketService.emit(observer.socketId, event, data);
+    });
   }
 
   signObservableEvent<T = any>(packet: T, client: Socket): T {

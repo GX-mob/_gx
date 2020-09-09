@@ -1,4 +1,3 @@
-import EVENTS_MAP from "../events-map";
 import { positionSchema, Position } from "./position";
 import { configurationSchema, Configuration } from "./configuration";
 
@@ -7,10 +6,7 @@ export type Setup = {
   configuration: Configuration;
 };
 
-export default {
-  id: EVENTS_MAP.SETUP.ID,
-  schema: {
-    position: positionSchema,
-    configuration: configurationSchema,
-  },
+export const driverSetupSchema = {
+  position: positionSchema,
+  configuration: configurationSchema,
 };
