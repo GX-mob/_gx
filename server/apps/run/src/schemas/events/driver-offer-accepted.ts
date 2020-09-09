@@ -1,8 +1,16 @@
-export type Type = boolean;
+import EVENTS_MAP from "../events-map";
 
-export const schema = { ridePID: "string", timestamp: "uint32" };
+export type DriverOfferAccepted = {
+  ridePID: string;
+  timestamp: number;
+};
+
+export const driverOfferAcceptedSchema = {
+  ridePID: "string",
+  timestamp: "uint32",
+};
 
 export default {
-  id: 0,
-  schema,
+  id: EVENTS_MAP.DRIVER_OFFER_ACCEPTED.ID,
+  schema: driverOfferAcceptedSchema,
 };

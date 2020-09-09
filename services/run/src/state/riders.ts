@@ -196,7 +196,7 @@ export class Riders {
       /**
        * Hard skip conditions
        *
-       * Conditions that probably not change in next execution.
+       * Conditions that probably not change or have effect in next execution.
        */
       if (
         /**
@@ -216,7 +216,7 @@ export class Riders {
       /**
        * Soft skip conditions
        *
-       * Conditions that can be changed in next execution by the
+       * Conditions that can be have effect change in next execution by the
        * driver configuration update action, finished ride event
        * or got enter in max distance area.
        */

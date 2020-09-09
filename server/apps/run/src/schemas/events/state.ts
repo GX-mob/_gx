@@ -1,3 +1,4 @@
+import EVENTS_MAP from "../events-map";
 /**
  * User state event schema
  */
@@ -15,7 +16,9 @@ export type State = {
   pid: string;
 };
 
+export const stateSchema = { state: "int8", id: "string" };
+
 export default {
-  id: 1,
-  schema: { state: "int8", id: "string" },
+  id: EVENTS_MAP.STATE.ID,
+  schema: stateSchema,
 };

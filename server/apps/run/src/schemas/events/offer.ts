@@ -1,5 +1,4 @@
-import location, { Location } from "../common/location";
-import rideTypes, { RideTypes } from "../common/ride-types";
+import EVENTS_MAP from "../events-map";
 import { Type as Ride } from "../common/ride";
 // import { Ride } from "@gx-mob/types"
 
@@ -50,11 +49,11 @@ export type OfferServer = {
   offeredTo: string | null;
 };
 
-export const schema = {
+export const offerSchema = {
   riderPID: "string",
 };
 
 export default {
-  id: 1,
-  schema,
+  id: EVENTS_MAP.OFFER.ID,
+  schema: offerSchema,
 };

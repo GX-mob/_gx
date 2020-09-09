@@ -1,10 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { SessionModule, SessionService } from "@app/session";
-import { DataModule } from "@app/data";
-import { CacheModule, CacheService } from "@app/cache";
-import { SocketModule, SocketService } from "@app/socket";
-import { EventsModule } from "./events/events.module";
+import { GatewaysModule } from "./gateways/gateways.module";
 
 @Module({
   imports: [
@@ -12,12 +8,8 @@ import { EventsModule } from "./events/events.module";
       isGlobal: true,
       envFilePath: ".development.env",
     }),
-    SocketModule,
-    DataModule,
-    SessionModule,
-    CacheModule,
-    EventsModule,
+    GatewaysModule,
   ],
-  providers: [SocketService, SessionService, CacheService],
+  providers: [],
 })
 export class AppModule {}

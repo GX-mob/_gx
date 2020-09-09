@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { SocketNode } from "./socket.node";
+import { SocketAdapter } from "@app/socket";
 import { parsers } from "extensor";
 import { schemas } from "./schemas";
 
@@ -17,16 +17,22 @@ async function bootstrap() {
         }
       : (process.env.REDIS_URI as string);
 
-  const socketNode = new SocketNode(app, {
-    parser,
-    redis,
-    broadcastedEvents: ["setup", "position", "offerResponse", "configuration"],
-  });
-
-  app.useWebSocketAdapter(socketNode);
+  app.useWebSocketAdapter(
+    new SocketAdapter(app, {
+      parser,
+      redis,
+      broadcastedEvents: [
+        "setup",
+        "position",
+        "offerResponse",
+        "configuration",
+      ],
+    }),
+  );
 
   const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
   await app.listen(PORT);
+  console.log("listening on:", await app.getUrl());
 }
 bootstrap();

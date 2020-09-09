@@ -50,10 +50,10 @@ export class SocketService {
    * @param event
    * @param listener
    */
-  protected on(
+  public on<T>(
     event: string,
     listener: (
-      content: Omit<DispatchedEvent, "event">,
+      content: Omit<DispatchedEvent<T>, "event">,
       acknowledgment?: Callback,
     ) => void,
   ) {

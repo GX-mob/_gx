@@ -1,5 +1,6 @@
-import { schema as position, Position } from "./position";
-import { schema as configuration, Configuration } from "./configuration";
+import EVENTS_MAP from "../events-map";
+import { positionSchema, Position } from "./position";
+import { configurationSchema, Configuration } from "./configuration";
 
 export type Setup = {
   position: Position;
@@ -7,9 +8,9 @@ export type Setup = {
 };
 
 export default {
-  id: 0,
+  id: EVENTS_MAP.SETUP.ID,
   schema: {
-    position,
-    configuration,
+    position: positionSchema,
+    configuration: configurationSchema,
   },
 };

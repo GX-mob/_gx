@@ -2,6 +2,7 @@ import { IoAdapter } from "@nestjs/platform-socket.io";
 import { SocketModule, SocketService } from ".";
 import { INestApplication } from "@nestjs/common";
 import { ConfigOptions } from "./types";
+import { Server } from "socket.io";
 
 export class SocketAdapter extends IoAdapter {
   private socketService: SocketService;
@@ -17,7 +18,7 @@ export class SocketAdapter extends IoAdapter {
       .get(SocketService, { strict: true });
   }
   createIOServer(port: number, options: any = {}): any {
-    const server = super.createIOServer(port, {
+    const server: Server = super.createIOServer(port, {
       ...options,
       parser: this.serviceConfiguration.parser.parser,
     });

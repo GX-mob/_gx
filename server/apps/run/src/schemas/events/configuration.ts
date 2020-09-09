@@ -1,4 +1,5 @@
 import { RidePayMethods, RideTypes } from "@app/database";
+import EVENTS_MAP from "../events-map";
 
 export type Configuration = {
   /**
@@ -19,17 +20,17 @@ export type Configuration = {
    * End drop districts
    *
    * A list of districts that drivers choose as their
-   * destination to receive only offers that match
+   * destination for receive only offers that match
    */
   drops: string[];
 };
 
-export const schema = {
+export const configurationSchema = {
   payMethods: ["uint8"],
   types: ["uint8"],
 };
 
 export default {
-  id: 0,
-  schema,
+  id: EVENTS_MAP.CONFIGURATION.ID,
+  schema: configurationSchema,
 };

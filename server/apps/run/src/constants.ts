@@ -13,17 +13,17 @@ export enum CACHE_TTL {
 
 export enum MATCH {
   MAX_EXECUTION = 60 * 5, // 60 = Executes the algorithm during 1 minute
-  EXECUTION_INTERVAL = 1000, // 1 second
+  ITERATION_INTERVAL = 1000, // 1 second
 }
 
 export enum OFFER {
   DRIVER_RESPONSE_TIMEOUT = 13000, // 13 seconds
-  ADDITIONAL_METERS_OVER_TRY = 200,
-  INITIAL_DISTANCE_LIMIT = 1000,
-  DISTANCE_LIMIT = 1800,
+  INITIAL_RADIUS_SIZE = 1000,
+  ADD_RADIUS_SIZE_EACH_ITERATION = 200,
+  MAX_RADIUS_SIZE = 1800,
 }
 
 export enum CANCELATION {
-  SAFE_TIME_MS = 3, // 3 minutes
+  SAFE_TIME_MS = 1000 * 60 * 3, // 3 minutes
   FARE = 3,
 }

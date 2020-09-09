@@ -1,3 +1,4 @@
+import EVENTS_MAP from "../events-map";
 import latLng, { LatLng } from "../common/lat-lng";
 
 /**
@@ -23,7 +24,7 @@ export type Position = {
   id: string;
 };
 
-export const schema = {
+export const positionSchema = {
   latLng,
   heading: "uint8",
   kmh: "int16",
@@ -32,6 +33,6 @@ export const schema = {
 };
 
 export default {
-  id: 1,
-  schema,
+  id: EVENTS_MAP.POSITION.ID,
+  schema: positionSchema,
 };
