@@ -1,0 +1,46 @@
+name: Common Http Service
+#on:
+#  push:
+#    branches: [master, beta, production]
+#    paths:
+#      - "server/apps/common/**"
+#
+#jobs:
+#  defaults:
+#    runs-on: ubuntu-latest
+#    env:
+#      working-directory: ./server
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Node.js 12.x
+#        uses: actions/setup-node@v1
+#        with:
+#          node-version: 12.x
+#      - name: Lint, test and build
+#        run: |
+#          npm ci
+#          npm run lint:common
+#          npm run test:common -- --coverage
+#          npm run build:common
+#        working-directory: ${{env.working-directory}}
+#      - name: Initialize Google Cloud SDK
+#        if: ${{ github.ref == 'refs/heads/production' || github.ref == 'refs/heads/beta' }}
+#        uses: GX-mob/publish-gae-action@master
+#        with:
+#          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+#          service_account_key: ${{ secrets.GCP_SA_KEY }}
+#          project_id: ${{ secrets.PROJECT_ID }}
+#          gae_variables: ${{ secrets.GAE_HTTP_COMMON_VARIABLES }}
+#          gae_config_path: "./server/apps/common/app.yml"
+#
+#      - name: Publish service to Google App Engine
+#        if: ${{ github.ref == 'refs/heads/production' || github.ref == 'refs/heads/beta' }}
+#        run: |
+#          gcloud auth activate-service-account ${{ secrets.GCP_SA_EMAIL }} --key-file=client-secret.json
+#          gcloud config set project ${{ secrets.PROJECT_ID }}
+#          gcloud -q app deploy app.yaml --promote
+#        working-directory: ${{env.working-directory}}
+#
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v1
+#        working-directory: ${{env.working-directory}}
