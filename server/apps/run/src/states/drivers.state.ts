@@ -73,7 +73,8 @@ export class DriversState {
       connectionData || (await this.connectionData.get(socketId));
 
     if (!connectionData) {
-      return this.error(
+      return this.log(
+        "error",
         `Couldn't get connection data for socketId ${socketId}`,
       );
     }
@@ -95,8 +96,8 @@ export class DriversState {
     this.list[driverIndex] = driverObject;
   }
 
-  private error(msg: string) {
-    logger.error(msg, {
+  private log(type: "error" | "info" | "warn", msg: string) {
+    logger[type](msg, {
       actor: "DriversState",
       nodeId: this.socketService.nodeId,
     });
@@ -109,7 +110,10 @@ export class DriversState {
       return driver;
     }
 
-    this.error(`Local connection object for socketId ${socketId} not found`);
+    this.log(
+      "info",
+      `Local connection object for socketId ${socketId} not found`,
+    );
   }
 
   /**
@@ -139,15 +143,15 @@ export class DriversState {
   /**
    * Handle driver offer response
    */
-  async offerResponseEvent(socketId: string, data: OfferResponse) {
-    const driver = this.findDriver(socketId);
-    if (!driver) return;
+  async offerResponseEvent(
+    socketId: string,
+    offerResponse: OfferResponse,
+    driverData?: Connection,
+  ) {
+    const offer = this.offersState.findOffer(offerResponse.ridePID);
+    if (!offer) return;
 
-    const offer = this.offersState.findOffer(data.ridePID);
-
-    if (!offer) {
-      return this.socketService.emit(socketId, "error", "offer-not-found");
-    }
+    const driver = driverData || (await this.connectionData.get(socketId));
 
     /**
      * To avoid any bug in a delayed response and other driver already received the offer
@@ -164,7 +168,7 @@ export class DriversState {
     /**
      * If negative response, adds to ignore list and resume the offer
      */
-    if (!data.response) {
+    if (!offerResponse.response) {
       offer.ignoreds.push(driver.pid);
 
       return this.offerRide(offer);
@@ -176,7 +180,7 @@ export class DriversState {
     // Store to decide in the future whether to generate a pendencie in a cancelation event
     await util.retry(
       () =>
-        this.offersState.set(data.ridePID, {
+        this.offersState.set(offerResponse.ridePID, {
           ...offer,
           driverSocketId: driver.socketId,
           acceptTimestamp,
@@ -276,9 +280,8 @@ export class DriversState {
   /**
    * Match driver algorithm
    *
-   * @param offer
-   * @param {string} socketId SocketId of requester
-   * @param list Next iteration list
+   * @param {OfferServer} offer
+   * @param {Driver[]} list Next iteration list
    */
   async match(
     offer: OfferServer,
@@ -289,7 +292,7 @@ export class DriversState {
 
     const nextList: Driver[] = [];
     const maxDistance = this.getDistance(runTimes);
-    let currentDistnace: number = Number.MAX_SAFE_INTEGER;
+    let currentDistance: number = Number.MAX_SAFE_INTEGER;
     let choiced: Driver | null = null;
 
     for (let i = 0; i < list.length; ++i) {
@@ -359,16 +362,16 @@ export class DriversState {
        */
       if (!choiced) {
         choiced = current;
-        currentDistnace = distance;
+        currentDistance = distance;
         continue;
       }
 
       /**
        * This driver is 20% more closer to the offer start point than last choiced driver
        */
-      if (distance < currentDistnace * 1.2) {
+      if (distance < currentDistance * 1.2) {
         choiced = current;
-        currentDistnace = distance;
+        currentDistance = distance;
       }
 
       /**
@@ -376,7 +379,7 @@ export class DriversState {
        */
       if (current.rate < choiced.rate * 1.2) {
         choiced = current;
-        currentDistnace = distance;
+        currentDistance = distance;
       }
     }
 

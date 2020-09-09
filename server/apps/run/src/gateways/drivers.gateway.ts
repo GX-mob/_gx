@@ -52,10 +52,10 @@ export class DriversGateway extends Common {
     @MessageBody() offerResponse: OfferResponse,
     @ConnectedSocket() client: Socket,
   ) {
-    const offer = this.offersState.findOffer(offerResponse.ridePID);
-
-    if (!offer) return;
-
-    this.driversState.offerResponseEvent(client.id, offerResponse);
+    this.driversState.offerResponseEvent(
+      client.id,
+      offerResponse,
+      client.connection,
+    );
   }
 }
