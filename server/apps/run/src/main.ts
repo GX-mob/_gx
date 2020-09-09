@@ -2,12 +2,12 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { SocketAdapter } from "@app/socket";
 import { parsers } from "extensor";
-import { schemas } from "./schemas";
+import { serverEventsSchemas } from "./events";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const parser = parsers.schemapack(schemas);
+  const parser = parsers.schemapack(serverEventsSchemas);
 
   const redis =
     process.env.NODE_ENV !== "production" && !process.env.REDIS_URI

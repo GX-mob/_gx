@@ -18,6 +18,7 @@ import {
   OfferSent,
   DriverRideAcceptedResponse,
   VoyagerRideAcceptedResponse,
+  Configuration,
 } from "../events";
 import { OffersState } from "./offers.state";
 import { OFFER, MATCH } from "../constants";
@@ -42,6 +43,13 @@ export class DriversState {
     this.socketService.on<Position>(EVENTS.POSITION, ({ socketId, data }) => {
       this.positionEvent(socketId, data);
     });
+
+    this.socketService.on<Configuration>(
+      EVENTS.CONFIGURATION,
+      ({ socketId, data }) => {
+        this.setConfigurationEvent(socketId, data);
+      },
+    );
 
     this.socketService.on<OfferResponse>(
       EVENTS.OFFER_RESPONSE,
@@ -114,6 +122,18 @@ export class DriversState {
     if (!driver) return;
 
     driver.position = position;
+  }
+
+  /**
+   * Set driver search ride configuration
+   * @param {string} socketId
+   * @param {Configuration} config
+   */
+  setConfigurationEvent(socketId: string, config: Configuration) {
+    const driver = this.findDriver(socketId);
+    if (!driver) return;
+
+    driver.config = config;
   }
 
   /**

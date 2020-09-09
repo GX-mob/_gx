@@ -23,9 +23,10 @@ export enum EVENTS {
   POSITION = "POSITION",
   DRIVER_SETUP = "DRIVER_SETUP",
   STATE = "STATE",
+  AM_I_RUNNING = "AM_I_RUNNING",
 }
 
-export const schemasServerEventConfiguration = {
+export const serverEventsSchemas = {
   [EVENTS.CONFIGURATION]: {
     id: 1,
     schema: configurationSchema,
@@ -61,5 +62,9 @@ export const schemasServerEventConfiguration = {
   [EVENTS.STATE]: {
     id: 9,
     schema: stateSchema,
+  },
+  [EVENTS.AM_I_RUNNING]: {
+    id: 10,
+    schema: "uint8",
   },
 };

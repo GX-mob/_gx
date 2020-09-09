@@ -7,8 +7,6 @@ import {
   ConnectedSocket,
 } from "@nestjs/websockets";
 import { SocketService, SocketModule } from "@app/socket";
-import { Position } from "../schemas/events/position";
-import { Connection } from "../schemas/common/connection";
 import { Server, Socket } from "socket.io";
 import { Module } from "@nestjs/common";
 import { USERS_ROLES } from "@app/database";
@@ -19,7 +17,7 @@ import { OffersState } from "../states/offers.state";
 import { DriversState } from "../states/drivers.state";
 import { ConnectionDataService } from "../conn-data.service";
 import { DataModule } from "@app/data";
-import { EVENTS, State } from "../events";
+import { EVENTS, State, Position, Connection } from "../events";
 declare module "socket.io" {
   interface Socket {
     connection: Connection;
@@ -62,19 +60,21 @@ export class Common
       }
 
       const { pid, averageEvaluation } = session.user;
-      const previous = await this.connectionData.get(pid);
+      const previousData = await this.connectionData.get(pid);
 
       const connection: Connection = {
         _id: session.user._id,
         pid,
         mode: this.role,
         p2p,
-        observers: previous.observers || [],
+        observers: previousData.observers || [],
         rate: averageEvaluation,
         socketId: socket.id,
       };
 
       await this.connectionData.set(pid, connection);
+
+      socket.connection = connection;
 
       return true;
     });
@@ -97,7 +97,7 @@ export class Common
     @MessageBody() state: State,
     @ConnectedSocket() client: Socket,
   ) {
-    //this.connectionState = state.state;
+    // client.connection.state = state.state;
     this.dispachToObervers("state", client, state);
   }
 

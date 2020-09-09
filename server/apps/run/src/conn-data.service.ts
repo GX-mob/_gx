@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { Connection } from "./schemas/common/connection";
+import { Connection } from "./events/schemas/common";
 import { CACHE_NAMESPACES, CACHE_TTL } from "./constants";
 
 @Injectable()

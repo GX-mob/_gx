@@ -8,10 +8,10 @@ export enum CACHE_NAMESPACES {
   OFFERS = "ridesOffers",
 }
 
-export const CACHE_TTL = {
-  CONNECTIONS: 1000 * 60 * 60 * 5, // 5 hours
-  OFFERS: 1000 * 60 * 15, // 15 minutes
-};
+export enum CACHE_TTL {
+  CONNECTIONS = 1000 * 60 * 60 * 5, // 5 hours
+  OFFERS = 1000 * 60 * 15, // 15 minutes
+}
 
 export enum MATCH {
   MAX_EXECUTION = 60 * 5, // 60 = Executes the algorithm during 1 minute

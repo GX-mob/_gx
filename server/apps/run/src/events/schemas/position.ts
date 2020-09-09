@@ -1,4 +1,4 @@
-import latLng, { LatLng } from "../common/lat-lng";
+import { latLngSchema, LatLng } from "./common";
 
 /**
  * Position event schema
@@ -20,13 +20,13 @@ export type Position = {
    * Ignored watchers that already receive the event by the P2P connection
    */
   ignored: string[];
-  id: string;
+  pid: string;
 };
 
 export const positionSchema = {
-  latLng,
+  latLng: latLngSchema,
   heading: "uint8",
   kmh: "int16",
   ignore: ["string"],
-  id: "string",
+  pid: "string",
 };
