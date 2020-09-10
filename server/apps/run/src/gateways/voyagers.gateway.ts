@@ -76,7 +76,7 @@ export class VoyagersGateway extends Common {
     const offer = await this.stateService.getOfferData(ridePID);
     const { driverSocketId, acceptTimestamp } = offer;
 
-    // remove the ride from user connection data object
+    // remove the ride from user rides list
     const rides = socket.connection.rides as string[];
     const rideIdx = rides.indexOf(ride.pid);
 
