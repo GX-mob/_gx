@@ -9,7 +9,7 @@ import {
   InternalServerErrorException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { User } from "@app/database";
+import { User, USERS_ROLES } from "@app/database";
 import { util } from "@app/helpers";
 import { AccountSecurityController } from "./security.controller";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
@@ -67,6 +67,7 @@ describe("AccountProfileController", () => {
       emails: ["valid@email.com"],
       birth: new Date("06/13/1994"),
       averageEvaluation: 5.0,
+      roles: [USERS_ROLES.VOYAGER]
     };
   }
   beforeEach(() => {

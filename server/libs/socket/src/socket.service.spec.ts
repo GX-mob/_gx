@@ -3,18 +3,15 @@
  *
  * @group unit/services/socket
  */
+import { spawn } from "child_process";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";
 import IOClient, { Socket } from "socket.io-client";
-import IORedis, { Redis } from "ioredis";
+import IORedis from "ioredis";
 import { parsers } from "extensor";
 import { SocketService } from "./socket.service";
-
-type pubSubConfig = {
-  pubClient: Redis;
-  subClient: Redis;
-};
+import faker from "faker";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -32,8 +29,7 @@ describe("SocketService", () => {
   let clientSocket2: typeof Socket;
   let clientSocket3: typeof Socket;
 
-  let redis1: pubSubConfig;
-  let redis2: pubSubConfig;
+  let redisInstanceIp: string;
 
   const broadcastedEvents = ["position", "state"];
 
@@ -46,19 +42,21 @@ describe("SocketService", () => {
     ioServer2 = IOServer(httpServer2);
     ioServer3 = IOServer(httpServer3);
 
+    const redisHost = process.env.REDIS_HOST || "127.0.0.1";
+
     const redis1 = {
-      pubClient: new IORedis("172.17.0.2"),
-      subClient: new IORedis("172.17.0.2"),
+      pubClient: new IORedis(redisHost),
+      subClient: new IORedis(redisHost),
     };
 
     const redis2 = {
-      pubClient: new IORedis("172.17.0.2"),
-      subClient: new IORedis("172.17.0.2"),
+      pubClient: new IORedis(redisHost),
+      subClient: new IORedis(redisHost),
     };
 
     const redis3 = {
-      pubClient: new IORedis("172.17.0.2"),
-      subClient: new IORedis("172.17.0.2"),
+      pubClient: new IORedis(redisHost),
+      subClient: new IORedis(redisHost),
     };
 
     const parser = parsers.schemapack({});

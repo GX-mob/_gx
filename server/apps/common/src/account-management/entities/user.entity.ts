@@ -1,5 +1,5 @@
 import { Exclude } from "class-transformer";
-import { User } from "@app/database";
+import { User, USERS_ROLES } from "@app/database";
 
 export class UserEntity implements User {
   _id!: string;
@@ -11,7 +11,7 @@ export class UserEntity implements User {
   cpf!: string;
   birth!: Date;
   avatar!: string;
-  roles!: string[];
+  roles!: USERS_ROLES[];
   averageEvaluation!: number;
 
   @Exclude()

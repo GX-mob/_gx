@@ -5,7 +5,13 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { DatabaseModule, User, UserModel, Session } from "@app/database";
+import {
+  DatabaseModule,
+  User,
+  UserModel,
+  Session,
+  USERS_ROLES,
+} from "@app/database";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { DataService } from "./data.service";
 import mongoose from "mongoose";
@@ -26,7 +32,7 @@ describe("DataService", () => {
     phones: ["+5582988888888", "+5582988444445"],
     emails: [],
     birth: new Date("06/13/1994"),
-    roles: ["voyager"],
+    roles: [USERS_ROLES.VOYAGER],
   };
 
   const mockSession = {

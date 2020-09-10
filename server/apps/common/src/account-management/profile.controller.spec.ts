@@ -8,7 +8,7 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { User } from "@app/database";
+import { User, USERS_ROLES } from "@app/database";
 import { AccountProfileController } from "./profile.controller";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
@@ -69,6 +69,7 @@ describe("AccountProfileController", () => {
       birth: new Date("06/13/1994"),
       password: Buffer.from("test"),
       averageEvaluation: 5.0,
+      roles: [USERS_ROLES.VOYAGER],
     };
   }
 
