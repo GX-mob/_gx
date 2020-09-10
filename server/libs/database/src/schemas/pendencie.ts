@@ -3,6 +3,7 @@ import Connections from "../connections";
 import { UserModel } from "./user";
 
 export interface Pendencie {
+  _id: any;
   ride: string;
   issuer: any;
   amount: number;

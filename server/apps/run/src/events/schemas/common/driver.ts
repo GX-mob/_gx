@@ -2,6 +2,13 @@ import { UserBasic } from "./user-basic";
 import { Position } from "../position";
 import { Configuration } from "../configuration";
 
+export enum DriverState {
+  IDLE = 1,
+  SEARCHING = 2,
+  RUNNING = 3,
+  RIDE_FINALIZATION_STATE = 4,
+}
+
 export type Driver = UserBasic & {
   position: Position;
   /**
@@ -10,7 +17,7 @@ export type Driver = UserBasic & {
    * * 2 = Searching
    * * 3 = Running
    */
-  state?: 1 | 2 | 3;
+  state?: DriverState;
   /**
    * Driver ride match configuration
    */

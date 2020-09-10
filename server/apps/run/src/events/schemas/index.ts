@@ -7,3 +7,5 @@ export * from "./position";
 export * from "./offer-response";
 export * from "./offer-sent";
 export * from "./state";
+export * from "./cancel-ride";
+export * from "./canceled-ride";

@@ -5,7 +5,9 @@ import chalk from "chalk";
 import { startDatabase } from "./setup-dev-database";
 
 async function start() {
-  await startDatabase();
+  if (!process.env.MONGO_URI) {
+    await startDatabase();
+  }
 
   const [, , application] = process.argv;
 

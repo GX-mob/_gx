@@ -8,6 +8,8 @@ import {
   positionSchema,
   driverSetupSchema,
   stateSchema,
+  cancelRideSchema,
+  canceledRideSchema,
 } from "./schemas";
 
 export * from "./schemas";
@@ -24,6 +26,8 @@ export enum EVENTS {
   DRIVER_SETUP = "DRIVER_SETUP",
   STATE = "STATE",
   AM_I_RUNNING = "AM_I_RUNNING",
+  CANCEL_RIDE = "CANCEL_RIDE",
+  CANCELED_RIDE = "CANCELED_RIDE",
 }
 
 export const serverEventsSchemas = {
@@ -66,5 +70,13 @@ export const serverEventsSchemas = {
   [EVENTS.AM_I_RUNNING]: {
     id: 10,
     schema: "uint8",
+  },
+  [EVENTS.CANCEL_RIDE]: {
+    id: 11,
+    schema: cancelRideSchema,
+  },
+  [EVENTS.CANCELED_RIDE]: {
+    id: 12,
+    schema: canceledRideSchema,
   },
 };

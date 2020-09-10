@@ -13,7 +13,7 @@ export type OfferServer = {
    */
   ride: Ride;
   /**
-   * Requester socket id
+   * Usefull requester data
    */
   requesterSocketId: string;
   /**
@@ -39,6 +39,14 @@ export type OfferServer = {
    * Current offered driver
    */
   offeredTo: string | null;
+  /**
+   * Socket id of the driver thats accepts the ride
+   */
+  driverSocketId?: string;
+  /**
+   * Accepted timestamp, used to define a safe cancelation without fares
+   */
+  acceptTimestamp?: number;
 };
 
 export const offerSchema = {

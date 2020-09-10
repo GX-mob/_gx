@@ -9,15 +9,15 @@ import {
 import { SocketService, SocketModule } from "@app/socket";
 import { Server, Socket } from "socket.io";
 import { Module } from "@nestjs/common";
-import { USERS_ROLES } from "@app/database";
+import { USERS_ROLES, Ride, User } from "@app/database";
 import { CacheModule, CacheService } from "@app/cache";
 import { SessionModule, SessionService } from "@app/session";
 import { auth } from "extensor";
-import { OffersState } from "../states/offers.state";
-import { DriversState } from "../states/drivers.state";
-import { ConnectionDataService } from "../conn-data.service";
-import { DataModule } from "@app/data";
+import { StateService } from "../state.service";
+import { DataModule, DataService } from "@app/data";
 import { EVENTS, State, Position, Connection } from "../events";
+import { util } from "@app/helpers";
+import { CANCELATION } from "../constants";
 declare module "socket.io" {
   interface Socket {
     connection: Connection;
@@ -26,7 +26,7 @@ declare module "socket.io" {
 
 @Module({
   imports: [CacheModule, DataModule, SessionModule, SocketModule],
-  providers: [DriversState, OffersState, ConnectionDataService],
+  providers: [StateService],
 })
 export class Common
   implements
@@ -38,10 +38,9 @@ export class Common
   constructor(
     readonly socketService: SocketService,
     readonly cacheService: CacheService,
+    readonly dataService: DataService,
     readonly sessionService: SessionService,
-    readonly driversState: DriversState,
-    readonly offersState: OffersState,
-    readonly connectionData: ConnectionDataService,
+    readonly stateService: StateService,
   ) {}
 
   afterInit(server: Server) {
@@ -60,21 +59,15 @@ export class Common
       }
 
       const { pid, averageEvaluation } = session.user;
-      const previousData = await this.connectionData.get(pid);
 
-      const connection: Connection = {
+      socket.connection = await this.stateService.setConnectionData(pid, {
         _id: session.user._id,
         pid,
         mode: this.role,
         p2p,
-        observers: previousData.observers || [],
         rate: averageEvaluation,
         socketId: socket.id,
-      };
-
-      await this.connectionData.set(pid, connection);
-
-      socket.connection = connection;
+      });
 
       return true;
     });
@@ -122,5 +115,27 @@ export class Common
 
   signObservableEvent<T = any>(packet: T, client: Socket): T {
     return { ...packet, pid: client.connection.pid };
+  }
+
+  public createPendencie({
+    ride,
+    issuer,
+    affected,
+  }: {
+    ride: Ride;
+    issuer: User["_id"];
+    affected: User["_id"];
+  }) {
+    return util.retry(
+      () =>
+        this.dataService.pendencies.create({
+          issuer,
+          affected,
+          amount: CANCELATION.FARE,
+          ride: ride._id,
+        }),
+      3,
+      500,
+    );
   }
 }

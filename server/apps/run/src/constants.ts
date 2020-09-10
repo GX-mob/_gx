@@ -32,3 +32,9 @@ export enum CANCELATION {
   SAFE_TIME_MS = 1000 * 60 * 3, // 3 minutes
   FARE = 3,
 }
+
+export enum CANCELATION_EXCEPTIONS {
+  RIDE_NOT_FOUND = "ride-not-found",
+  RIDE_RUNNING = "ride-running",
+  NOT_IN_RIDE = "not-in-ride",
+}

@@ -1,13 +1,13 @@
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { logger } from "@app/helpers";
 import Redis from "ioredis";
-import { ConfigService } from "@nestjs/config";
 import { Server, Adapter } from "socket.io";
 import redisIoAdapter from "socket.io-redis";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
 import EventEmitter from "eventemitter3";
 import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
-import { OPTIONS_KEY, SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
+import { SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
 
 @Injectable()
 export class SocketService {
@@ -15,13 +15,41 @@ export class SocketService {
    * Self node id to used prevent handling self emitted events
    */
   readonly nodeId = shortid.generate();
-  readonly nodesEvents = new EventEmitter();
+  private broadcastedListener = new EventEmitter();
+  private nodeListener = new EventEmitter();
+  readonly nodes = {
+    /**
+     * Registres a event listener from another server nodes
+     */
+    on: <T = any>(event: string, listener: (data: T) => void) =>
+      this.nodeListener.on(event, listener),
+    /**
+     * Emits events to another server nodes
+     */
+    emit: <T = any>(event: string, data: T) => {
+      const serverEvent = this.createServerEvent(
+        SERVER_EVENTS.SOCKET_NODE_EVENT,
+        {
+          event,
+          data,
+        },
+      );
+
+      this.adapter.customRequest(serverEvent, (err, replies) => {
+        if (err) {
+          this.log("error", err);
+        }
+      });
+    },
+  };
   public server!: Server;
   public schemas!: ParsersList;
   private adapter!: Adapter;
   private options!: ConfigOptions;
 
-  constructor(private config: ConfigService) {}
+  private log(type: "error" | "warn" | "info", msg: any) {
+    logger[type](msg, { actor: "SocketService", nodeId: this.nodeId });
+  }
 
   configureServer(server: Server, options: ConfigOptions) {
     this.server = server;
@@ -46,7 +74,7 @@ export class SocketService {
   }
 
   /**
-   * Register listener of broadcasted events
+   * Registres a listener of broadcasted events
    * @param event
    * @param listener
    */
@@ -57,7 +85,7 @@ export class SocketService {
       acknowledgment?: Callback,
     ) => void,
   ) {
-    this.nodesEvents.on(event, listener);
+    this.broadcastedListener.on(event, listener);
   }
 
   private registerServerEventsListener() {
@@ -74,10 +102,13 @@ export class SocketService {
 
       switch (event) {
         case SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT:
-          this.nodesEvents.emit(content.event, content);
+          this.broadcastedListener.emit(content.event, content);
           return cb(true);
         case SERVER_EVENTS.DISPATCHED_SOCKET_EVENT:
           return this.handleDispatchedSocketEvent(content, cb);
+        case SERVER_EVENTS.SOCKET_NODE_EVENT:
+          this.nodeListener.emit(content.event, content.data);
+          return cb(true);
       }
 
       cb(null);
@@ -110,7 +141,7 @@ export class SocketService {
   }
 
   /**
-   * Emit event to socket.
+   * Emits event to socket.
    *
    * If this node has the socket connection, it self emits the event, otherwise,
    * dispatch to the others nodes and the one with the socket emits the event.
@@ -146,6 +177,7 @@ export class SocketService {
 
     this.adapter.customRequest(serverEvent, (err, replies) => {
       if (err) {
+        this.log("error", err);
       }
 
       callback && callback(replies.find((value) => value));
