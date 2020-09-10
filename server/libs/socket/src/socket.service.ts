@@ -14,7 +14,7 @@ export class SocketService {
   /**
    * Self node id to used prevent handling self emitted events
    */
-  readonly nodeId = shortid.generate();
+  public nodeId = shortid.generate();
   private broadcastedListener = new EventEmitter();
   private nodeListener = new EventEmitter();
   readonly nodes = {
@@ -117,6 +117,7 @@ export class SocketService {
 
   private handleDispatchedSocketEvent(content: DispatchedEvent, cb: Callback) {
     const { socketId, event, data, ack } = content;
+
     if (!(socketId in this.server.sockets.connected)) {
       return cb(null);
     }
@@ -153,6 +154,7 @@ export class SocketService {
    */
   emit<T = any>(socketId: string, event: string, data: T, callback?: Callback) {
     const { connected } = this.server.sockets;
+
     if (socketId in connected) {
       return connected[socketId].emit(event, data, callback);
     }
@@ -172,6 +174,7 @@ export class SocketService {
         socketId,
         event,
         data,
+        ack: !!callback,
       },
     );
 
