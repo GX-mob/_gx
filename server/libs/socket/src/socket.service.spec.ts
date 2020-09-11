@@ -3,7 +3,6 @@
  *
  * @group unit/services/socket
  */
-import { spawn } from "child_process";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";
@@ -11,7 +10,6 @@ import IOClient, { Socket } from "socket.io-client";
 import IORedis from "ioredis";
 import { parsers } from "extensor";
 import { SocketService } from "./socket.service";
-import faker from "faker";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 

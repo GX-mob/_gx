@@ -35,11 +35,15 @@ export class DriversGateway extends Common {
   }
 
   @SubscribeMessage(EVENTS.DRIVER_SETUP)
-  setupEventHandler(
+  async setupEventHandler(
     @MessageBody() setup: Setup,
     @ConnectedSocket() client: Socket,
   ) {
-    this.stateService.setupDriverEvent(client.id, setup, client.connection);
+    await this.stateService.setupDriverEvent(
+      client.id,
+      setup,
+      client.connection,
+    );
 
     return client.connection.state;
   }

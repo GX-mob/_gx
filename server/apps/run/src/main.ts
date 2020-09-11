@@ -3,9 +3,15 @@ import { AppModule } from "./app.module";
 import { SocketAdapter } from "@app/socket";
 import { parsers } from "extensor";
 import { serverEventsSchemas } from "./events";
+import { logger } from "@app/helpers";
+import { FastifyAdapter } from "@nestjs/platform-fastify";
+
+const FastifyAdapterInstance = new FastifyAdapter({
+  logger,
+});
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
 
   const parser = parsers.schemapack(serverEventsSchemas);
 
@@ -33,6 +39,7 @@ async function bootstrap() {
   const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
   await app.listen(PORT);
-  console.log("listening on:", await app.getUrl());
 }
 bootstrap();
+
+module.exports = FastifyAdapterInstance.getHttpServer();

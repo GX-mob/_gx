@@ -18,6 +18,9 @@ import { DataModule, DataService } from "@app/data";
 import { EVENTS, State, Position, Connection } from "../events";
 import { util } from "@app/helpers";
 import { CANCELATION } from "../constants";
+
+import { LoggerModule } from "nestjs-pino";
+
 declare module "socket.io" {
   interface Socket {
     connection: Connection;

@@ -38,3 +38,7 @@ export enum CANCELATION_EXCEPTIONS {
   RIDE_RUNNING = "ride-running",
   NOT_IN_RIDE = "not-in-ride",
 }
+
+export enum EXCEPTIONS {
+  CONNECTION_DATA_NOT_FOUND = "CONNECTION_DATA_NOT_FOUND",
+}

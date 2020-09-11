@@ -47,6 +47,7 @@
     "ioredis": "^4.17.3",
     "jpegtran": "^1.1.0",
     "mongoose": "^5.10.4",
+    "nestjs-pino": "^1.2.0",
     "pino": "^6.6.0",
     "pngquant": "^3.1.0",
     "redis-mock": "^0.51.0",

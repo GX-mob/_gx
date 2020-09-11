@@ -1,7 +1,7 @@
 import { Connection, ConnectionOptions } from "mongoose";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { logger } from "@app/helpers";
+import { PinoLogger } from "nestjs-pino";
 import Connections from "./connections";
 import { UserModel } from "./schemas/user";
 import { SessionModel } from "./schemas/session";
@@ -31,7 +31,11 @@ export class DatabaseService {
     Connections.Rides,
   ];
 
-  constructor(private configService: ConfigService<{ DATABASE_URI: string }>) {
+  constructor(
+    private configService: ConfigService<{ DATABASE_URI: string }>,
+    private logger: PinoLogger,
+  ) {
+    logger.setContext(DatabaseService.name);
     const databaseUri = this.configService.get("DATABASE_URI") as string;
 
     this.connect(databaseUri);
@@ -56,14 +60,11 @@ export class DatabaseService {
 
   private initConnectionLogger(connection: Connection) {
     connection.on("connected", () => {
-      logger.info({ actor: "MongoDB", database: connection.name }, "connected");
+      this.logger.info({ database: connection.name }, "connected");
     });
 
     connection.on("disconnected", () => {
-      logger.warn(
-        { actor: "MongoDB", database: connection.name },
-        "disconnected",
-      );
+      this.logger.warn({ database: connection.name }, "disconnected");
     });
   }
 }

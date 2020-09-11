@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { logger } from "@app/helpers";
+import { PinoLogger } from "nestjs-pino";
 import Redis from "ioredis";
 import { Server, Adapter } from "socket.io";
 import redisIoAdapter from "socket.io-redis";
@@ -37,7 +37,7 @@ export class SocketService {
 
       this.adapter.customRequest(serverEvent, (err, replies) => {
         if (err) {
-          this.log("error", err);
+          this.logger.error(err);
         }
       });
     },
@@ -47,8 +47,8 @@ export class SocketService {
   private adapter!: Adapter;
   private options!: ConfigOptions;
 
-  private log(type: "error" | "warn" | "info", msg: any) {
-    logger[type](msg, { actor: "SocketService", nodeId: this.nodeId });
+  constructor(readonly logger: PinoLogger) {
+    logger.setContext(SocketService.name);
   }
 
   configureServer(server: Server, options: ConfigOptions) {
@@ -180,7 +180,7 @@ export class SocketService {
 
     this.adapter.customRequest(serverEvent, (err, replies) => {
       if (err) {
-        this.log("error", err);
+        this.logger.error(err);
       }
 
       callback && callback(replies.find((value) => value));

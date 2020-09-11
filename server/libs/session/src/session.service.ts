@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
@@ -27,7 +28,10 @@ export class SessionService {
     private configService: ConfigService,
     private data: DataService,
     private cache: CacheService,
+    readonly logger: PinoLogger,
   ) {
+    logger.setContext(SessionService.name);
+
     this.keyid = this.configService.get("AUTH_KID") as string;
     this.publicKey = this.configService.get("AUTH_PUBLIC_KEY") as string;
     this.privateKey = this.configService.get("AUTH_PRIVATE_KEY") as string;

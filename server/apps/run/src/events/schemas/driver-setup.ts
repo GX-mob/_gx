@@ -3,7 +3,7 @@ import { configurationSchema, Configuration } from "./configuration";
 
 export type Setup = {
   position: Position;
-  configuration: Configuration;
+  config: Configuration;
 };
 
 export const driverSetupSchema = {

@@ -1,6 +1,6 @@
 import deepmerge from "deepmerge";
 import { Injectable } from "@nestjs/common";
-import { logger, util } from "@app/helpers";
+import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
 import { DataService } from "@app/data";
 import { SocketService } from "@app/socket";
@@ -23,8 +23,16 @@ import {
   VoyagerRideAcceptedResponse,
   Configuration,
 } from "./events";
-import { OFFER, MATCH, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
+import {
+  OFFER,
+  MATCH,
+  CACHE_NAMESPACES,
+  CACHE_TTL,
+  EXCEPTIONS,
+} from "./constants";
 import { NODES_EVENTS, UpdateDriverState } from "./events/nodes";
+import { PinoLogger } from "nestjs-pino";
+import { WsException } from "@nestjs/websockets";
 
 @Injectable()
 export class StateService {
@@ -41,9 +49,14 @@ export class StateService {
     readonly cacheService: CacheService,
     readonly dataService: DataService,
     readonly socketService: SocketService,
+    private readonly logger: PinoLogger,
   ) {
+    logger.setContext(StateService.name);
+
     this.socketService.on<Setup>(EVENTS.DRIVER_SETUP, ({ socketId, data }) => {
-      this.setupDriverEvent(socketId, data);
+      this.setupDriverEvent(socketId, data).catch((err) => {
+        this.logger.error(err.message);
+      });
     });
 
     this.socketService.on<Position>(EVENTS.POSITION, ({ socketId, data }) => {
@@ -88,10 +101,7 @@ export class StateService {
     connectionData = connectionData || (await this.getConnectionData(socketId));
 
     if (!connectionData) {
-      return this.log(
-        "error",
-        `Couldn't get connection data for socketId ${socketId}`,
-      );
+      throw new WsException(EXCEPTIONS.CONNECTION_DATA_NOT_FOUND);
     }
 
     const driver = this.findDriver(socketId);
@@ -99,7 +109,7 @@ export class StateService {
       ...connectionData,
       socketId,
       position: setup.position,
-      config: setup.configuration,
+      config: setup.config,
     };
 
     if (!driver) {
@@ -111,22 +121,17 @@ export class StateService {
     this.drivers[driverIndex] = driverObject;
   }
 
-  private log(type: "error" | "info" | "warn", msg: string) {
-    logger[type](msg, {
-      actor: "StateService",
-      nodeId: this.socketService.nodeId,
-    });
-  }
-
-  findDriver(socketId: string): Driver | undefined {
+  findDriver(
+    socketId: string,
+    logLevel: "error" | "info" | "warn" = "info",
+  ): Driver | undefined {
     const driver = this.drivers.find((driver) => socketId === driver.socketId);
 
     if (driver) {
       return driver;
     }
 
-    this.log(
-      "info",
+    this.logger[logLevel](
       `Local connection object for socketId ${socketId} not found`,
     );
   }
@@ -259,14 +264,17 @@ export class StateService {
     });
   }
 
-  public findOffer(ridePID: string) {
+  public findOffer(
+    ridePID: string,
+    logLevel: "error" | "info" | "warn" = "info",
+  ) {
     const offer = this.offers.find((offer) => ridePID === offer.ride.pid);
 
     if (offer) {
       return offer;
     }
 
-    this.log("warn", `Offer object for ridePID ${ridePID} not found`);
+    this.logger[logLevel](`Offer object for ridePID ${ridePID} not found`);
   }
 
   async createOffer(
@@ -556,22 +564,21 @@ export class StateService {
     // To prevent recursive propagation of the event
     isNodeEvent = false,
   ) {
-    const driver = this.findDriver(socketId);
+    const driver = this.findDriver(socketId, "error");
+    if (!driver) return;
 
-    if (driver) {
-      const driverIndex = this.drivers.indexOf(driver);
+    const driverIndex = this.drivers.indexOf(driver);
 
-      this.drivers[driverIndex] = deepmerge(driver, state);
+    this.drivers[driverIndex] = deepmerge(driver, state);
 
-      if (!isNodeEvent) {
-        this.socketService.nodes.emit<UpdateDriverState>(
-          NODES_EVENTS.UPDATE_DRIVER_STATE,
-          {
-            socketId,
-            state,
-          },
-        );
-      }
+    if (!isNodeEvent) {
+      this.socketService.nodes.emit<UpdateDriverState>(
+        NODES_EVENTS.UPDATE_DRIVER_STATE,
+        {
+          socketId,
+          state,
+        },
+      );
     }
   }
 }
