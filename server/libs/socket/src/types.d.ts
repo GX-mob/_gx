@@ -17,10 +17,10 @@ export type ServerEvent = {
   content: any;
 };
 
-export type DispatchedEvent<T = any> = {
+export type DispatchedEvent<Data = any, Event = any> = {
   socketId: string;
-  event: string;
-  data: T;
+  event: Event;
+  data: Data;
   ack: unknown;
 };
 

@@ -2,7 +2,7 @@ export type OfferResponse = {
   /**
    * Ride public id
    */
-  ridePID: "string";
+  ridePID: string;
   response: boolean;
 };
 

@@ -18,12 +18,21 @@ import {
   RideTypes,
   USERS_ROLES,
 } from "@app/database";
-import { Setup, Connection, Driver, EVENTS } from "./events";
+import {
+  Setup,
+  Connection,
+  Driver,
+  EVENTS,
+  OfferRequest,
+  OfferResponse,
+  OfferServer,
+} from "./events";
 import faker from "faker";
 import { WsException } from "@nestjs/websockets";
-import { EXCEPTIONS } from "./constants";
+import { EXCEPTIONS, OFFER, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
 import deepmerge from "deepmerge";
 import { Types } from "mongoose";
+import { ConnectionDataNotFoundException } from "./exceptions";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -142,16 +151,16 @@ describe("StateService", () => {
   });
 
   describe("setupDriverEvent", () => {
-    it("should throw error due not found connection data", async () => {
+    it("should throw ConnectionDataNotFoundException", async () => {
       cacheMock.get.mockResolvedValue(null);
 
       const setup = mockSetup();
 
+      const socketId = shortid.generate();
+
       await expect(
-        service.setupDriverEvent(shortid.generate(), setup),
-      ).rejects.toStrictEqual(
-        new WsException(EXCEPTIONS.CONNECTION_DATA_NOT_FOUND),
-      );
+        service.setupDriverEvent(socketId, setup),
+      ).rejects.toStrictEqual(new ConnectionDataNotFoundException(socketId));
 
       socketService.emitter.emit(EVENTS.DRIVER_SETUP, {
         socketId: shortid.generate(),
@@ -306,6 +315,199 @@ describe("StateService", () => {
         await wait(100);
 
         expect(driver[field]).toStrictEqual(fromAnotherNodeData);
+      });
+    });
+  });
+
+  describe("offerResponseEvent", () => {
+    it("should not execute due to not generated the offer", async () => {
+      const offerResponse: OfferResponse = {
+        ridePID: shortid.generate(),
+        response: true,
+      };
+      await service.offerResponseEvent(shortid.generate(), offerResponse);
+      expect(cacheMock.get).toBeCalledTimes(0);
+    });
+
+    it("should throw ConnectionDataNotFoundException", async () => {
+      const ridePID = shortid.generate();
+      (service as any).offers = [{ ride: { pid: ridePID } }];
+
+      const offerResponse: OfferResponse = {
+        ridePID,
+        response: true,
+      };
+
+      const socketId = shortid.generate();
+
+      await expect(
+        service.offerResponseEvent(socketId, offerResponse),
+      ).rejects.toStrictEqual(new ConnectionDataNotFoundException(socketId));
+    });
+
+    it(`should emit ${EVENTS.DELAYED_OFFER_RESPONSE}`, async () => {
+      const ridePID = shortid.generate();
+      const driverPID = shortid.generate();
+      const otherDriverPID = shortid.generate();
+      const driverConnectionData = { pid: driverPID };
+
+      (service as any).offers = [
+        { ride: { pid: ridePID }, offeredTo: otherDriverPID },
+      ];
+
+      const offerResponse: OfferResponse = {
+        ridePID,
+        response: true,
+      };
+
+      const socketId = shortid.generate();
+
+      await service.offerResponseEvent(
+        socketId,
+        offerResponse,
+        driverConnectionData as any,
+      );
+
+      expect(socketService.emit.mock.calls[0][0]).toBe(socketId);
+      expect(socketService.emit.mock.calls[0][1]).toBe(
+        EVENTS.DELAYED_OFFER_RESPONSE,
+      );
+      expect(socketService.emit.mock.calls[0][2]).toBe(true);
+    });
+
+    it("should handle a negative response", async () => {
+      const ridePID = shortid.generate();
+      const driverPID = shortid.generate();
+      const driverConnectionData = { pid: driverPID };
+
+      const offer: OfferServer = {
+        ride: { pid: ridePID } as any,
+        offeredTo: driverPID,
+        requesterSocketId: shortid.generate(),
+        ignoreds: [""],
+        offerResponseTimeout: setTimeout(() => {},
+        OFFER.DRIVER_RESPONSE_TIMEOUT),
+      };
+
+      (service as any).offers = [offer];
+
+      const offerResponse: OfferResponse = {
+        ridePID,
+        response: false,
+      };
+
+      const socketId = shortid.generate();
+
+      await service.offerResponseEvent(
+        socketId,
+        offerResponse,
+        driverConnectionData as any,
+      );
+
+      expect(offer.ignoreds.includes(driverConnectionData.pid));
+      expect((offer.offerResponseTimeout as any)._destroyed).toBeTruthy();
+    });
+
+    it("should handle a positive response", async () => {
+      const ridePID = shortid.generate();
+      const driverPID = shortid.generate();
+      const driverID = shortid.generate();
+      const driverSocketId = shortid.generate();
+      const driverConnectionData = {
+        _id: driverID,
+        pid: driverPID,
+        p2p: faker.random.boolean(),
+        socketId: driverSocketId,
+      };
+
+      const voyagerPID = shortid.generate();
+      const voyagerSocketId = shortid.generate();
+      const voyagerConnectionData = {
+        pid: voyagerPID,
+        p2p: faker.random.boolean(),
+        socketId: voyagerSocketId,
+      };
+
+      cacheMock.get.mockResolvedValueOnce(voyagerConnectionData);
+      cacheMock.get.mockResolvedValueOnce(driverConnectionData);
+      cacheMock.get.mockResolvedValueOnce(voyagerConnectionData);
+
+      const offer: OfferServer = {
+        ride: { pid: ridePID } as any,
+        offeredTo: driverPID,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [""],
+        offerResponseTimeout: setTimeout(() => {},
+        OFFER.DRIVER_RESPONSE_TIMEOUT),
+      };
+
+      (service as any).offers = [offer];
+
+      const offerResponse: OfferResponse = {
+        ridePID,
+        response: true,
+      };
+
+      await service.offerResponseEvent(
+        driverSocketId,
+        offerResponse,
+        driverConnectionData as any,
+      );
+
+      const cacheCalls = cacheMock.set.mock.calls;
+
+      expect((offer.offerResponseTimeout as any)._destroyed).toBeTruthy();
+      expect(cacheCalls[0][0]).toBe(CACHE_NAMESPACES.OFFERS);
+      expect(cacheCalls[0][1]).toBe(offer.ride.pid);
+      expect(cacheCalls[0][2]).toMatchObject({ ...offer, driverSocketId });
+      expect(typeof cacheCalls[0][2].acceptTimestamp).toBe("number");
+      expect(cacheCalls[0][3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
+
+      const rideDataCalls = dataMock.rides.update.mock.calls;
+
+      expect(rideDataCalls[0][0]).toStrictEqual({ pid: offer.ride.pid });
+      expect(rideDataCalls[0][1]).toStrictEqual({ driver: driverID });
+
+      const [driverEmit, voyagerEmit] = socketService.emit.mock.calls;
+
+      expect(driverEmit[0]).toBe(driverSocketId);
+      expect(driverEmit[1]).toBe(EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE);
+      expect(driverEmit[2]).toMatchObject({ ridePID: offer.ride.pid });
+      expect(typeof driverEmit[2].timestamp).toBe("number");
+
+      expect(voyagerEmit[0]).toBe(voyagerSocketId);
+      expect(voyagerEmit[1]).toBe(EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE);
+      expect(voyagerEmit[2]).toMatchObject({
+        ridePID: offer.ride.pid,
+        driverPID: driverPID,
+      });
+      expect(typeof voyagerEmit[2].timestamp).toBe("number");
+
+      expect(cacheMock.get.mock.calls[0][0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(cacheMock.get.mock.calls[0][1]).toBe(voyagerSocketId);
+
+      const [
+        ,
+        driverUpdateCalls,
+        voyagerUpdateCalls,
+      ] = cacheMock.set.mock.calls;
+
+      expect(driverUpdateCalls[0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(driverUpdateCalls[1]).toBe(driverPID);
+      expect(driverUpdateCalls[2]).toStrictEqual({
+        ...driverConnectionData,
+        observers: [
+          { socketId: voyagerSocketId, p2p: voyagerConnectionData.p2p },
+        ],
+      });
+
+      expect(voyagerUpdateCalls[0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(voyagerUpdateCalls[1]).toBe(voyagerPID);
+      expect(voyagerUpdateCalls[2]).toStrictEqual({
+        ...voyagerConnectionData,
+        observers: [
+          { socketId: driverSocketId, p2p: driverConnectionData.p2p },
+        ],
       });
     });
   });

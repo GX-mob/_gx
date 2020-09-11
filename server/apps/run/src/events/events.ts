@@ -1,15 +1,42 @@
 import {
+  Configuration,
   configurationSchema,
+  //
+  DriverRideAcceptedResponse,
   driverRideAcceptedResponseSchema,
+  //
+  VoyagerRideAcceptedResponse,
   voyagerRideAcceptedResponseSchema,
+  //
+  OfferRequest,
   offerSchema,
+  //
+  OfferResponse,
   offerReponseSchema,
+  //
+  OfferSent,
   offerSentSchema,
+  //
+  Position,
   positionSchema,
+  //
+  Setup,
   driverSetupSchema,
+  //
+  State,
   stateSchema,
+  //
+  CancelRide,
   cancelRideSchema,
+  //
+  CanceledRide,
   canceledRideSchema,
+  //
+  delayedOfferReponse,
+  DelayedOfferReponse,
+  //
+  AmIRunning,
+  amIRunningSchema,
 } from "./schemas";
 
 export * from "./schemas";
@@ -28,6 +55,7 @@ export enum EVENTS {
   AM_I_RUNNING = "AM_I_RUNNING",
   CANCEL_RIDE = "CANCEL_RIDE",
   CANCELED_RIDE = "CANCELED_RIDE",
+  DELAYED_OFFER_RESPONSE = "DELAYED_OFFER_RESPONSE",
 }
 
 export const serverEventsSchemas = {
@@ -69,7 +97,7 @@ export const serverEventsSchemas = {
   },
   [EVENTS.AM_I_RUNNING]: {
     id: 10,
-    schema: "uint8",
+    schema: amIRunningSchema,
   },
   [EVENTS.CANCEL_RIDE]: {
     id: 11,
@@ -79,4 +107,34 @@ export const serverEventsSchemas = {
     id: 12,
     schema: canceledRideSchema,
   },
+  [EVENTS.DELAYED_OFFER_RESPONSE]: {
+    id: 13,
+    schema: delayedOfferReponse,
+  },
 };
+
+export interface Events {
+  [EVENTS.CONFIGURATION]: Configuration;
+  [EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE]: DriverRideAcceptedResponse;
+  [EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE]: VoyagerRideAcceptedResponse;
+  [EVENTS.OFFER]: OfferRequest;
+  [EVENTS.OFFER_RESPONSE]: OfferResponse;
+  [EVENTS.OFFER_SENT]: OfferSent;
+  [EVENTS.POSITION]: Position;
+  [EVENTS.DRIVER_SETUP]: Setup;
+  [EVENTS.STATE]: State;
+  [EVENTS.AM_I_RUNNING]: AmIRunning;
+  [EVENTS.CANCEL_RIDE]: CancelRide;
+  [EVENTS.CANCELED_RIDE]: CanceledRide;
+  [EVENTS.DELAYED_OFFER_RESPONSE]: DelayedOfferReponse;
+}
+
+declare module "socket.io" {
+  interface Socket {
+    emit<K extends keyof Events>(
+      event: keyof Events,
+      data: Events[K],
+      callback?: any,
+    ): void;
+  }
+}

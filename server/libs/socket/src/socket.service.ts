@@ -10,7 +10,7 @@ import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
 import { SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
 
 @Injectable()
-export class SocketService {
+export class SocketService<Events = { [k: string]: any }> {
   /**
    * Self node id to used prevent handling self emitted events
    */
@@ -78,14 +78,14 @@ export class SocketService {
    * @param event
    * @param listener
    */
-  public on<T>(
-    event: string,
+  public on<K extends keyof Events>(
+    event: K,
     listener: (
-      content: Omit<DispatchedEvent<T>, "event">,
+      content: Omit<DispatchedEvent<Events[K]>, "event">,
       acknowledgment?: Callback,
     ) => void,
   ) {
-    this.broadcastedListener.on(event, listener);
+    this.broadcastedListener.on(String(event), listener);
   }
 
   private registerServerEventsListener() {
@@ -152,14 +152,19 @@ export class SocketService {
    * @param {any} data
    * @param {function | true} [ack] Acknowledgment
    */
-  emit<T = any>(socketId: string, event: string, data: T, callback?: Callback) {
+  emit<K extends keyof Events>(
+    socketId: string,
+    event: K,
+    data: Events[K],
+    callback?: Callback,
+  ) {
     const { connected } = this.server.sockets;
 
     if (socketId in connected) {
-      return connected[socketId].emit(event, data, callback);
+      return (connected[socketId] as any).emit(event, data, callback);
     }
 
-    this.dispatchSocketEvent(socketId, event, data, callback);
+    this.dispatchSocketEvent(socketId, event as string, data, callback);
   }
 
   private dispatchSocketEvent(
