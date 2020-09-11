@@ -4,7 +4,7 @@
  * @group unit/services/run-state
  */
 import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
 import { DataModule, DataService } from "@app/data";
@@ -17,6 +17,7 @@ import {
   RidePayMethods,
   RideTypes,
   USERS_ROLES,
+  Ride,
 } from "@app/database";
 import {
   Setup,
@@ -26,13 +27,17 @@ import {
   OfferRequest,
   OfferResponse,
   OfferServer,
+  DriverState,
 } from "./events";
 import faker from "faker";
 import { WsException } from "@nestjs/websockets";
-import { EXCEPTIONS, OFFER, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
+import { MATCH, OFFER, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
 import deepmerge from "deepmerge";
 import { Types } from "mongoose";
-import { ConnectionDataNotFoundException } from "./exceptions";
+import {
+  ConnectionDataNotFoundException,
+  RideNotFoundException,
+} from "./exceptions";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -79,7 +84,7 @@ describe("StateService", () => {
           heading: 0,
           kmh: 30,
           ignored: [],
-          pid: shortid.generate(),
+          pid: "",
         },
         config: {
           payMethods: [RidePayMethods.Money],
@@ -109,7 +114,17 @@ describe("StateService", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [
+            () => ({
+              MATCH: {
+                MAX_ITERATION: 10,
+                ITERATION_INTERVAL: 100,
+              },
+            }),
+          ],
+        }),
         LoggerModule.forRoot(),
         CacheModule,
         DataModule,
@@ -509,6 +524,169 @@ describe("StateService", () => {
           { socketId: driverSocketId, p2p: driverConnectionData.p2p },
         ],
       });
+    });
+  });
+
+  describe("createOffer", () => {
+    it("should throw RideNotFoundException", async () => {
+      dataMock.rides.get.mockResolvedValueOnce(null);
+      const ridePID = shortid.generate();
+
+      const offerRequest: OfferRequest = {
+        ridePID,
+      };
+
+      await expect(
+        service.createOffer(offerRequest, {} as any),
+      ).rejects.toStrictEqual(new RideNotFoundException(ridePID));
+
+      const [getCalls] = dataMock.rides.get.mock.calls;
+
+      expect(getCalls[0]).toStrictEqual({ pid: ridePID });
+    });
+
+    it("should create an offer", async () => {
+      const ridePID = shortid.generate();
+      const socketId = shortid.generate();
+      const connection = { socketId };
+      const offerRequest: OfferRequest = { ridePID };
+
+      dataMock.rides.get.mockResolvedValueOnce({ pid: ridePID });
+
+      await service.createOffer(offerRequest, connection as any);
+
+      const offer = service.offers.find((offer) => offer.ride.pid === ridePID);
+
+      expect(offer).toBeDefined();
+      const [cacheSetCall] = cacheMock.set.mock.calls;
+
+      expect(cacheSetCall[0]).toBe(CACHE_NAMESPACES.OFFERS);
+      expect(cacheSetCall[1]).toBe(ridePID);
+      expect(cacheSetCall[2]).toStrictEqual(offer);
+      expect(cacheSetCall[3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
+    });
+  });
+
+  describe("match", () => {
+    const basePosition = {
+      latLng: [
+        parseFloat(faker.address.latitude()),
+        parseFloat(faker.address.longitude()),
+      ],
+      heading: 0,
+      kmh: 30,
+      ignored: [],
+      pid: "",
+    };
+
+    const baseConfig = {
+      payMethods: [RidePayMethods.Money],
+      types: [RideTypes.Normal],
+      drops: ["any"],
+    };
+
+    function mockPosition(override: Partial<Position> = {}): Position {
+      return deepmerge(
+        {
+          latLng: [
+            parseFloat(faker.address.latitude()),
+            parseFloat(faker.address.longitude()),
+          ],
+          heading: 0,
+          kmh: 30,
+          ignored: [],
+          pid: "",
+        },
+        override,
+      );
+    }
+
+    function mockDriverPosition(override: Partial<Driver> = {}): Driver {
+      return {
+        _id: shortid.generate(),
+        pid: shortid.generate(),
+        rate: faker.random.number({ min: 1, max: 4 }),
+        p2p: faker.random.boolean(),
+        socketId: shortid.generate(),
+        position: {
+          latLng: [-9.575557, -35.779208],
+          heading: 0,
+          kmh: 30,
+          ignored: [],
+          pid: "",
+        },
+        config: {
+          ...baseConfig,
+        },
+        ...override,
+      };
+    }
+
+    it("should got a match driver and pass through all conditionals", () => {
+      const routeStartLatLng = [-9.572477, -35.776619];
+      const tooAwayPoint: [number, number] = [-9.572178, -35.754305];
+
+      const driverToAway = mockDriverPosition({
+        position: { ...basePosition, latLng: tooAwayPoint },
+      });
+      const driverIgnored = mockDriverPosition();
+      const driverIDLE = mockDriverPosition({
+        state: DriverState.IDLE,
+      });
+      const driverDiferentDistricts = mockDriverPosition({
+        config: {
+          ...baseConfig,
+          drops: ["centro", "farol"],
+        },
+      });
+      const driverDifferentPaymethod = mockDriverPosition({
+        config: {
+          ...baseConfig,
+          payMethods: [RidePayMethods.CreditCard],
+        },
+      });
+      const driverDifferentType = mockDriverPosition({
+        config: {
+          ...baseConfig,
+          types: [RideTypes.VIG],
+        },
+      });
+      const driverElegible = mockDriverPosition();
+      const driverMoreNearElegible = mockDriverPosition({
+        position: {
+          ...basePosition,
+          latLng: [-9.573539, -35.778969],
+        },
+      });
+      const driverBetterRated = mockDriverPosition({
+        rate: 5,
+      });
+
+      service.drivers = [
+        driverToAway,
+        driverIgnored,
+        driverIDLE,
+        driverDiferentDistricts,
+        driverDifferentPaymethod,
+        driverDifferentType,
+        driverElegible,
+        driverMoreNearElegible,
+        driverBetterRated,
+      ];
+
+      const ride: Partial<Ride> = {};
+
+      const voyagerSocketId = shortid.generate();
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      service.offers.push(offerObject);
     });
   });
 });

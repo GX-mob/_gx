@@ -14,14 +14,12 @@ export enum CACHE_TTL {
 }
 
 export enum MATCH {
-  MAX_EXECUTION = 60 * 5, // 60 = Executes the algorithm during 1 minute
+  MAX_ITERATION = 60, // To prevent long loop
   ITERATION_INTERVAL = 1000, // 1 second
+  TOO_AWAY = 2, // Distance in KM to consider driver too away
 }
 
 export enum OFFER {
-  CREATE_RESPONSE_RIDE_NOT_FOUND = "ride-not-found",
-  CREATE_RESPONSE_OFFERING = "offering",
-
   DRIVER_RESPONSE_TIMEOUT = 13000, // 13 seconds
   INITIAL_RADIUS_SIZE = 1000,
   ADD_RADIUS_SIZE_EACH_ITERATION = 200,

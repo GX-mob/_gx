@@ -1,5 +1,6 @@
 import deepmerge from "deepmerge";
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
 import { DataService } from "@app/data";
@@ -46,6 +47,7 @@ export class StateService {
     readonly dataService: DataService,
     readonly socketService: SocketService<Events>,
     private readonly logger: PinoLogger,
+    readonly configService: ConfigService<{ MATCH: MATCH }>,
   ) {
     logger.setContext(StateService.name);
 
@@ -273,7 +275,7 @@ export class StateService {
   async createOffer(
     offer: OfferRequest,
     connection: Connection,
-  ): Promise<string> {
+  ): Promise<boolean> {
     const ride = await this.dataService.rides.get({ pid: offer.ridePID });
 
     if (!ride) {
@@ -301,7 +303,8 @@ export class StateService {
 
     this.offerRide(offerObject);
 
-    return OFFER.CREATE_RESPONSE_OFFERING;
+    // acknownlegment
+    return true;
   }
 
   /**
@@ -313,10 +316,12 @@ export class StateService {
     const driver = await this.match(offer);
 
     /**
-     * If don't have a match, inform to user the break time
+     * If don't have a match, informes to user the break time,
+     * this should be rarely executed, its to avoid a long time
+     * blocking of server resources.
      */
     if (!driver) {
-      // TODO Try limit reached, require to user a pause ~ 100
+      // TODO this.socketService.emit(offer.requesterSocketId, "offerExecutionGotToLong", true)
       return this.offerRide(offer);
     }
 
@@ -414,14 +419,13 @@ export class StateService {
          * Not match with the driver configured district
          */
         (current.config.drops[0] !== "any" &&
-          current.config.drops.includes(ride.route.end.district)) ||
+          !current.config.drops.includes(ride.route.end.district)) ||
         /**
          * Not match with the driver configured pay method
          */
         current.config.payMethods.includes(ride.payMethod) ||
         /**
-         * The driver not accept the ride type
-         * * For future feature, for give the choice to driver not receive offers of group rides
+         * The driver not accept or cannot serve the ride type
          */
         current.config.types.includes(ride.type) ||
         /**
@@ -458,7 +462,7 @@ export class StateService {
       }
     }
 
-    if (runTimes > MATCH.MAX_EXECUTION) {
+    if (runTimes > this.configService.get("MATCH").MAX_ITERATION) {
       return null;
     }
 
@@ -467,7 +471,7 @@ export class StateService {
        * Interval for next execution
        */
       await new Promise((resolve) =>
-        setTimeout(resolve, MATCH.ITERATION_INTERVAL),
+        setTimeout(resolve, this.configService.get("MATCH").ITERATION_INTERVAL),
       );
       return await this.match(offer, nextList, runTimes);
     }
