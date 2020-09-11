@@ -107,6 +107,7 @@ export type TRoute = {
   end: TRoutePoint;
   path: string;
   distance: number;
+  duration: number;
 };
 
 export enum RideTypes {

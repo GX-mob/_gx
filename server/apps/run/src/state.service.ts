@@ -23,7 +23,7 @@ import {
   OfferRequest,
   Configuration,
 } from "./events";
-import { OFFER, MATCH, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
+import { CACHE_NAMESPACES, CACHE_TTL } from "./constants";
 import { NODES_EVENTS, UpdateDriverState } from "./events/nodes";
 import { PinoLogger } from "nestjs-pino";
 import {
@@ -47,7 +47,7 @@ export class StateService {
     readonly dataService: DataService,
     readonly socketService: SocketService<Events>,
     private readonly logger: PinoLogger,
-    readonly configService: ConfigService<{ MATCH: MATCH }>,
+    readonly configService: ConfigService,
   ) {
     logger.setContext(StateService.name);
 
@@ -321,12 +321,16 @@ export class StateService {
      * blocking of server resources.
      */
     if (!driver) {
-      // TODO this.socketService.emit(offer.requesterSocketId, "offerExecutionGotToLong", true)
-      return this.offerRide(offer);
+      this.socketService.emit(
+        offer.requesterSocketId,
+        EVENTS.OFFER_GOT_TOO_LONG,
+        true,
+      );
+      return;
     }
 
     /**
-     * Set the current driver that receive the offer
+     * Defines the current driver that received the offer
      */
     offer.offeredTo = driver.pid;
 
@@ -351,7 +355,7 @@ export class StateService {
         offer.offeredTo = null;
         this.offerRide(offer);
       },
-      OFFER.DRIVER_RESPONSE_TIMEOUT,
+      this.configService.get("OFFER.DRIVER_RESPONSE_TIMEOUT") as number,
       driver,
       offer,
     );
@@ -396,7 +400,7 @@ export class StateService {
         /**
          * Removes drivers that are too away
          */
-        distance > 3000
+        distance > this.configService.get("MATCH.TOO_AWAY")
       ) {
         continue;
       }
@@ -442,7 +446,7 @@ export class StateService {
       if (!choiced) {
         choiced = current;
         currentDistance = distance;
-        continue;
+        // continue;
       }
 
       /**
@@ -462,7 +466,7 @@ export class StateService {
       }
     }
 
-    if (runTimes > this.configService.get("MATCH").MAX_ITERATION) {
+    if (runTimes > this.configService.get("MATCH.MAX_ITERATION")) {
       return null;
     }
 
@@ -470,9 +474,11 @@ export class StateService {
       /**
        * Interval for next execution
        */
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.configService.get("MATCH").ITERATION_INTERVAL),
+      const iterationInterval = this.configService.get(
+        "MATCH.ITERATION_INTERVAL",
       );
+
+      await new Promise((resolve) => setTimeout(resolve, iterationInterval));
       return await this.match(offer, nextList, runTimes);
     }
 
@@ -485,18 +491,25 @@ export class StateService {
    * @param trys
    */
   getDistance(trys: number): number {
+    const initialRadiusSize = this.configService.get(
+      "OFFER.INITIAL_RADIUS_SIZE",
+    );
+    const addRadiusSizeEachIteration = this.configService.get(
+      "OFFER.ADD_RADIUS_SIZE_EACH_ITERATION",
+    );
+    const maxRadiusSize = this.configService.get("OFFER.MAX_RADIUS_SIZE");
+
     const distance =
       trys === 1
-        ? OFFER.INITIAL_RADIUS_SIZE
-        : OFFER.INITIAL_RADIUS_SIZE +
-          OFFER.ADD_RADIUS_SIZE_EACH_ITERATION * trys;
+        ? initialRadiusSize
+        : initialRadiusSize + addRadiusSizeEachIteration * trys;
 
-    return distance > OFFER.MAX_RADIUS_SIZE ? OFFER.MAX_RADIUS_SIZE : distance;
+    return distance > maxRadiusSize ? maxRadiusSize : distance;
   }
 
   setOfferData(
     ridePID: string,
-    data: Omit<OfferServer, "offerResponseTieout">,
+    data: Omit<OfferServer, "offerResponseTimeout">,
   ) {
     return this.setOrUpdateCache(CACHE_NAMESPACES.OFFERS, ridePID, data, {
       ex: CACHE_TTL.OFFERS,
@@ -505,7 +518,7 @@ export class StateService {
 
   getOfferData(
     ridePID: string,
-  ): Promise<Omit<OfferServer, "offerResponseTieout">> {
+  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
     return this.cacheService.get(CACHE_NAMESPACES.OFFERS, ridePID);
   }
 

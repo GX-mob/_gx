@@ -37,6 +37,9 @@ import {
   //
   AmIRunning,
   amIRunningSchema,
+  //
+  OfferGotTooLong,
+  offerGotTooLong,
 } from "./schemas";
 
 export * from "./schemas";
@@ -56,6 +59,7 @@ export enum EVENTS {
   CANCEL_RIDE = "CANCEL_RIDE",
   CANCELED_RIDE = "CANCELED_RIDE",
   DELAYED_OFFER_RESPONSE = "DELAYED_OFFER_RESPONSE",
+  OFFER_GOT_TOO_LONG = "OFFER_GOT_TOO_LONG",
 }
 
 export const serverEventsSchemas = {
@@ -111,6 +115,10 @@ export const serverEventsSchemas = {
     id: 13,
     schema: delayedOfferReponse,
   },
+  [EVENTS.OFFER_GOT_TOO_LONG]: {
+    id: 14,
+    schema: offerGotTooLong,
+  },
 };
 
 export interface Events {
@@ -127,6 +135,7 @@ export interface Events {
   [EVENTS.CANCEL_RIDE]: CancelRide;
   [EVENTS.CANCELED_RIDE]: CanceledRide;
   [EVENTS.DELAYED_OFFER_RESPONSE]: DelayedOfferReponse;
+  [EVENTS.OFFER_GOT_TOO_LONG]: OfferGotTooLong;
 }
 
 declare module "socket.io" {

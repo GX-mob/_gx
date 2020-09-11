@@ -13,19 +13,6 @@ export enum CACHE_TTL {
   OFFERS = 1000 * 60 * 15, // 15 minutes
 }
 
-export enum MATCH {
-  MAX_ITERATION = 60, // To prevent long loop
-  ITERATION_INTERVAL = 1000, // 1 second
-  TOO_AWAY = 2, // Distance in KM to consider driver too away
-}
-
-export enum OFFER {
-  DRIVER_RESPONSE_TIMEOUT = 13000, // 13 seconds
-  INITIAL_RADIUS_SIZE = 1000,
-  ADD_RADIUS_SIZE_EACH_ITERATION = 200,
-  MAX_RADIUS_SIZE = 1800,
-}
-
 export enum CANCELATION {
   SAFE_TIME_MS = 1000 * 60 * 3, // 3 minutes
   FARE = 3,

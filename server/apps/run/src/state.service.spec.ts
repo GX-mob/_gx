@@ -4,7 +4,7 @@
  * @group unit/services/run-state
  */
 import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule, registerAs } from "@nestjs/config";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
 import { DataModule, DataService } from "@app/data";
@@ -30,8 +30,7 @@ import {
   DriverState,
 } from "./events";
 import faker from "faker";
-import { WsException } from "@nestjs/websockets";
-import { MATCH, OFFER, CACHE_NAMESPACES, CACHE_TTL } from "./constants";
+import { CACHE_NAMESPACES, CACHE_TTL } from "./constants";
 import deepmerge from "deepmerge";
 import { Types } from "mongoose";
 import {
@@ -117,12 +116,17 @@ describe("StateService", () => {
         ConfigModule.forRoot({
           isGlobal: true,
           load: [
-            () => ({
-              MATCH: {
-                MAX_ITERATION: 10,
-                ITERATION_INTERVAL: 100,
-              },
-            }),
+            registerAs("MATCH", () => ({
+              MAX_ITERATION: 10,
+              ITERATION_INTERVAL: 100,
+              TOO_AWAY: 2000,
+            })),
+            registerAs("OFFER", () => ({
+              DRIVER_RESPONSE_TIMEOUT: 13000, // 13 seconds
+              INITIAL_RADIUS_SIZE: 1000,
+              ADD_RADIUS_SIZE_EACH_ITERATION: 200,
+              MAX_RADIUS_SIZE: 1800,
+            })),
           ],
         }),
         LoggerModule.forRoot(),
@@ -400,8 +404,7 @@ describe("StateService", () => {
         offeredTo: driverPID,
         requesterSocketId: shortid.generate(),
         ignoreds: [""],
-        offerResponseTimeout: setTimeout(() => {},
-        OFFER.DRIVER_RESPONSE_TIMEOUT),
+        offerResponseTimeout: setTimeout(() => {}, Number.MAX_SAFE_INTEGER),
       };
 
       (service as any).offers = [offer];
@@ -452,8 +455,7 @@ describe("StateService", () => {
         offeredTo: driverPID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [""],
-        offerResponseTimeout: setTimeout(() => {},
-        OFFER.DRIVER_RESPONSE_TIMEOUT),
+        offerResponseTimeout: setTimeout(() => {}, Number.MAX_SAFE_INTEGER),
       };
 
       (service as any).offers = [offer];
@@ -567,7 +569,7 @@ describe("StateService", () => {
     });
   });
 
-  describe("match", () => {
+  describe("offerRide", () => {
     const basePosition = {
       latLng: [
         parseFloat(faker.address.latitude()),
@@ -604,6 +606,7 @@ describe("StateService", () => {
     function mockDriverPosition(override: Partial<Driver> = {}): Driver {
       return {
         _id: shortid.generate(),
+        state: DriverState.SEARCHING,
         pid: shortid.generate(),
         rate: faker.random.number({ min: 1, max: 4 }),
         p2p: faker.random.boolean(),
@@ -622,44 +625,81 @@ describe("StateService", () => {
       };
     }
 
-    it("should got a match driver and pass through all conditionals", () => {
-      const routeStartLatLng = [-9.572477, -35.776619];
+    it(`should get a ${EVENTS.OFFER_GOT_TOO_LONG}`, async () => {
+      const ride: Partial<Ride> = {};
+
+      const voyagerSocketId = shortid.generate();
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      await service.offerRide(offerObject);
+
+      const [tooLongEvent] = socketService.emit.mock.calls;
+
+      expect(tooLongEvent[0]).toBe(voyagerSocketId);
+      expect(tooLongEvent[1]).toBe(EVENTS.OFFER_GOT_TOO_LONG);
+      expect(tooLongEvent[2]).toBe(true);
+    });
+
+    it("should get a match driver and pass through all conditionals", async () => {
+      const routeStartLatLng: [number, number] = [-9.572477, -35.776619];
       const tooAwayPoint: [number, number] = [-9.572178, -35.754305];
 
       const driverToAway = mockDriverPosition({
+        pid: "toAway",
         position: { ...basePosition, latLng: tooAwayPoint },
       });
-      const driverIgnored = mockDriverPosition();
+      const driverIgnored = mockDriverPosition({
+        pid: "ignored",
+      });
       const driverIDLE = mockDriverPosition({
+        pid: "idle",
         state: DriverState.IDLE,
       });
       const driverDiferentDistricts = mockDriverPosition({
+        pid: "diferentDistrict",
         config: {
           ...baseConfig,
           drops: ["centro", "farol"],
         },
       });
       const driverDifferentPaymethod = mockDriverPosition({
+        pid: "diferentPayMethod",
         config: {
           ...baseConfig,
           payMethods: [RidePayMethods.CreditCard],
         },
       });
       const driverDifferentType = mockDriverPosition({
+        pid: "diferentType",
         config: {
           ...baseConfig,
           types: [RideTypes.VIG],
         },
       });
-      const driverElegible = mockDriverPosition();
+      const driverElegible = mockDriverPosition({
+        pid: "firstElegible",
+      });
       const driverMoreNearElegible = mockDriverPosition({
+        pid: "moreNearElegible",
         position: {
           ...basePosition,
           latLng: [-9.573539, -35.778969],
         },
       });
       const driverBetterRated = mockDriverPosition({
+        pid: "betterRated",
         rate: 5,
+        position: {
+          ...basePosition,
+          latLng: [-9.573539, -35.778969],
+        },
       });
 
       service.drivers = [
@@ -674,19 +714,55 @@ describe("StateService", () => {
         driverBetterRated,
       ];
 
-      const ride: Partial<Ride> = {};
+      const ride: Partial<Ride> = {
+        pid: shortid.generate(),
+        route: {
+          start: {
+            coord: routeStartLatLng,
+            primary: faker.address.streetAddress(),
+            secondary: faker.address.streetAddress(),
+            district: "",
+          },
+          end: {
+            coord: [
+              parseFloat(faker.address.latitude()),
+              parseFloat(faker.address.longitude()),
+            ],
+            primary: faker.address.streetAddress(),
+            secondary: faker.address.streetAddress(),
+            district: "prado",
+          },
+          path: "",
+          distance: 23.4,
+          duration: 25,
+        },
+      };
 
       const voyagerSocketId = shortid.generate();
 
       const offerObject: OfferServer = {
         ride: ride as any,
         requesterSocketId: voyagerSocketId,
-        ignoreds: [],
+        ignoreds: [driverIgnored.pid],
         offeredTo: null,
         offerResponseTimeout: null,
       };
 
-      service.offers.push(offerObject);
+      await service.offerRide(offerObject);
+
+      expect(offerObject.offeredTo).toBe(driverBetterRated.pid);
+
+      const [driverInfoEvent, voyagerInfoEvent] = socketService.emit.mock.calls;
+
+      expect(driverInfoEvent[0]).toBe(driverBetterRated.socketId);
+      expect(driverInfoEvent[1]).toBe(EVENTS.OFFER);
+      expect(driverInfoEvent[2]).toStrictEqual({
+        ridePID: ride.pid,
+      });
+
+      expect(voyagerInfoEvent[0]).toBe(voyagerSocketId);
+      expect(voyagerInfoEvent[1]).toBe(EVENTS.OFFER_SENT);
+      expect(voyagerInfoEvent[2]).toStrictEqual(driverBetterRated);
     });
   });
 });

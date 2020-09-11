@@ -17,6 +17,7 @@ describe("Model: Ride", () => {
     path: "...",
     end: mockRoutePoint,
     distance: 3400,
+    duration: 30,
   };
 
   let base = {

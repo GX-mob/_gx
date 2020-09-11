@@ -11,3 +11,4 @@ export * from "./state";
 export * from "./cancel-ride";
 export * from "./canceled-ride";
 export * from "./delayed-offer-response";
+export * from "./offer-got-too-long";
