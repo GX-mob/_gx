@@ -10,9 +10,8 @@ import {
   Body,
 } from "@nestjs/common";
 import { AuthGuard, AuthorizedRequest, Driver } from "@app/auth";
-import { DatabaseService } from "@app/database";
 import { CacheService } from "@app/cache";
-import { DataService } from "@app/data";
+import { RepositoryService, RideRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { RidesService } from "./rides.service";
 import { GetRidesPricesParams, CreateRideDto } from "./rides.dto";
@@ -23,8 +22,8 @@ import { CACHE_NAMESPACES } from "../constants";
 export class RidesController {
   constructor(
     readonly cache: CacheService,
-    readonly databaseService: DatabaseService,
-    readonly data: DataService,
+    readonly repositoryService: RepositoryService,
+    readonly rideRepository: RideRepository,
     readonly rideService: RidesService,
   ) {}
 
@@ -60,7 +59,7 @@ export class RidesController {
       throw new ForbiddenException();
     }
 
-    const ride = await this.data.rides.get({ pid: ridePid });
+    const ride = await this.rideRepository.get({ pid: ridePid });
 
     if (!ride) {
       throw new NotFoundException();
@@ -81,7 +80,7 @@ export class RidesController {
     /**
      * Get user pendencies
      */
-    const { pendencieModel } = this.databaseService;
+    const { pendencieModel } = this.repositoryService;
     const pendencies = await pendencieModel.find({ issuer: voyagerId });
 
     const { route, type, payMethod, country, area, subArea } = body;
@@ -97,7 +96,7 @@ export class RidesController {
 
     const costs = { ...rideCosts, base, total };
 
-    const { pid } = await this.data.rides.create({
+    const { pid } = await this.rideRepository.create({
       voyager: voyagerId,
       route,
       type,

@@ -2,13 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
+import { Session, SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
-import { DataService } from "@app/data";
 import { CacheService } from "@app/cache";
-import { User, Session, USERS_ROLES } from "@app/database";
+import { User, USERS_ROLES } from "@app/database";
 import { util } from "@app/helpers";
-import HttpError from "http-errors";
+import {
+  SessionNotFoundException,
+  SessionDeactivatedException,
+} from "./exceptions";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
   jwt.verify,
@@ -26,7 +29,7 @@ export class SessionService {
 
   constructor(
     private configService: ConfigService,
-    private data: DataService,
+    private sessionRepository: SessionRepository,
     private cache: CacheService,
     readonly logger: PinoLogger,
   ) {
@@ -48,7 +51,7 @@ export class SessionService {
     userAgent: string | null,
     ip: string | null,
   ): Promise<{ token: string; session: Session }> {
-    const session = await this.data.sessions.create({
+    const session = await this.sessionRepository.create({
       user: user._id,
       userAgent: userAgent || "",
       ips: ip ? [ip] : [],
@@ -102,11 +105,11 @@ export class SessionService {
     const sessionData = await this.get(session_id);
 
     if (!sessionData) {
-      throw new HttpError.Unauthorized("not-found");
+      throw new SessionNotFoundException();
     }
 
     if (!sessionData.active) {
-      throw new HttpError.Forbidden("deactivated");
+      throw new SessionDeactivatedException();
     }
 
     const session = { ...sessionData };
@@ -128,17 +131,17 @@ export class SessionService {
   }
 
   async get(_id: Types.ObjectId) {
-    return this.data.sessions.get({ _id });
+    return this.sessionRepository.get({ _id });
   }
 
   async update(
     session_id: Types.ObjectId,
-    data: Omit<Partial<Session>, "_id">,
+    data: Partial<Omit<Session, "_id" | "user" | "createdAt">>,
   ) {
-    await this.data.sessions.update({ _id: session_id }, data);
+    await this.sessionRepository.update({ _id: session_id }, data);
   }
 
   async delete(session_id: Types.ObjectId) {
-    await this.data.sessions.remove({ _id: session_id });
+    await this.sessionRepository.remove({ _id: session_id });
   }
 }

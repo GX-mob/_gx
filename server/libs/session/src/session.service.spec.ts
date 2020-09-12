@@ -5,13 +5,21 @@
  */
 import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { UserModel, USERS_ROLES } from "@app/database";
-import { DataModule, DataService } from "@app/data";
 import { DatabaseService, Session } from "@app/database";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { SessionService } from "./session.service";
+import {
+  SessionRepository,
+  RepositoryModule,
+  RepositoryService,
+} from "@app/repositories";
+import {
+  SessionNotFoundException,
+  SessionDeactivatedException,
+} from "./exceptions";
 
 describe("SessionService", () => {
   let service: SessionService;
@@ -30,21 +38,15 @@ describe("SessionService", () => {
   const ua = "test";
   const ip = "127.0.0.1";
 
-  const dataService = {
-    users: {
-      get: jest.fn().mockResolvedValue({ _id: user._id, groups: [1] }),
-    },
-    sessions: {
-      create: jest.fn().mockResolvedValue({
-        _id: sid,
-        userAgent: ua,
-        ips: [ip],
-      }),
-      verifyToken: jest.fn(),
-      get: jest.fn(),
-      update: jest.fn(),
-      remove: jest.fn(),
-    },
+  const sessionRepositoryMock = {
+    create: jest.fn().mockResolvedValue({
+      _id: sid,
+      userAgent: ua,
+      ips: [ip],
+    }),
+    get: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   const cacheService = {
@@ -55,17 +57,22 @@ describe("SessionService", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({ envFilePath: ".development.env" }),
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ".development.env",
+        }),
         LoggerModule.forRoot(),
-        DataModule,
+        RepositoryModule,
         CacheModule,
       ],
       providers: [SessionService],
     })
+      .overrideProvider(RepositoryService)
+      .useValue({})
       .overrideProvider(RedisService)
       .useValue({})
-      .overrideProvider(DataService)
-      .useValue(dataService)
+      .overrideProvider(SessionRepository)
+      .useValue(sessionRepositoryMock)
       .overrideProvider(CacheService)
       .useValue(cacheService)
       .overrideProvider(DatabaseService)
@@ -89,8 +96,8 @@ describe("SessionService", () => {
   });
 
   it("should update a session", async () => {
-    dataService.sessions.update.mockResolvedValue(void 0);
-    dataService.sessions.get.mockResolvedValue({ active: false });
+    sessionRepositoryMock.update.mockResolvedValue(void 0);
+    sessionRepositoryMock.get.mockResolvedValue({ active: false });
 
     await service.update(sid, { active: false });
     const updated = await service.get(sid);
@@ -128,7 +135,7 @@ describe("SessionService", () => {
 
     const groups = [1];
 
-    dataService.sessions.get.mockResolvedValue({
+    sessionRepositoryMock.get.mockResolvedValue({
       _id: sid,
       uid: user._id,
       groups,
@@ -157,16 +164,20 @@ describe("SessionService", () => {
   it("should throw an error due to deactivated or non existent session", async () => {
     cacheService.get.mockResolvedValue(null);
     cacheService.set.mockResolvedValue("OK");
-    dataService.sessions.verifyToken.mockResolvedValue(true);
-    dataService.sessions.get.mockResolvedValue(null);
+
+    sessionRepositoryMock.get.mockResolvedValue(null);
 
     const { token } = await service.create(user, ua, ip);
 
-    await expect(service.verify(token, ip)).rejects.toThrow("not-found");
+    await expect(service.verify(token, ip)).rejects.toStrictEqual(
+      new SessionNotFoundException(),
+    );
 
-    dataService.sessions.get.mockResolvedValue({ active: false });
+    sessionRepositoryMock.get.mockResolvedValue({ active: false });
 
-    await expect(service.verify(token, ip)).rejects.toThrow("deactivated");
+    await expect(service.verify(token, ip)).rejects.toStrictEqual(
+      new SessionDeactivatedException(),
+    );
   });
 
   it("should append ip to ip tracking field", async () => {
@@ -177,10 +188,11 @@ describe("SessionService", () => {
       groups: [1],
       ips: [ip],
       active: true,
+      user: { _id: user._id, groups: [1] },
     };
-    dataService.users.get.mockResolvedValue({ _id: user._id, groups: [1] });
-    dataService.sessions.get.mockResolvedValue(session);
-    dataService.sessions.update.mockResolvedValue("OK");
+
+    sessionRepositoryMock.get.mockResolvedValue(session);
+    sessionRepositoryMock.update.mockResolvedValue("OK");
 
     const newIp = "127.0.0.2";
     const { token } = await service.create(user, ua, ip);

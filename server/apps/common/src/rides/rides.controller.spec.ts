@@ -6,7 +6,12 @@
 import { RidesController } from "./rides.controller";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
-import { Price, RidePayMethods, RideTypes, TRoutePoint } from "@app/database";
+import {
+  Price,
+  RidePayMethods,
+  RideTypes,
+  TRoutePoint,
+} from "@app/repositories";
 import { GetRidesPricesParams, CreateRideDto } from "./rides.dto";
 import { prices, path } from "./__mocks__";
 import shortid from "shortid";
@@ -25,7 +30,7 @@ describe("RidesController", () => {
     set: jest.fn(),
   };
 
-  const databaseMock = {
+  const repositoryServiceMock = {
     pendencieModel: {
       find: jest.fn(),
     },
@@ -37,11 +42,9 @@ describe("RidesController", () => {
     },
   };
 
-  const dataMock = {
-    rides: {
-      get: jest.fn(),
-      create: jest.fn(),
-    },
+  const rideRepositoryMock = {
+    get: jest.fn(),
+    create: jest.fn(),
   };
 
   let fastifyRequestMock: any = {
@@ -83,11 +86,11 @@ describe("RidesController", () => {
   };
 
   beforeEach(() => {
-    rideService = new RidesService(databaseMock as any);
+    rideService = new RidesService(repositoryServiceMock as any);
     controller = new RidesController(
       cacheMock as any,
-      databaseMock as any,
-      dataMock as any,
+      repositoryServiceMock as any,
+      rideRepositoryMock as any,
       rideService,
     );
   });
@@ -166,7 +169,7 @@ describe("RidesController", () => {
       const driverPid = shortid.generate();
       fastifyRequestMock.session.user = { pid: driverPid };
       cacheMock.get.mockResolvedValue(driverPid);
-      dataMock.rides.get.mockResolvedValue(null);
+      rideRepositoryMock.get.mockResolvedValue(null);
 
       await expect(
         controller.getRideDataHandler(fastifyRequestMock, ridePid),
@@ -181,7 +184,7 @@ describe("RidesController", () => {
 
       fastifyRequestMock.session.user = { pid: driverPid };
       cacheMock.get.mockResolvedValue(driverPid);
-      dataMock.rides.get.mockResolvedValue(rideData);
+      rideRepositoryMock.get.mockResolvedValue(rideData);
 
       const response = await controller.getRideDataHandler(
         fastifyRequestMock,
@@ -199,8 +202,12 @@ describe("RidesController", () => {
       const generatedRidePid = shortid.generate();
       const voyagerPendencies: [] = [];
 
-      databaseMock.pendencieModel.find.mockResolvedValue(voyagerPendencies);
-      dataMock.rides.create.mockResolvedValue({ pid: generatedRidePid });
+      repositoryServiceMock.pendencieModel.find.mockResolvedValue(
+        voyagerPendencies,
+      );
+      rideRepositoryMock.create.mockResolvedValue({
+        pid: generatedRidePid,
+      });
       fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
 
       const body = mockRoute();
@@ -224,7 +231,7 @@ describe("RidesController", () => {
         pendencies: voyagerPendencies,
       });
 
-      expect(dataMock.rides.create.mock.calls[0][0]).toStrictEqual({
+      expect(rideRepositoryMock.create.mock.calls[0][0]).toStrictEqual({
         ...body,
         voyager: voyagerId,
         costs: expectedCosts,
@@ -238,8 +245,12 @@ describe("RidesController", () => {
       const generatedRidePid = shortid.generate();
       const voyagerPendencies: any[] = [{ amount: 3 }];
 
-      databaseMock.pendencieModel.find.mockResolvedValue(voyagerPendencies);
-      dataMock.rides.create.mockResolvedValue({ pid: generatedRidePid });
+      repositoryServiceMock.pendencieModel.find.mockResolvedValue(
+        voyagerPendencies,
+      );
+      rideRepositoryMock.create.mockResolvedValue({
+        pid: generatedRidePid,
+      });
       fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
 
       const body = mockRoute();
@@ -263,7 +274,7 @@ describe("RidesController", () => {
         pendencies: voyagerPendencies,
       });
 
-      expect(dataMock.rides.create.mock.calls[0][0]).toStrictEqual({
+      expect(rideRepositoryMock.create.mock.calls[0][0]).toStrictEqual({
         ...body,
         voyager: voyagerId,
         costs: expectedCosts,

@@ -14,60 +14,24 @@
     "baseUrl": "./",
     "incremental": true,
     "paths": {
-      "@app/cache": [
-        "libs/cache/src"
-      ],
-      "@app/cache/*": [
-        "libs/cache/src/*"
-      ],
-      "@app/data": [
-        "libs/data/src"
-      ],
-      "@app/data/*": [
-        "libs/data/src/*"
-      ],
-      "@app/storage": [
-        "libs/storage/src"
-      ],
-      "@app/storage/*": [
-        "libs/storage/src/*"
-      ],
-      "@app/session": [
-        "libs/session/src"
-      ],
-      "@app/session/*": [
-        "libs/session/src/*"
-      ],
-      "@app/helpers": [
-        "libs/helpers/src"
-      ],
-      "@app/helpers/*": [
-        "libs/helpers/src/*"
-      ],
-      "@app/contact-verification": [
-        "libs/contact-verification/src"
-      ],
-      "@app/contact-verification/*": [
-        "libs/contact-verification/src/*"
-      ],
-      "@app/database": [
-        "libs/database/src"
-      ],
-      "@app/database/*": [
-        "libs/database/src/*"
-      ],
-      "@app/auth": [
-        "libs/auth/src"
-      ],
-      "@app/auth/*": [
-        "libs/auth/src/*"
-      ],
-      "@app/socket": [
-        "libs/socket/src"
-      ],
-      "@app/socket/*": [
-        "libs/socket/src/*"
-      ]
+      "@app/cache": ["libs/cache/src"],
+      "@app/cache/*": ["libs/cache/src/*"],
+      "@app/repositories": ["libs/repositories/src"],
+      "@app/repositories/*": ["libs/repositories/src/*"],
+      "@app/storage": ["libs/storage/src"],
+      "@app/storage/*": ["libs/storage/src/*"],
+      "@app/session": ["libs/session/src"],
+      "@app/session/*": ["libs/session/src/*"],
+      "@app/helpers": ["libs/helpers/src"],
+      "@app/helpers/*": ["libs/helpers/src/*"],
+      "@app/contact-verification": ["libs/contact-verification/src"],
+      "@app/contact-verification/*": ["libs/contact-verification/src/*"],
+      "@app/database": ["libs/database/src"],
+      "@app/database/*": ["libs/database/src/*"],
+      "@app/auth": ["libs/auth/src"],
+      "@app/auth/*": ["libs/auth/src/*"],
+      "@app/socket": ["libs/socket/src"],
+      "@app/socket/*": ["libs/socket/src/*"]
     }
   }
 }

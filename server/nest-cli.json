@@ -35,13 +35,13 @@
         "tsConfigPath": "libs/cache/tsconfig.lib.json"
       }
     },
-    "data": {
+    "repositories": {
       "type": "library",
-      "root": "libs/data",
+      "root": "libs/repositories",
       "entryFile": "index",
-      "sourceRoot": "libs/data/src",
+      "sourceRoot": "libs/repositories/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/data/tsconfig.lib.json"
+        "tsConfigPath": "libs/repositories/tsconfig.lib.json"
       }
     },
     "util": {

@@ -8,10 +8,19 @@ export type Settings<Model> = {
   autoPopulate?: Array<keyof Model>;
 };
 
+export interface ConfigurationInterface<Model> {
+  Create: Partial<Model>;
+  Query: Partial<Model>;
+  Update: Partial<Omit<Model, "_id">>;
+}
+
 /**
  * Abstraction to manipulate the cached and persistent data of a single record, respectively.
  */
-export class Handler<Model, Create> {
+export class RepositoryFactory<
+  Model,
+  Configuration extends ConfigurationInterface<Model>
+> {
   constructor(
     private cache: CacheService,
     public model: mongoose.Model<any>,
@@ -24,7 +33,7 @@ export class Handler<Model, Create> {
    * @returns
    * @constructs {Model}
    */
-  async get(query: Partial<Model>): Promise<Model | null> {
+  async get(query: Configuration["Query"]): Promise<Model | null> {
     const cache = await this.cache.get(this.settings.namespace, query);
 
     if (cache) {
@@ -44,7 +53,7 @@ export class Handler<Model, Create> {
 
   // getMany(query, )
 
-  private async makeQuery(query: Partial<Model>) {
+  private async makeQuery(query: Configuration["Query"]) {
     const _query = this.model.findOne(query).lean();
 
     this.populateObject(_query);
@@ -81,7 +90,7 @@ export class Handler<Model, Create> {
    * @param query
    * @param data
    */
-  async update(query: any, data: Partial<Model>) {
+  async update(query: Configuration["Query"], data: Configuration["Update"]) {
     await this.model.updateOne(query, data);
     this.updateCache(query);
   }
@@ -94,7 +103,7 @@ export class Handler<Model, Create> {
    * @returns Lean document
    */
   async create(
-    data: Omit<Create, "_id">,
+    data: Configuration["Create"],
     options = { cache: true },
   ): Promise<Model> {
     let modelResult = await this.model.create((data as unknown) as Model);
@@ -112,7 +121,7 @@ export class Handler<Model, Create> {
     return modelResult;
   }
 
-  async updateCache(query: Partial<Model>) {
+  async updateCache(query: Configuration["Query"]) {
     const data = await this.makeQuery(query);
 
     if (!data) return;

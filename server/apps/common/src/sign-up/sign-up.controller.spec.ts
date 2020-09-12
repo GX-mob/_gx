@@ -24,11 +24,9 @@ describe("SignUpController", () => {
     set: jest.fn(),
   };
 
-  const dataServiceMock = {
-    users: {
-      get: jest.fn(),
-      create: jest.fn(),
-    },
+  const userRepositoryMock = {
+    get: jest.fn(),
+    create: jest.fn(),
   };
 
   const verifyServiceMock = {
@@ -55,7 +53,7 @@ describe("SignUpController", () => {
   beforeEach(() => {
     signUpController = new SignUpController(
       cacheServiceMock as any,
-      dataServiceMock as any,
+      userRepositoryMock as any,
       verifyServiceMock as any,
       sessionServiceMock as any,
     );
@@ -67,7 +65,7 @@ describe("SignUpController", () => {
 
   describe("phoneVerificationRequest", () => {
     it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.PHONE_REGISTRED}')`, async () => {
-      dataServiceMock.users.get.mockResolvedValue({});
+      userRepositoryMock.get.mockResolvedValue({});
 
       await expect(
         signUpController.phoneVerificationRequest(
@@ -278,8 +276,8 @@ describe("SignUpController", () => {
       requestBody.birth = faker.date.past(18).toISOString();
       requestBody.terms = true;
 
-      dataServiceMock.users.get.mockResolvedValueOnce(null);
-      dataServiceMock.users.get.mockResolvedValueOnce({ cpf: requestBody.cpf });
+      userRepositoryMock.get.mockResolvedValueOnce(null);
+      userRepositoryMock.get.mockResolvedValueOnce({ cpf: requestBody.cpf });
 
       cacheServiceMock.get.mockResolvedValue({
         validated: true,
@@ -317,7 +315,7 @@ describe("SignUpController", () => {
         code: "000000",
       });
 
-      dataServiceMock.users.create.mockResolvedValue(user);
+      userRepositoryMock.create.mockResolvedValue(user);
 
       sessionServiceMock.create.mockResolvedValue({ token });
 

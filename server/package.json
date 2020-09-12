@@ -130,8 +130,8 @@
     "moduleNameMapper": {
       "@app/cache/(.*)": "<rootDir>/libs/cache/src/$1",
       "@app/cache": "<rootDir>/libs/cache/src",
-      "^@app/data/(.*)$": "<rootDir>/libs/data/src/$1",
-      "^@app/data$": "<rootDir>/libs/data/src",
+      "^@app/repositories/(.*)$": "<rootDir>/libs/repositories/src/$1",
+      "^@app/repositories$": "<rootDir>/libs/repositories/src",
       "@app/storage/(.*)": "<rootDir>/libs/storage/src/$1",
       "@app/storage": "<rootDir>/libs/storage/src",
       "@app/session/(.*)": "<rootDir>/libs/session/src/$1",

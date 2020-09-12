@@ -27,7 +27,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { DataService } from "@app/data";
+import { UserRepository, UserCreateInterface } from "@app/repositories";
 import { CacheService } from "@app/cache";
 import { SessionService } from "@app/session";
 import { ContactVerificationService } from "@app/contact-verification";
@@ -40,7 +40,7 @@ import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 export class SignUpController {
   constructor(
     readonly cache: CacheService,
-    readonly data: DataService,
+    readonly userRepository: UserRepository,
     readonly contactVerification: ContactVerificationService,
     readonly session: SessionService,
   ) {}
@@ -144,14 +144,13 @@ export class SignUpController {
     /**
      * Check if CPF is already registred
      */
-    const registredCPF = await this.data.users.get({ cpf });
+    const registredCPF = await this.userRepository.get({ cpf });
 
     if (registredCPF) {
       throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.CPF_REGISTRED);
     }
 
-    const userObject = {
-      _id: "asd",
+    const userObject: UserCreateInterface = {
       phones: [phone],
       firstName,
       lastName,
@@ -159,7 +158,7 @@ export class SignUpController {
       birth: new Date(birth),
     };
 
-    const user = await this.data.users.create(userObject);
+    const user = await this.userRepository.create(userObject);
     const session = await this.session.create(
       user,
       request.headers["user-agent"] as string,
@@ -178,7 +177,7 @@ export class SignUpController {
   }
 
   private async checkUser(phone: string) {
-    const user = await this.data.users.get({ phones: phone });
+    const user = await this.userRepository.get({ phones: phone });
 
     if (user) {
       throw new UnprocessableEntityException(

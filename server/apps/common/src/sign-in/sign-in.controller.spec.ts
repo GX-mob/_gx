@@ -18,10 +18,8 @@ describe("SignInController", () => {
 
   let signInController: SignInController;
 
-  const dataServiceMock = {
-    users: {
-      get: jest.fn(),
-    },
+  const userRepositoryMock = {
+    get: jest.fn(),
   };
 
   const verifyServiceMock = {
@@ -47,7 +45,7 @@ describe("SignInController", () => {
 
   beforeEach(() => {
     signInController = new SignInController(
-      dataServiceMock as any,
+      userRepositoryMock as any,
       verifyServiceMock as any,
       sessionServiceMock as any,
     );
@@ -60,7 +58,7 @@ describe("SignInController", () => {
   describe("identify", () => {
     it(`should throw NotFoundException('${EXCEPTIONS_MESSAGES.USER_NOT_FOUND}')`, async () => {
       const result = null;
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
 
       await expect(
         signInController.identify(fastifyResponseMock as any, "foo"),
@@ -76,7 +74,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
       await signInController.identify(fastifyResponseMock as any, "foo");
 
       expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
@@ -91,7 +89,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
       await signInController.identify(fastifyResponseMock as any, "foo");
 
       expect(fastifyResponseMock.send.mock.calls[0][0]).toMatchObject({
@@ -111,7 +109,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
 
       const signInPasswordDto = new SignInPasswordDto();
 
@@ -139,7 +137,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
       sessionServiceMock.create.mockResolvedValue({ token });
 
       const signInPasswordDto = new SignInPasswordDto();
@@ -167,7 +165,7 @@ describe("SignInController", () => {
         avatar: "https://",
         "2fa": phone,
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
 
       const signInPasswordDto = new SignInPasswordDto();
 
@@ -198,7 +196,7 @@ describe("SignInController", () => {
         avatar: "https://",
         "2fa": email,
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
 
       const signInPasswordDto = new SignInPasswordDto();
 
@@ -227,7 +225,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
 
       const signInCodeDto = new SignInCodeDto();
 
@@ -254,7 +252,7 @@ describe("SignInController", () => {
         firstName: "Foo",
         avatar: "https://",
       };
-      dataServiceMock.users.get.mockResolvedValue(result);
+      userRepositoryMock.get.mockResolvedValue(result);
       verifyServiceMock.verify.mockResolvedValue(true);
       sessionServiceMock.create.mockResolvedValue({ token });
       const signInCodeDto = new SignInCodeDto();

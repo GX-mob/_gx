@@ -30,7 +30,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import { util } from "@app/helpers";
 import { User } from "@app/database";
-import { DataService } from "@app/data";
+import { UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
 import { EXCEPTIONS_MESSAGES } from "../constants";
@@ -39,7 +39,7 @@ import validator from "validator";
 @Controller("sign-in")
 export class SignInController {
   constructor(
-    private readonly data: DataService,
+    private readonly userRepository: UserRepository,
     private readonly contactVerification: ContactVerificationService,
     private readonly session: SessionService,
   ) {}
@@ -67,7 +67,7 @@ export class SignInController {
   }
 
   private async getUser(phone: string) {
-    const user = await this.data.users.get({ phones: phone });
+    const user = await this.userRepository.get({ phones: phone });
 
     if (!user) {
       throw new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND);

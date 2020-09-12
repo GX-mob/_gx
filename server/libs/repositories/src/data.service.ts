@@ -2,17 +2,17 @@ import { Injectable } from "@nestjs/common";
 import mongoose from "mongoose";
 import { DatabaseService, User, Session, Ride, Pendencie } from "@app/database";
 import { CacheService } from "@app/cache";
-import { Handler, Settings } from "./handler";
+import { RepositoryFactory, Settings } from "./repository-factory";
 
 @Injectable()
 export class DataService {
-  public users: Handler<
+  public users: RepositoryFactory<
     User,
     Omit<User, "pid" | "averageEvaluation" | "emails" | "roles">
   >;
-  public sessions: Handler<Session, Omit<Session, "active">>;
-  public rides: Handler<Ride, Omit<Ride, "pid" | "status">>;
-  public pendencies: Handler<Pendencie, Omit<Pendencie, "resolved">>;
+  public sessions: RepositoryFactory<Session, Omit<Session, "active">>;
+  public rides: RepositoryFactory<Ride, Omit<Ride, "pid" | "status">>;
+  public pendencies: RepositoryFactory<Pendencie, Omit<Pendencie, "resolved">>;
 
   constructor(
     private databaseService: DatabaseService,
@@ -54,6 +54,6 @@ export class DataService {
     model: mongoose.Model<any>,
     settings: Settings<Model>,
   ) {
-    return new Handler<Model, Create>(this.cache, model, settings);
+    return new RepositoryFactory<Model, Create>(this.cache, model, settings);
   }
 }
