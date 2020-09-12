@@ -105,11 +105,10 @@ export class DriversGateway extends Common {
     if ((acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now) {
       await this.dataService.rides.update({ pid: ridePID }, { driver: null });
 
-      this.socketService.emit<CanceledRide>(
-        requesterSocketId,
-        EVENTS.CANCELED_RIDE,
-        { ridePID, pendencie: "" },
-      );
+      this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
+        ridePID,
+        pendencie: "",
+      });
 
       return { status: "ok" };
     }
@@ -120,11 +119,10 @@ export class DriversGateway extends Common {
       affected: ride.voyager,
     });
 
-    this.socketService.emit<CanceledRide>(
-      requesterSocketId,
-      EVENTS.CANCELED_RIDE,
-      { ridePID, pendencie: pendencie._id },
-    );
+    this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
+      ridePID,
+      pendencie: pendencie._id,
+    });
 
     return { status: "ok", pendencie: pendencie._id };
   }

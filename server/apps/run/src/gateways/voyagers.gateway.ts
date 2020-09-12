@@ -94,11 +94,10 @@ export class VoyagersGateway extends Common {
       );
 
       // Informe to driver the cancelation event
-      this.socketService.emit<CanceledRide>(
-        driverSocketId as string,
-        EVENTS.CANCELED_RIDE,
-        { ridePID, pendencie: "" },
-      );
+      this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
+        ridePID,
+        pendencie: "",
+      });
 
       return { status: "ok" };
     }
@@ -114,11 +113,10 @@ export class VoyagersGateway extends Common {
       });
 
       // Informe to driver the cancelation event
-      this.socketService.emit<CanceledRide>(
-        driverSocketId as string,
-        EVENTS.CANCELED_RIDE,
-        { ridePID, pendencie: pendencie._id },
-      );
+      this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
+        ridePID,
+        pendencie: pendencie._id,
+      });
 
       return { status: "ok", pendencie: pendencie._id };
     }

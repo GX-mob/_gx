@@ -15,7 +15,7 @@ import { SessionModule, SessionService } from "@app/session";
 import { auth } from "extensor";
 import { StateService } from "../state.service";
 import { DataModule, DataService } from "@app/data";
-import { EVENTS, State, Position, Connection } from "../events";
+import { EVENTS, State, Position, Connection, Events } from "../events";
 import { util } from "@app/helpers";
 import { CANCELATION } from "../constants";
 
@@ -31,15 +31,11 @@ declare module "socket.io" {
   imports: [CacheModule, DataModule, SessionModule, SocketModule],
   providers: [StateService],
 })
-export class Common
-  implements
-    OnGatewayInit<Server>,
-    OnGatewayConnection<Socket>,
-    OnGatewayDisconnect<Socket> {
+export class Common implements OnGatewayInit<Server> {
   public role!: USERS_ROLES;
 
   constructor(
-    readonly socketService: SocketService,
+    readonly socketService: SocketService<Events>,
     readonly cacheService: CacheService,
     readonly dataService: DataService,
     readonly sessionService: SessionService,
@@ -76,16 +72,8 @@ export class Common
     });
   }
 
-  handleConnection(socket: Socket) {
-    console.log("client connected", socket.id);
-  }
-
-  handleDisconnect(socket: Socket) {
-    console.log("client disconected", socket.id);
-  }
-
   positionEventHandler(position: Position, client: Socket) {
-    this.dispachToObervers("position", client, position);
+    this.dispachToObervers(EVENTS.POSITION, client, position);
   }
 
   @SubscribeMessage(EVENTS.STATE)
@@ -94,13 +82,13 @@ export class Common
     @ConnectedSocket() client: Socket,
   ) {
     // client.connection.state = state.state;
-    this.dispachToObervers("state", client, state);
+    this.dispachToObervers(EVENTS.STATE, client, state);
   }
 
-  dispachToObervers<T = any>(
-    event: string,
+  dispachToObervers<K extends keyof Events>(
+    event: keyof Events,
     client: Socket,
-    data: T,
+    data: Events[K],
     considerP2P = true,
   ) {
     const { observers } = client.connection;
