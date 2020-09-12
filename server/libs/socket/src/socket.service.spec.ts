@@ -4,6 +4,7 @@
  * @group unit/services/socket
  */
 import { Test, TestingModule } from "@nestjs/testing";
+import { LoggerModule } from "nestjs-pino";
 import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";
 import IOClient, { Socket } from "socket.io-client";
@@ -124,14 +125,17 @@ describe("SocketService", () => {
 
   beforeEach(async () => {
     const module1: TestingModule = await Test.createTestingModule({
+      imports: [LoggerModule.forRoot()],
       providers: [SocketService],
     }).compile();
 
     const module2: TestingModule = await Test.createTestingModule({
+      imports: [LoggerModule.forRoot()],
       providers: [SocketService],
     }).compile();
 
     const module3: TestingModule = await Test.createTestingModule({
+      imports: [LoggerModule.forRoot()],
       providers: [SocketService],
     }).compile();
 

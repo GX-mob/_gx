@@ -5,6 +5,7 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
+import { LoggerModule } from "nestjs-pino";
 import { DatabaseService } from "./database.service";
 
 describe("DatabaseService", () => {
@@ -12,7 +13,7 @@ describe("DatabaseService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule],
+      imports: [ConfigModule, LoggerModule.forRoot()],
       providers: [DatabaseService],
     }).compile();
 

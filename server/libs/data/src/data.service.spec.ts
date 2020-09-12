@@ -5,8 +5,10 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { LoggerModule } from "nestjs-pino";
 import {
   DatabaseModule,
+  DatabaseService,
   User,
   UserModel,
   Session,
@@ -23,6 +25,7 @@ import { generate } from "shortid";
 describe("DataService", () => {
   let service: DataService;
   let cacheService: CacheService;
+  let databaseService: DatabaseService;
   let mongoServer: MongoMemoryServer;
 
   const mockUser = {
@@ -59,6 +62,7 @@ describe("DataService", () => {
           isGlobal: true,
           envFilePath: ".development.env",
         }),
+        LoggerModule.forRoot(),
         DatabaseModule,
         CacheModule,
       ],
@@ -70,6 +74,7 @@ describe("DataService", () => {
 
     service = module.get<DataService>(DataService);
     cacheService = module.get<CacheService>(CacheService);
+    databaseService = module.get<DatabaseService>(DatabaseService);
   });
 
   it("should be defined", () => {

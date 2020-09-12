@@ -6,6 +6,7 @@
 import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { LoggerModule } from "nestjs-pino";
 import { UserModel, USERS_ROLES } from "@app/database";
 import { DataModule, DataService } from "@app/data";
 import { DatabaseService, Session } from "@app/database";
@@ -55,6 +56,7 @@ describe("SessionService", () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ envFilePath: ".development.env" }),
+        LoggerModule.forRoot(),
         DataModule,
         CacheModule,
       ],

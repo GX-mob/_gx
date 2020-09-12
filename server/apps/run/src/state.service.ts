@@ -53,7 +53,7 @@ export class StateService {
 
     this.socketService.on(EVENTS.DRIVER_SETUP, ({ socketId, data }) => {
       this.setupDriverEvent(socketId, data).catch((err) => {
-        this.logger.error(err.message);
+        this.logger.error(err);
       });
     });
 
@@ -66,7 +66,9 @@ export class StateService {
     });
 
     this.socketService.on(EVENTS.OFFER_RESPONSE, ({ socketId, data }) => {
-      this.offerResponseEvent(socketId, data);
+      this.offerResponseEvent(socketId, data).catch((err) => {
+        this.logger.error(err);
+      });
     });
 
     /**
@@ -275,6 +277,7 @@ export class StateService {
   async createOffer(
     offer: OfferRequest,
     connection: Connection,
+    startOffer = true,
   ): Promise<boolean> {
     const ride = await this.dataService.rides.get({ pid: offer.ridePID });
 
@@ -301,7 +304,7 @@ export class StateService {
       },
     );
 
-    this.offerRide(offerObject);
+    startOffer && this.offerRide(offerObject);
 
     // acknownlegment
     return true;
@@ -446,13 +449,12 @@ export class StateService {
       if (!choiced) {
         choiced = current;
         currentDistance = distance;
-        // continue;
       }
 
       /**
-       * This driver is 20% more closer to the offer start point than last choiced driver
+       * This driver is 20% more closer than last choiced one
        */
-      if (distance < currentDistance * 1.2) {
+      if (distance < currentDistance * 0.8) {
         choiced = current;
         currentDistance = distance;
       }
@@ -460,7 +462,7 @@ export class StateService {
       /**
        * This driver have a avaliation rate 20% better than last choiced driver
        */
-      if (current.rate < choiced.rate * 1.2) {
+      if (current.rate > choiced.rate * 0.8) {
         choiced = current;
         currentDistance = distance;
       }

@@ -37,6 +37,7 @@ import {
   ConnectionDataNotFoundException,
   RideNotFoundException,
 } from "./exceptions";
+import { NODES_EVENTS } from "./events/nodes";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -55,15 +56,31 @@ describe("StateService", () => {
     },
   };
 
-  let socketService = new (class {
-    nodeId = shortid.generate();
-    nodes = new EventEmitter();
-    emit = jest.fn();
-    emitter = new EventEmitter();
-    on(event: any, handler: any) {
-      this.emitter.on(event, handler);
-    }
-  })();
+  const socketServiceMockFactory = () => {
+    const nodeId = shortid.generate();
+    const nodesEmitter = new EventEmitter();
+    const nodes = {
+      emit: jest.fn(),
+      on: (event: any, handler: any) => {
+        nodesEmitter.on(event, handler);
+      },
+    };
+    const emit = jest.fn();
+    const emitter = new EventEmitter();
+    const on = (event: any, handler: any) => {
+      socketService.emitter.on(event, handler);
+    };
+    return {
+      nodeId,
+      nodesEmitter,
+      nodes,
+      emit,
+      emitter,
+      on,
+    };
+  };
+
+  let socketService = socketServiceMockFactory();
 
   const loggerMock = {
     setContext: jest.fn(),
@@ -110,6 +127,61 @@ describe("StateService", () => {
     );
   }
 
+  const basePosition = {
+    latLng: [
+      parseFloat(faker.address.latitude()),
+      parseFloat(faker.address.longitude()),
+    ],
+    heading: 0,
+    kmh: 30,
+    ignored: [],
+    pid: "",
+  };
+
+  const baseConfig = {
+    payMethods: [RidePayMethods.Money],
+    types: [RideTypes.Normal],
+    drops: ["any"],
+  };
+
+  function mockPosition(override: Partial<Position> = {}): Position {
+    return deepmerge(
+      {
+        latLng: [
+          parseFloat(faker.address.latitude()),
+          parseFloat(faker.address.longitude()),
+        ],
+        heading: 0,
+        kmh: 30,
+        ignored: [],
+        pid: "",
+      },
+      override,
+    );
+  }
+
+  function mockDriverPosition(override: Partial<Driver> = {}): Driver {
+    return {
+      _id: shortid.generate(),
+      state: DriverState.SEARCHING,
+      pid: shortid.generate(),
+      rate: faker.random.number({ min: 1, max: 4 }),
+      p2p: faker.random.boolean(),
+      socketId: shortid.generate(),
+      position: {
+        latLng: [-9.575557, -35.779208],
+        heading: 0,
+        kmh: 30,
+        ignored: [],
+        pid: "",
+      },
+      config: {
+        ...baseConfig,
+      },
+      ...override,
+    };
+  }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
@@ -122,7 +194,7 @@ describe("StateService", () => {
               TOO_AWAY: 2000,
             })),
             registerAs("OFFER", () => ({
-              DRIVER_RESPONSE_TIMEOUT: 13000, // 13 seconds
+              DRIVER_RESPONSE_TIMEOUT: 3000, // 3 seconds
               INITIAL_RADIUS_SIZE: 1000,
               ADD_RADIUS_SIZE_EACH_ITERATION: 200,
               MAX_RADIUS_SIZE: 1800,
@@ -152,15 +224,8 @@ describe("StateService", () => {
   });
 
   afterEach(() => {
-    socketService = new (class {
-      nodeId = shortid.generate();
-      nodes = new EventEmitter();
-      emit = jest.fn();
-      emitter = new EventEmitter();
-      on(event: any, handler: any) {
-        this.emitter.on(event, handler);
-      }
-    })();
+    socketService = socketServiceMockFactory();
+
     jest.resetAllMocks();
   });
 
@@ -177,18 +242,20 @@ describe("StateService", () => {
 
       const socketId = shortid.generate();
 
+      const rejectExpected = new ConnectionDataNotFoundException(socketId);
+
       await expect(
         service.setupDriverEvent(socketId, setup),
-      ).rejects.toStrictEqual(new ConnectionDataNotFoundException(socketId));
+      ).rejects.toStrictEqual(rejectExpected);
 
       socketService.emitter.emit(EVENTS.DRIVER_SETUP, {
-        socketId: shortid.generate(),
+        socketId,
         data: mockSetup(),
       });
 
       await wait(100);
 
-      expect(loggerMock.error).toBeCalledTimes(1);
+      expect(loggerMock.error.mock.calls[0][0]).toStrictEqual(rejectExpected);
     });
 
     it("should insert driver in the list", async () => {
@@ -344,7 +411,16 @@ describe("StateService", () => {
         ridePID: shortid.generate(),
         response: true,
       };
-      await service.offerResponseEvent(shortid.generate(), offerResponse);
+      const socketId = shortid.generate();
+
+      await service.offerResponseEvent(socketId, offerResponse);
+
+      socketService.emitter.emit(EVENTS.OFFER_RESPONSE, {
+        socketId,
+        data: offerResponse,
+      });
+
+      await wait(100);
       expect(cacheMock.get).toBeCalledTimes(0);
     });
 
@@ -359,9 +435,19 @@ describe("StateService", () => {
 
       const socketId = shortid.generate();
 
+      const rejectExpected = new ConnectionDataNotFoundException(socketId);
+
       await expect(
         service.offerResponseEvent(socketId, offerResponse),
-      ).rejects.toStrictEqual(new ConnectionDataNotFoundException(socketId));
+      ).rejects.toStrictEqual(rejectExpected);
+
+      socketService.emitter.emit(EVENTS.OFFER_RESPONSE, {
+        socketId,
+        data: offerResponse,
+      });
+
+      await wait(100);
+      expect(loggerMock.error.mock.calls[0][0]).toStrictEqual(rejectExpected);
     });
 
     it(`should emit ${EVENTS.DELAYED_OFFER_RESPONSE}`, async () => {
@@ -404,7 +490,7 @@ describe("StateService", () => {
         offeredTo: driverPID,
         requesterSocketId: shortid.generate(),
         ignoreds: [""],
-        offerResponseTimeout: setTimeout(() => {}, Number.MAX_SAFE_INTEGER),
+        offerResponseTimeout: setTimeout(() => {}, 1000000),
       };
 
       (service as any).offers = [offer];
@@ -455,7 +541,7 @@ describe("StateService", () => {
         offeredTo: driverPID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [""],
-        offerResponseTimeout: setTimeout(() => {}, Number.MAX_SAFE_INTEGER),
+        offerResponseTimeout: setTimeout(() => {}, 1000000),
       };
 
       (service as any).offers = [offer];
@@ -555,7 +641,7 @@ describe("StateService", () => {
 
       dataMock.rides.get.mockResolvedValueOnce({ pid: ridePID });
 
-      await service.createOffer(offerRequest, connection as any);
+      await service.createOffer(offerRequest, connection as any, false);
 
       const offer = service.offers.find((offer) => offer.ride.pid === ridePID);
 
@@ -570,60 +656,87 @@ describe("StateService", () => {
   });
 
   describe("offerRide", () => {
-    const basePosition = {
-      latLng: [
-        parseFloat(faker.address.latitude()),
-        parseFloat(faker.address.longitude()),
-      ],
-      heading: 0,
-      kmh: 30,
-      ignored: [],
-      pid: "",
-    };
+    const routeStartLatLng: [number, number] = [-9.572477, -35.776619];
+    const tooAwayPoint: [number, number] = [-9.572178, -35.754305];
 
-    const baseConfig = {
-      payMethods: [RidePayMethods.Money],
-      types: [RideTypes.Normal],
-      drops: ["any"],
-    };
+    const driverToAway = mockDriverPosition({
+      pid: "toAway",
+      position: { ...basePosition, latLng: tooAwayPoint },
+    });
+    const driverIgnored = mockDriverPosition({
+      pid: "ignored",
+    });
+    const driverIDLE = mockDriverPosition({
+      pid: "idle",
+      state: DriverState.IDLE,
+    });
+    const driverDiferentDistricts = mockDriverPosition({
+      pid: "diferentDistrict",
+      config: {
+        ...baseConfig,
+        drops: ["centro", "farol"],
+      },
+    });
+    const driverDifferentPaymethod = mockDriverPosition({
+      pid: "diferentPayMethod",
+      config: {
+        ...baseConfig,
+        payMethods: [RidePayMethods.CreditCard],
+      },
+    });
+    const driverDifferentType = mockDriverPosition({
+      pid: "diferentType",
+      config: {
+        ...baseConfig,
+        types: [RideTypes.VIG],
+      },
+    });
+    const driverElegible = mockDriverPosition({
+      pid: "firstElegible",
+    });
+    const driverSecondElegible = mockDriverPosition({
+      pid: "secondElegible",
+      position: { ...basePosition, latLng: [-9.574551, -35.779852] },
+    });
+    const driverMoreNearElegible = mockDriverPosition({
+      pid: "moreNearElegible",
+      position: {
+        ...basePosition,
+        latLng: [-9.573539, -35.778969],
+      },
+    });
+    const driverBetterRated = mockDriverPosition({
+      pid: "betterRated",
+      rate: 5,
+      position: {
+        ...basePosition,
+        latLng: [-9.573539, -35.778969],
+      },
+    });
 
-    function mockPosition(override: Partial<Position> = {}): Position {
-      return deepmerge(
-        {
-          latLng: [
+    const ride: Partial<Ride> = {
+      pid: shortid.generate(),
+      route: {
+        start: {
+          coord: routeStartLatLng,
+          primary: faker.address.streetAddress(),
+          secondary: faker.address.streetAddress(),
+          district: "",
+        },
+        end: {
+          coord: [
             parseFloat(faker.address.latitude()),
             parseFloat(faker.address.longitude()),
           ],
-          heading: 0,
-          kmh: 30,
-          ignored: [],
-          pid: "",
+          primary: faker.address.streetAddress(),
+          secondary: faker.address.streetAddress(),
+          district: "prado",
         },
-        override,
-      );
-    }
-
-    function mockDriverPosition(override: Partial<Driver> = {}): Driver {
-      return {
-        _id: shortid.generate(),
-        state: DriverState.SEARCHING,
-        pid: shortid.generate(),
-        rate: faker.random.number({ min: 1, max: 4 }),
-        p2p: faker.random.boolean(),
-        socketId: shortid.generate(),
-        position: {
-          latLng: [-9.575557, -35.779208],
-          heading: 0,
-          kmh: 30,
-          ignored: [],
-          pid: "",
-        },
-        config: {
-          ...baseConfig,
-        },
-        ...override,
-      };
-    }
+        path: "",
+        distance: 23.4,
+        duration: 25,
+      },
+    };
 
     it(`should get a ${EVENTS.OFFER_GOT_TOO_LONG}`, async () => {
       const ride: Partial<Ride> = {};
@@ -648,60 +761,6 @@ describe("StateService", () => {
     });
 
     it("should get a match driver and pass through all conditionals", async () => {
-      const routeStartLatLng: [number, number] = [-9.572477, -35.776619];
-      const tooAwayPoint: [number, number] = [-9.572178, -35.754305];
-
-      const driverToAway = mockDriverPosition({
-        pid: "toAway",
-        position: { ...basePosition, latLng: tooAwayPoint },
-      });
-      const driverIgnored = mockDriverPosition({
-        pid: "ignored",
-      });
-      const driverIDLE = mockDriverPosition({
-        pid: "idle",
-        state: DriverState.IDLE,
-      });
-      const driverDiferentDistricts = mockDriverPosition({
-        pid: "diferentDistrict",
-        config: {
-          ...baseConfig,
-          drops: ["centro", "farol"],
-        },
-      });
-      const driverDifferentPaymethod = mockDriverPosition({
-        pid: "diferentPayMethod",
-        config: {
-          ...baseConfig,
-          payMethods: [RidePayMethods.CreditCard],
-        },
-      });
-      const driverDifferentType = mockDriverPosition({
-        pid: "diferentType",
-        config: {
-          ...baseConfig,
-          types: [RideTypes.VIG],
-        },
-      });
-      const driverElegible = mockDriverPosition({
-        pid: "firstElegible",
-      });
-      const driverMoreNearElegible = mockDriverPosition({
-        pid: "moreNearElegible",
-        position: {
-          ...basePosition,
-          latLng: [-9.573539, -35.778969],
-        },
-      });
-      const driverBetterRated = mockDriverPosition({
-        pid: "betterRated",
-        rate: 5,
-        position: {
-          ...basePosition,
-          latLng: [-9.573539, -35.778969],
-        },
-      });
-
       service.drivers = [
         driverToAway,
         driverIgnored,
@@ -710,33 +769,10 @@ describe("StateService", () => {
         driverDifferentPaymethod,
         driverDifferentType,
         driverElegible,
+        driverSecondElegible,
         driverMoreNearElegible,
         driverBetterRated,
       ];
-
-      const ride: Partial<Ride> = {
-        pid: shortid.generate(),
-        route: {
-          start: {
-            coord: routeStartLatLng,
-            primary: faker.address.streetAddress(),
-            secondary: faker.address.streetAddress(),
-            district: "",
-          },
-          end: {
-            coord: [
-              parseFloat(faker.address.latitude()),
-              parseFloat(faker.address.longitude()),
-            ],
-            primary: faker.address.streetAddress(),
-            secondary: faker.address.streetAddress(),
-            district: "prado",
-          },
-          path: "",
-          distance: 23.4,
-          duration: 25,
-        },
-      };
 
       const voyagerSocketId = shortid.generate();
 
@@ -763,6 +799,193 @@ describe("StateService", () => {
       expect(voyagerInfoEvent[0]).toBe(voyagerSocketId);
       expect(voyagerInfoEvent[1]).toBe(EVENTS.OFFER_SENT);
       expect(voyagerInfoEvent[2]).toStrictEqual(driverBetterRated);
+
+      clearTimeout((offerObject as any).offerResponseTimeout);
+    });
+
+    it("should execute a driver timeout response", async () => {
+      service.drivers = [
+        driverToAway,
+        driverIgnored,
+        driverIDLE,
+        driverDiferentDistricts,
+        driverDifferentPaymethod,
+        driverDifferentType,
+        driverElegible,
+        driverMoreNearElegible,
+        driverBetterRated,
+      ];
+
+      const voyagerSocketId = shortid.generate();
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [driverIgnored.pid],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      await service.offerRide(offerObject);
+
+      expect(offerObject.offeredTo).toBe(driverBetterRated.pid);
+
+      const [driverInfoEvent, voyagerInfoEvent] = socketService.emit.mock.calls;
+
+      expect(driverInfoEvent[0]).toBe(driverBetterRated.socketId);
+      expect(driverInfoEvent[1]).toBe(EVENTS.OFFER);
+      expect(driverInfoEvent[2]).toStrictEqual({
+        ridePID: ride.pid,
+      });
+
+      expect(voyagerInfoEvent[0]).toBe(voyagerSocketId);
+      expect(voyagerInfoEvent[1]).toBe(EVENTS.OFFER_SENT);
+      expect(voyagerInfoEvent[2]).toStrictEqual(driverBetterRated);
+
+      await wait(3100);
+
+      expect(offerObject.ignoreds.includes(driverBetterRated.pid)).toBeTruthy();
+      expect(offerObject.offeredTo).toBe(driverMoreNearElegible.pid);
+      clearTimeout((offerObject as any).offerResponseTimeout);
+    });
+  });
+
+  describe("setOfferData", () => {
+    it("should insert new value", async () => {
+      const ridePID = shortid.generate();
+      const voyagerSocketId = shortid.generate();
+      const ride = {};
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      cacheMock.get.mockResolvedValue(null);
+
+      await service.setOfferData(ridePID, offerObject);
+
+      const [cacheSetCalls] = cacheMock.set.mock.calls;
+
+      expect(cacheMock.get).toHaveBeenCalledTimes(1);
+      expect(cacheSetCalls[0]).toBe(CACHE_NAMESPACES.OFFERS);
+      expect(cacheSetCalls[1]).toBe(ridePID);
+      expect(cacheSetCalls[2]).toStrictEqual(offerObject);
+      expect(cacheSetCalls[3]).toStrictEqual({
+        ex: CACHE_TTL.OFFERS,
+      });
+    });
+
+    it("should update the value", async () => {
+      const ridePID = shortid.generate();
+      const voyagerSocketId = shortid.generate();
+      const ride = {};
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      cacheMock.get.mockResolvedValue({
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: ["currentIgnored"],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      });
+
+      await service.setOfferData(ridePID, offerObject);
+
+      const [cacheSetCalls] = cacheMock.set.mock.calls;
+
+      expect(cacheMock.get).toHaveBeenCalledTimes(1);
+      expect(cacheSetCalls[0]).toBe(CACHE_NAMESPACES.OFFERS);
+      expect(cacheSetCalls[1]).toBe(ridePID);
+      expect(cacheSetCalls[2]).toStrictEqual({
+        ...offerObject,
+        ignoreds: ["currentIgnored"],
+      });
+      expect(cacheSetCalls[3]).toStrictEqual({
+        ex: CACHE_TTL.OFFERS,
+      });
+    });
+  });
+
+  describe("setOfferData", () => {
+    it("should return the value", async () => {
+      const ridePID = shortid.generate();
+      const voyagerSocketId = shortid.generate();
+      const ride = {};
+
+      const offerObject: OfferServer = {
+        ride: ride as any,
+        requesterSocketId: voyagerSocketId,
+        ignoreds: [],
+        offeredTo: null,
+        offerResponseTimeout: null,
+      };
+
+      cacheMock.get.mockResolvedValue(offerObject);
+      await expect(service.getOfferData(ridePID)).resolves.toStrictEqual(
+        offerObject,
+      );
+    });
+  });
+
+  describe("updateDriver", () => {
+    it("should not execute", () => {
+      const socketId = "not-in-list";
+      service.updateDriver(socketId, { state: DriverState.SEARCHING });
+
+      expect(loggerMock.error).toBeCalled();
+    });
+
+    it("should update from node event", async () => {
+      const driverState = mockDriverPosition();
+
+      service.drivers = [driverState];
+
+      service.updateDriver(
+        driverState.socketId,
+        { state: DriverState.IDLE },
+        true,
+      );
+
+      expect(service.drivers[0].state).toBe(DriverState.IDLE);
+
+      socketService.nodesEmitter.emit(NODES_EVENTS.UPDATE_DRIVER_STATE, {
+        socketId: driverState.socketId,
+        state: { state: DriverState.SEARCHING },
+      });
+
+      await wait(100);
+
+      expect(service.drivers[0].state).toBe(DriverState.SEARCHING);
+    });
+
+    it("should update and emit", () => {
+      const driverState = mockDriverPosition();
+      const updateTo = { state: DriverState.IDLE };
+
+      service.drivers = [driverState];
+
+      service.updateDriver(driverState.socketId, updateTo);
+
+      expect(service.drivers[0].state).toBe(DriverState.IDLE);
+
+      const [nodesEmitCalls] = socketService.nodes.emit.mock.calls;
+
+      expect(nodesEmitCalls[0]).toBe(NODES_EVENTS.UPDATE_DRIVER_STATE);
+      expect(nodesEmitCalls[1]).toStrictEqual({
+        socketId: driverState.socketId,
+        state: updateTo,
+      });
     });
   });
 });
