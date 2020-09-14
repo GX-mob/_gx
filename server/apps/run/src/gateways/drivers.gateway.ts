@@ -6,7 +6,7 @@ import {
 } from "@nestjs/websockets";
 import { NAMESPACES } from "../constants";
 import { Common } from "./common";
-import { USERS_ROLES, Pendencie, RideStatus } from "@app/database";
+import { Pendencie, Ride } from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
@@ -18,13 +18,12 @@ import {
   CancelRide,
   CanceledRide,
 } from "../events";
-import { CANCELATION, CANCELATION_EXCEPTIONS } from "../constants";
-import { client } from "extensor/dist/auth";
+import { CANCELATION } from "../constants";
+import { Driver } from "@app/auth";
 
+@Driver()
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common {
-  public role = USERS_ROLES.DRIVER;
-
   @SubscribeMessage(EVENTS.POSITION)
   positionEventHandler(
     @MessageBody() position: Position,
@@ -39,13 +38,9 @@ export class DriversGateway extends Common {
     @MessageBody() setup: Setup,
     @ConnectedSocket() client: Socket,
   ) {
-    await this.stateService.setupDriverEvent(
-      client.id,
-      setup,
-      client.connection,
-    );
+    await this.stateService.setupDriverEvent(client.id, setup, client.data);
 
-    return client.connection.state;
+    return client.data.state;
   }
 
   @SubscribeMessage(EVENTS.CONFIGURATION)
@@ -61,38 +56,23 @@ export class DriversGateway extends Common {
     @MessageBody() offerResponse: OfferResponse,
     @ConnectedSocket() client: Socket,
   ) {
-    this.stateService.offerResponseEvent(
-      client.id,
-      offerResponse,
-      client.connection,
-    );
+    this.stateService.offerResponseEvent(client.id, offerResponse, client.data);
   }
 
   @SubscribeMessage(EVENTS.CANCEL_RIDE)
   async cancelRideEventHandler(
     @MessageBody() ridePID: CancelRide,
     @ConnectedSocket() socket: Socket,
-  ): Promise<{ status: string; error?: string; pendencie?: Pendencie["_id"] }> {
+  ): Promise<{
+    status: CanceledRide["status"] | "error";
+    error?: string;
+    pendencie?: Pendencie["_id"];
+  }> {
     const now = Date.now();
-    const ride = await this.dataService.rides.get({ pid: ridePID });
+    const ride = (await this.rideRepository.get({ pid: ridePID })) as Ride;
+    const { _id } = socket.data;
 
-    /**
-     * Security checks
-     */
-    if (!ride) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.RIDE_NOT_FOUND };
-    }
-
-    // block cancel running ride
-    if (ride.status === RideStatus.RUNNING) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.RIDE_RUNNING };
-    }
-
-    const { _id } = socket.connection;
-
-    if (ride.driver !== _id) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.NOT_IN_RIDE };
-    }
+    this.cancelationSecutiryChecks(ride, _id, "driver");
 
     const offer = await this.stateService.getOfferData(ridePID);
     const { requesterSocketId, acceptTimestamp } = offer;
@@ -103,17 +83,17 @@ export class DriversGateway extends Common {
      * Safe cancel, no pendencie needed
      */
     if ((acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now) {
-      await this.dataService.rides.update({ pid: ridePID }, { driver: null });
+      this.updateRide({ pid: ridePID }, { driver: null });
 
       this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
         ridePID,
-        pendencie: "",
+        status: "safe",
       });
 
-      return { status: "ok" };
+      return { status: "safe" };
     }
 
-    const pendencie = await this.createPendencie({
+    this.createPendencie({
       ride: ride._id,
       issuer: ride.driver,
       affected: ride.voyager,
@@ -121,9 +101,9 @@ export class DriversGateway extends Common {
 
     this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
       ridePID,
-      pendencie: pendencie._id,
+      status: "pendencie-issued",
     });
 
-    return { status: "ok", pendencie: pendencie._id };
+    return { status: "pendencie-issued" };
   }
 }

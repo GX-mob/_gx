@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
-import { DataService } from "@app/data";
+import { RideRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
 import {
@@ -14,7 +14,7 @@ import {
   DriverState,
   // Common
   Driver,
-  Connection,
+  ConnectionData,
   // Events
   Position,
   Setup,
@@ -44,7 +44,7 @@ export class StateService {
 
   constructor(
     readonly cacheService: CacheService,
-    readonly dataService: DataService,
+    readonly rideRepository: RideRepository,
     readonly socketService: SocketService<Events>,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
@@ -87,7 +87,7 @@ export class StateService {
   public async setupDriverEvent(
     socketId: string,
     setup: Setup,
-    connectionData?: Connection,
+    connectionData?: ConnectionData,
   ) {
     if (!connectionData) {
       connectionData = await this.getConnectionData(socketId);
@@ -155,7 +155,7 @@ export class StateService {
   async offerResponseEvent(
     socketId: string,
     offerResponse: OfferResponse,
-    driverConnectionData?: Connection,
+    driverConnectionData?: ConnectionData,
   ) {
     const offer = this.findOffer(offerResponse.ridePID);
     if (!offer) return;
@@ -201,7 +201,7 @@ export class StateService {
           offer.ride.pid,
           {
             ...offer,
-            driverSocketId: (driverConnectionData as Connection).socketId,
+            driverSocketId: (driverConnectionData as ConnectionData).socketId,
             acceptTimestamp,
           },
           {
@@ -215,9 +215,9 @@ export class StateService {
     // Update ride data
     await util.retry(
       () =>
-        this.dataService.rides.update(
+        this.rideRepository.update(
           { pid: offer.ride.pid },
-          { driver: (driverConnectionData as Connection)._id },
+          { driver: (driverConnectionData as ConnectionData)._id },
         ),
       3,
       500,
@@ -276,13 +276,13 @@ export class StateService {
 
   async createOffer(
     offer: OfferRequest,
-    connection: Connection,
+    connection: ConnectionData,
     startOffer = true,
   ): Promise<boolean> {
-    const ride = await this.dataService.rides.get({ pid: offer.ridePID });
+    const ride = await this.rideRepository.get({ pid: offer.ridePID });
 
     if (!ride) {
-      throw new RideNotFoundException(offer.ridePID);
+      throw new RideNotFoundException();
     }
 
     const offerObject: OfferServer = {
@@ -528,7 +528,7 @@ export class StateService {
    * Get connection data
    * @param id Socket ID or User public ID
    */
-  public async getConnectionData(id: string): Promise<Connection> {
+  public async getConnectionData(id: string): Promise<ConnectionData> {
     const connection = await this.cacheService.get(
       CACHE_NAMESPACES.CONNECTIONS,
       id,
@@ -548,8 +548,8 @@ export class StateService {
    */
   public async setConnectionData(
     pid: string,
-    data: Partial<Connection>,
-  ): Promise<Connection> {
+    data: Partial<ConnectionData>,
+  ): Promise<ConnectionData> {
     return this.setOrUpdateCache(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
       link: ["socketId"],
       ex: CACHE_TTL.CONNECTIONS,

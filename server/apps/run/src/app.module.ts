@@ -3,6 +3,8 @@ import { ConfigModule } from "@nestjs/config";
 import { GatewaysModule } from "./gateways/gateways.module";
 import { LoggerModule } from "nestjs-pino";
 import { MATCH, OFFER } from "./configuration/state.config";
+import { RepositoryModule } from "@app/repositories";
+import { CacheModule } from "@app/cache";
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { MATCH, OFFER } from "./configuration/state.config";
     LoggerModule.forRoot({
       pinoHttp: { prettyPrint: process.env.NODE_ENV !== "production" },
     }),
+    CacheModule,
+    RepositoryModule,
     GatewaysModule,
   ],
   providers: [],

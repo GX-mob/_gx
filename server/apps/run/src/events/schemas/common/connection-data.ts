@@ -1,9 +1,9 @@
 import { Configuration } from "../configuration";
 import { UserBasic } from "./user-basic";
 import { Driver } from "./driver";
-import { Ride, USERS_ROLES } from "@app/database";
+import { Ride, USERS_ROLES } from "@app/repositories";
 
-export type Connection = UserBasic & {
+export type ConnectionData = UserBasic & {
   mode: USERS_ROLES;
   /**
    * Sockets that observe some events of this socket

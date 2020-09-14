@@ -1,13 +1,12 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
-
 import {
-  DatabaseService,
+  RepositoryService,
   PriceDetail,
   Price,
   PriceModel,
   UserModel,
   RideModel,
-} from "../dist/apps/common/libs/database/src";
+} from "../dist/apps/common/libs/repositories/src";
 import chalk from "chalk";
 import faker from "faker";
 import { log } from "./util";
@@ -43,7 +42,10 @@ export async function startDatabase() {
 }
 
 export async function seedDatabase() {
-  const db = new DatabaseService({ get: () => process.env.DATABASE_URI });
+  const db = new RepositoryService(
+    { get: () => process.env.DATABASE_URI },
+    { setContext: () => {}, error: console.log, info: () => {} },
+  );
 
   await Promise.all(db.connections);
 

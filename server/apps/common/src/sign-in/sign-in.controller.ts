@@ -29,8 +29,7 @@ import {
 import { FastifyRequest, FastifyReply } from "fastify";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import { util } from "@app/helpers";
-import { User } from "@app/database";
-import { UserRepository } from "@app/repositories";
+import { User, UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
 import { EXCEPTIONS_MESSAGES } from "../constants";

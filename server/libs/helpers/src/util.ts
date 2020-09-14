@@ -183,3 +183,10 @@ export function decimalAdjust(
     shiftBack[0] + "e" + (shiftBack[1] ? +shiftBack[1] + exp : exp),
   );
 }
+
+/**
+ * Mix of `handleRejectionByUnderHood` and `retry`
+ */
+export function retryUnderHood(...args: Parameters<typeof retry>): void {
+  return handleRejectionByUnderHood(retry(...args));
+}

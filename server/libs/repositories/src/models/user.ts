@@ -49,8 +49,6 @@ export interface User {
 
 export interface UserDocument extends User, Document {}
 
-export const USER_MODEL_PROVIDER = "USER_MODEL_PROVIDER";
-
 export const UserSchema: Schema = new Schema(
   {
     pid: { type: String, default: shortid.generate, unique: true },

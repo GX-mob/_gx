@@ -175,8 +175,6 @@ export interface Ride {
 
 export interface RideDocument extends Ride, Document {}
 
-export const RIDE_MODEL_PROVIDER = "RIDE_MODEL_PROVIDER";
-
 export const RideSchema: Schema = new Schema(
   {
     pid: { type: String, default: shortid.generate, unique: true },

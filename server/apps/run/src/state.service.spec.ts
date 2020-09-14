@@ -1,27 +1,26 @@
 /**
- * Data Service
- *
  * @group unit/services/run-state
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
-import { DataModule, DataService } from "@app/data";
 import { SocketModule, SocketService } from "@app/socket";
 import { StateService } from "./state.service";
 import EventEmitter from "eventemitter3";
 import shortid from "shortid";
 import {
-  DatabaseService,
+  RideRepository,
   RidePayMethods,
   RideTypes,
   USERS_ROLES,
   Ride,
-} from "@app/database";
+  RepositoryModule,
+  RepositoryService,
+} from "@app/repositories";
 import {
   Setup,
-  Connection,
+  ConnectionData,
   Driver,
   EVENTS,
   OfferRequest,
@@ -49,11 +48,9 @@ describe("StateService", () => {
     set: jest.fn(),
   };
 
-  const dataMock = {
-    rides: {
-      get: jest.fn(),
-      update: jest.fn(),
-    },
+  const rideRepository = {
+    get: jest.fn(),
+    update: jest.fn(),
   };
 
   const socketServiceMockFactory = () => {
@@ -112,7 +109,9 @@ describe("StateService", () => {
     );
   }
 
-  function mockConnection(override: Partial<Connection> = {}): Connection {
+  function mockConnection(
+    override: Partial<ConnectionData> = {},
+  ): ConnectionData {
     return deepmerge(
       {
         _id: new Types.ObjectId().toHexString(),
@@ -203,17 +202,17 @@ describe("StateService", () => {
         }),
         LoggerModule.forRoot(),
         CacheModule,
-        DataModule,
+        RepositoryModule,
         SocketModule,
       ],
       providers: [StateService],
     })
-      .overrideProvider(DatabaseService)
+      .overrideProvider(RepositoryService)
       .useValue({})
       .overrideProvider(CacheService)
       .useValue(cacheMock)
-      .overrideProvider(DataService)
-      .useValue(dataMock)
+      .overrideProvider(RideRepository)
+      .useValue(rideRepository)
       .overrideProvider(SocketService)
       .useValue(socketService)
       .overrideProvider(PinoLogger)
@@ -566,7 +565,7 @@ describe("StateService", () => {
       expect(typeof cacheCalls[0][2].acceptTimestamp).toBe("number");
       expect(cacheCalls[0][3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
 
-      const rideDataCalls = dataMock.rides.update.mock.calls;
+      const rideDataCalls = rideRepository.update.mock.calls;
 
       expect(rideDataCalls[0][0]).toStrictEqual({ pid: offer.ride.pid });
       expect(rideDataCalls[0][1]).toStrictEqual({ driver: driverID });
@@ -617,7 +616,7 @@ describe("StateService", () => {
 
   describe("createOffer", () => {
     it("should throw RideNotFoundException", async () => {
-      dataMock.rides.get.mockResolvedValueOnce(null);
+      rideRepository.get.mockResolvedValueOnce(null);
       const ridePID = shortid.generate();
 
       const offerRequest: OfferRequest = {
@@ -626,9 +625,9 @@ describe("StateService", () => {
 
       await expect(
         service.createOffer(offerRequest, {} as any),
-      ).rejects.toStrictEqual(new RideNotFoundException(ridePID));
+      ).rejects.toStrictEqual(new RideNotFoundException());
 
-      const [getCalls] = dataMock.rides.get.mock.calls;
+      const [getCalls] = rideRepository.get.mock.calls;
 
       expect(getCalls[0]).toStrictEqual({ pid: ridePID });
     });
@@ -639,7 +638,7 @@ describe("StateService", () => {
       const connection = { socketId };
       const offerRequest: OfferRequest = { ridePID };
 
-      dataMock.rides.get.mockResolvedValueOnce({ pid: ridePID });
+      rideRepository.get.mockResolvedValueOnce({ pid: ridePID });
 
       await service.createOffer(offerRequest, connection as any, false);
 

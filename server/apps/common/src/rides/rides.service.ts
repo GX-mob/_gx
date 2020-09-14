@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { utcToZonedTime } from "date-fns-tz";
-import { DatabaseService, Price, PriceDetail, Ride } from "@app/database";
+import { RepositoryService, Price, PriceDetail, Ride } from "@app/repositories";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
 import {
@@ -13,12 +13,12 @@ import {
 export class RidesService {
   readonly areas: { [area: string]: Price } = {};
 
-  constructor(readonly database: DatabaseService) {
+  constructor(readonly repositoryService: RepositoryService) {
     this.init();
   }
 
   private async init() {
-    const priceModel = this.database.priceModel;
+    const { priceModel } = this.repositoryService;
 
     /**
      * Get and store all rides types and prices

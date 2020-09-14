@@ -4,7 +4,7 @@ import { RepositoryFactory } from "../repository-factory";
 import { User, UserModel } from "../models/user";
 
 export interface UserQueryInterface
-  extends Partial<Pick<User, "pid" | "phones" | "emails" | "cpf">> {}
+  extends Partial<Pick<User, "_id" | "pid" | "phones" | "emails" | "cpf">> {}
 export interface UserUpdateInterface
   extends Partial<Omit<User, "_id" | "pid">> {}
 export interface UserCreateInterface

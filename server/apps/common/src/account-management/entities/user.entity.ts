@@ -1,5 +1,5 @@
 import { Exclude } from "class-transformer";
-import { User, USERS_ROLES } from "@app/database";
+import { User, USERS_ROLES } from "@app/repositories";
 
 export class UserEntity implements User {
   _id!: string;

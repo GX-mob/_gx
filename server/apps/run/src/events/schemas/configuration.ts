@@ -1,4 +1,4 @@
-import { RidePayMethods, RideTypes } from "@app/database";
+import { RidePayMethods, RideTypes } from "@app/repositories";
 
 export type Configuration = {
   /**

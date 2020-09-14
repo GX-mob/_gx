@@ -8,7 +8,7 @@ export interface SessionQueryInterface
 export interface SessionUpdateInterface
   extends Partial<Omit<Session, "_id" | "user">> {}
 export interface SessionCreateInterface
-  extends Omit<Session, "_id" | "active"> {}
+  extends Omit<Session, "_id" | "active" | "createdAt"> {}
 
 @Injectable()
 export class SessionRepository extends RepositoryFactory<

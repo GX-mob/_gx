@@ -9,10 +9,10 @@ import { Reflector } from "@nestjs/core";
 import { SessionService } from "@app/session";
 import { getClientIp } from "request-ip";
 import { FastifyRequest } from "fastify";
-import { USERS_ROLES } from "@app/database";
+import { USERS_ROLES } from "@app/repositories";
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class WsAuthGuard implements CanActivate {
   constructor(
     private sessionService: SessionService,
     private reflector: Reflector,
@@ -24,6 +24,12 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
     );
 
+    const wsContext = context.switchToWs();
+    const data = wsContext.getData();
+
+    console.log(data);
+    return true;
+    /*
     const request: FastifyRequest = context.switchToHttp().getRequest();
 
     if (!request.headers.authorization) {
@@ -35,10 +41,11 @@ export class AuthGuard implements CanActivate {
     const session = await this.sessionService.verify(token, ip);
 
     if (roles && !this.sessionService.hasPermission(session, roles)) {
-      throw new ForbiddenException("unauthorized");
+      throw new ForbiddenException();
     }
 
     (request as any).session = session;
     return true;
+    */
   }
 }

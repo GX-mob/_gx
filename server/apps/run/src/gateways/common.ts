@@ -2,87 +2,65 @@ import {
   MessageBody,
   SubscribeMessage,
   OnGatewayInit,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   ConnectedSocket,
 } from "@nestjs/websockets";
-import { SocketService, SocketModule } from "@app/socket";
+import { SocketService } from "@app/socket";
 import { Server, Socket } from "socket.io";
-import { Module } from "@nestjs/common";
-import { USERS_ROLES, Ride, User } from "@app/database";
-import { CacheModule, CacheService } from "@app/cache";
-import { SessionModule, SessionService } from "@app/session";
-import { auth } from "extensor";
+import { SessionService } from "@app/session";
+import { CacheService } from "@app/cache";
+import { auth, unique, storageAdapters } from "extensor";
 import { StateService } from "../state.service";
-import { DataModule, DataService } from "@app/data";
-import { EVENTS, State, Position, Connection, Events } from "../events";
-import { util } from "@app/helpers";
+import {
+  PendencieRepository,
+  Ride,
+  User,
+  USERS_ROLES,
+  RideRepository,
+  RideUpdateInterface,
+  RideQueryInterface,
+  RideStatus,
+} from "@app/repositories";
+import { EVENTS, State, Position, Events } from "../events";
+import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
 
-import { LoggerModule } from "nestjs-pino";
+import {
+  RideNotFoundException,
+  UncancelableRideException,
+} from "../exceptions";
+import { UseGuards } from "@nestjs/common";
+import { WsAuthGuard } from "@app/auth";
 
-declare module "socket.io" {
-  interface Socket {
-    connection: Connection;
-  }
-}
-
-@Module({
-  imports: [CacheModule, DataModule, SessionModule, SocketModule],
-  providers: [StateService],
-})
+@UseGuards(WsAuthGuard)
 export class Common implements OnGatewayInit<Server> {
   public role!: USERS_ROLES;
 
   constructor(
     readonly socketService: SocketService<Events>,
-    readonly cacheService: CacheService,
-    readonly dataService: DataService,
+    readonly rideRepository: RideRepository,
+    readonly pendencieRepository: PendencieRepository,
     readonly sessionService: SessionService,
     readonly stateService: StateService,
+    readonly cacheService: CacheService,
   ) {}
 
   afterInit(server: Server) {
-    auth.server(server, async ({ socket, data: { token, p2p } }) => {
-      const session = await this.sessionService.verify(
-        token,
-        socket.handshake.address,
-      );
-
-      const hasPermission = this.sessionService.hasPermission(session, [
-        this.role,
-      ]);
-
-      if (!hasPermission) {
-        throw new Error("unauthorized");
-      }
-
-      const { pid, averageEvaluation } = session.user;
-
-      socket.connection = await this.stateService.setConnectionData(pid, {
-        _id: session.user._id,
-        pid,
-        mode: this.role,
-        p2p,
-        rate: averageEvaluation,
-        socketId: socket.id,
-      });
-
-      return true;
+    unique(server, {
+      storage: new storageAdapters.IORedis(this.cacheService.redis),
     });
   }
 
-  positionEventHandler(position: Position, client: Socket) {
-    this.dispachToObervers(EVENTS.POSITION, client, position);
+  positionEventHandler(position: Position, socket: Socket) {
+    this.dispachToObervers(EVENTS.POSITION, socket, position);
   }
 
   @SubscribeMessage(EVENTS.STATE)
   stateEventHandler(
     @MessageBody() state: State,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() socket: Socket,
   ) {
-    // client.connection.state = state.state;
-    this.dispachToObervers(EVENTS.STATE, client, state);
+    socket.state = state.state;
+    this.dispachToObervers(EVENTS.STATE, socket, state);
   }
 
   dispachToObervers<K extends keyof Events>(
@@ -91,7 +69,7 @@ export class Common implements OnGatewayInit<Server> {
     data: Events[K],
     considerP2P = true,
   ) {
-    const { observers } = client.connection;
+    const { observers } = client.data;
 
     data = this.signObservableEvent(data, client);
 
@@ -104,8 +82,12 @@ export class Common implements OnGatewayInit<Server> {
     });
   }
 
-  signObservableEvent<T = any>(packet: T, client: Socket): T {
-    return { ...packet, pid: client.connection.pid };
+  signObservableEvent<T = any>(packet: T, socket: Socket): T {
+    return { ...packet, pid: socket.data.pid };
+  }
+
+  public updateRide(query: RideQueryInterface, data: RideUpdateInterface) {
+    return retryUnderHood(() => this.rideRepository.update(query, data));
   }
 
   public createPendencie({
@@ -117,9 +99,9 @@ export class Common implements OnGatewayInit<Server> {
     issuer: User["_id"];
     affected: User["_id"];
   }) {
-    return util.retry(
+    return retryUnderHood(
       () =>
-        this.dataService.pendencies.create({
+        this.pendencieRepository.create({
           issuer,
           affected,
           amount: CANCELATION.FARE,
@@ -128,5 +110,24 @@ export class Common implements OnGatewayInit<Server> {
       3,
       500,
     );
+  }
+
+  cancelationSecutiryChecks(
+    ride: Ride | null,
+    _id: User["_id"],
+    target: keyof Pick<Ride, "voyager" | "driver">,
+  ) {
+    if (!ride) {
+      throw new RideNotFoundException();
+    }
+
+    // block cancel running ride
+    if (ride.status === RideStatus.RUNNING) {
+      throw new UncancelableRideException(ride.pid, "running");
+    }
+
+    if (ride[target] !== _id) {
+      throw new UncancelableRideException(ride.pid, "not-in-ride");
+    }
   }
 }

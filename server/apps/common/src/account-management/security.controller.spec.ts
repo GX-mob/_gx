@@ -4,16 +4,11 @@
  * @group unit/controllers/security
  */
 import { Types } from "mongoose";
-import {
-  NotAcceptableException,
-  InternalServerErrorException,
-  UnprocessableEntityException,
-} from "@nestjs/common";
-import { User, USERS_ROLES } from "@app/database";
+import { UnprocessableEntityException } from "@nestjs/common";
+import { User, USERS_ROLES } from "@app/repositories";
 import { util } from "@app/helpers";
 import { AccountSecurityController } from "./security.controller";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
-import { UserEntity } from "./entities/user.entity";
 import shortid from "shortid";
 import faker from "faker";
 import { EXCEPTIONS_MESSAGES } from "../constants";
@@ -21,26 +16,12 @@ import { EXCEPTIONS_MESSAGES } from "../constants";
 describe("AccountProfileController", () => {
   let securityController: AccountSecurityController;
 
-  const dataServiceMock = {
-    users: {
-      get: jest.fn(),
-      update: jest.fn(),
-      model: {
-        updateOne: jest.fn(),
-      },
+  const userRepositoryMock = {
+    get: jest.fn(),
+    update: jest.fn(),
+    model: {
+      updateOne: jest.fn(),
     },
-    sessions: {
-      updateCache: jest.fn(),
-    },
-  };
-
-  const storageServiceMock = {
-    uploadStream: jest.fn(),
-    delete: jest.fn(),
-  };
-
-  const loggerMock = {
-    error: jest.fn(),
   };
 
   let fastifyRequestMock: any = {
@@ -67,11 +48,13 @@ describe("AccountProfileController", () => {
       emails: ["valid@email.com"],
       birth: new Date("06/13/1994"),
       averageEvaluation: 5.0,
-      roles: [USERS_ROLES.VOYAGER]
+      roles: [USERS_ROLES.VOYAGER],
     };
   }
   beforeEach(() => {
-    securityController = new AccountSecurityController(dataServiceMock as any);
+    securityController = new AccountSecurityController(
+      userRepositoryMock as any,
+    );
   });
 
   afterEach(() => {
@@ -98,7 +81,7 @@ describe("AccountProfileController", () => {
 
       await securityController.updatePassword(fastifyRequestMock, requestBody);
 
-      const mockCalls = dataServiceMock.users.model.updateOne.mock.calls;
+      const mockCalls = userRepositoryMock.model.updateOne.mock.calls;
 
       const newPasswordHash = mockCalls[0][1].password;
 
@@ -159,7 +142,7 @@ describe("AccountProfileController", () => {
 
       await securityController.updatePassword(fastifyRequestMock, requestBody);
 
-      const mockCalls = dataServiceMock.users.model.updateOne.mock.calls;
+      const mockCalls = userRepositoryMock.model.updateOne.mock.calls;
       const newPasswordHash = mockCalls[0][1].password;
 
       expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
@@ -212,7 +195,7 @@ describe("AccountProfileController", () => {
 
       await securityController.enable2FA(fastifyRequestMock, requestBody);
 
-      const mockCalls = dataServiceMock.users.update.mock.calls;
+      const mockCalls = userRepositoryMock.update.mock.calls;
 
       expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
       expect(mockCalls[0][1]).toStrictEqual({ "2fa": user.phones[0] });
@@ -263,7 +246,7 @@ describe("AccountProfileController", () => {
 
       await securityController.disable2FA(fastifyRequestMock, requestBody);
 
-      const mockCalls = dataServiceMock.users.update.mock.calls;
+      const mockCalls = userRepositoryMock.update.mock.calls;
 
       expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
       expect(mockCalls[0][1]).toStrictEqual({ "2fa": "" });

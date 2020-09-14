@@ -5,8 +5,7 @@ import {
   Request,
   Body,
 } from "@nestjs/common";
-import { User } from "@app/database";
-import { DataService } from "@app/data";
+import { User, UserRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { AuthorizedRequest } from "@app/auth";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
@@ -14,7 +13,7 @@ import { EXCEPTIONS_MESSAGES } from "../constants";
 
 @Controller("account/secutiry")
 export class AccountSecurityController {
-  constructor(readonly data: DataService) {}
+  constructor(readonly userRepository: UserRepository) {}
 
   @Patch("password")
   async updatePassword(
@@ -27,7 +26,10 @@ export class AccountSecurityController {
     if (!user.password) {
       const password = await util.hashPassword(newPassword);
 
-      await this.data.users.model.updateOne({ _id: user._id }, { password });
+      await this.userRepository.model.updateOne(
+        { _id: user._id },
+        { password },
+      );
 
       return;
     }
@@ -56,7 +58,7 @@ export class AccountSecurityController {
 
     const password = await util.hashPassword(newPassword);
 
-    await this.data.users.model.updateOne({ _id: user._id }, { password });
+    await this.userRepository.model.updateOne({ _id: user._id }, { password });
 
     return;
   }
@@ -78,7 +80,7 @@ export class AccountSecurityController {
       );
     }
 
-    await this.data.users.update({ _id: user._id }, { "2fa": contact });
+    await this.userRepository.update({ _id: user._id }, { "2fa": contact });
   }
 
   @Patch("2fa/disable")
@@ -101,7 +103,7 @@ export class AccountSecurityController {
       );
     }
 
-    this.data.users.update({ _id: user._id }, { "2fa": "" });
+    this.userRepository.update({ _id: user._id }, { "2fa": "" });
   }
 
   private passwordRequired(user: User): void {

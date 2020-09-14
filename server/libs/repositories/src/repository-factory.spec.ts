@@ -1,31 +1,33 @@
 /**
- * Data Service
+ * Repository Factory
  *
- * @group unit/services/data
+ * @group unit/repositories/repository-factory
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import {
-  DatabaseModule,
-  DatabaseService,
+  RepositoryModule,
+  RepositoryService,
   User,
   UserModel,
-  Session,
   USERS_ROLES,
-} from "@app/database";
+  Session,
+  UserRepository,
+  SessionRepository,
+} from "@app/repositories";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
-import { DataService } from "./data.service";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 //@ts-ignore
 import IORedisMock from "ioredis-mock";
 import { generate } from "shortid";
 
-describe("DataService", () => {
-  let service: DataService;
+describe("RepositoryFactory", () => {
+  let repositoryService: RepositoryService;
+  let userRepository: UserRepository;
+  let sessionRepository: SessionRepository;
   let cacheService: CacheService;
-  let databaseService: DatabaseService;
   let mongoServer: MongoMemoryServer;
 
   const mockUser = {
@@ -49,9 +51,16 @@ describe("DataService", () => {
   beforeAll(async () => {
     mongoServer = new MongoMemoryServer();
     process.env.DATABASE_URI = await mongoServer.getUri();
+    repositoryService = new RepositoryService(
+      { get: () => process.env.DATABASE_URI } as any,
+      { setContext: () => {}, warn: () => {}, info: () => {} } as any,
+    );
   });
 
   afterAll(async () => {
+    await Promise.all(
+      repositoryService.connections.map((connection) => connection.close()),
+    );
     await mongoServer.stop();
   });
 
@@ -63,30 +72,33 @@ describe("DataService", () => {
           envFilePath: ".development.env",
         }),
         LoggerModule.forRoot(),
-        DatabaseModule,
+        RepositoryModule,
         CacheModule,
       ],
-      providers: [ConfigService, DataService],
+      providers: [ConfigService, UserRepository, SessionRepository],
     })
       .overrideProvider(RedisService)
       .useValue({ client: new IORedisMock() })
+      .overrideProvider(RepositoryService)
+      .useValue(repositoryService)
       .compile();
 
-    service = module.get<DataService>(DataService);
+    userRepository = module.get<UserRepository>(UserRepository);
+    sessionRepository = module.get<SessionRepository>(SessionRepository);
     cacheService = module.get<CacheService>(CacheService);
-    databaseService = module.get<DatabaseService>(DatabaseService);
   });
 
   it("should be defined", () => {
-    expect(service).toBeDefined();
+    expect(userRepository).toBeDefined();
+    expect(sessionRepository).toBeDefined();
   });
 
   it("should create", async () => {
-    cached = await service.users.create(mockUser);
+    cached = await userRepository.create(mockUser);
 
     expect(cached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
 
-    const persistent = (await service.users.get({ _id: cached._id })) as User;
+    const persistent = (await userRepository.get({ _id: cached._id })) as User;
     const fromCache = (await cacheService.get("users", {
       _id: cached._id,
     })) as User;
@@ -100,7 +112,7 @@ describe("DataService", () => {
   });
 
   it("should create and return populated", async () => {
-    session = await service.sessions.create(
+    session = await sessionRepository.create(
       {
         ...mockSession,
         user: cached._id,
@@ -113,7 +125,7 @@ describe("DataService", () => {
   });
 
   it("should get cached record", async () => {
-    const user = (await service.users.get({ _id: cached._id })) as User;
+    const user = (await userRepository.get({ _id: cached._id })) as User;
 
     expect(user.cpf).toBe(cached.cpf);
   });
@@ -127,7 +139,7 @@ describe("DataService", () => {
       averageEvaluation: 4.5,
     });
 
-    const user = (await service.users.get({ _id: nonCached._id })) as User;
+    const user = (await userRepository.get({ _id: nonCached._id })) as User;
 
     expect(user.cpf).toBe(nonCached.cpf);
 
@@ -139,7 +151,7 @@ describe("DataService", () => {
   });
 
   it("get by a linking key", async () => {
-    const user2 = (await service.users.get({
+    const user2 = (await userRepository.get({
       phones: mockUser.phones[0],
     })) as User;
 
@@ -150,7 +162,7 @@ describe("DataService", () => {
   it("should update in both storages", async () => {
     const query = { _id: cached._id };
 
-    await service.users.update(query, { firstName: "Second" });
+    await userRepository.update(query, { firstName: "Second" });
 
     const persistent = (await UserModel.findOne(query)) as User;
     const fromCache = await cacheService.get("users", query);
@@ -160,7 +172,7 @@ describe("DataService", () => {
   });
 
   it("should do auto populate", async () => {
-    const sessionPopulated = (await service.sessions.get({
+    const sessionPopulated = (await sessionRepository.get({
       _id: session._id,
     })) as Session;
 
@@ -170,9 +182,9 @@ describe("DataService", () => {
   it("should remove in both storages", async () => {
     const query = { _id: cached._id };
 
-    await service.users.remove(query);
+    await userRepository.remove(query);
 
-    const user = (await service.users.get(query)) as null;
+    const user = (await userRepository.get(query)) as null;
 
     expect(user).toBe(null);
   });
@@ -186,11 +198,11 @@ describe("DataService", () => {
     const emptyObject: any = {};
     const emptyString: any = "";
 
-    expect(service.users.isEmpty(array)).toBeFalsy();
-    expect(service.users.isEmpty(object)).toBeFalsy();
-    expect(service.users.isEmpty(string)).toBeFalsy();
-    expect(service.users.isEmpty(emptyArray)).toBeTruthy();
-    expect(service.users.isEmpty(emptyObject)).toBeTruthy();
-    expect(service.users.isEmpty(emptyString)).toBeTruthy();
+    expect(userRepository.isEmpty(array)).toBeFalsy();
+    expect(userRepository.isEmpty(object)).toBeFalsy();
+    expect(userRepository.isEmpty(string)).toBeFalsy();
+    expect(userRepository.isEmpty(emptyArray)).toBeTruthy();
+    expect(userRepository.isEmpty(emptyObject)).toBeTruthy();
+    expect(userRepository.isEmpty(emptyString)).toBeTruthy();
   });
 });

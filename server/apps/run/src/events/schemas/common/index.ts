@@ -1,4 +1,4 @@
-export * from "./connection";
+export * from "./connection-data";
 export * from "./driver";
 export * from "./lat-lng";
 export * from "./location";

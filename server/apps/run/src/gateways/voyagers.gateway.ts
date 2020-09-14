@@ -12,7 +12,7 @@ import {
   RideStatus,
   RidePayMethods,
   Ride,
-} from "@app/database";
+} from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
@@ -21,10 +21,12 @@ import {
   CancelRide,
   CanceledRide,
 } from "../events";
+import { Voyager } from "@app/auth";
 
+@Voyager()
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
-  public role = USERS_ROLES.VOYAGER;
+  //public role = USERS_ROLES.VOYAGER;
 
   @SubscribeMessage(EVENTS.POSITION)
   positionEventHandler(
@@ -51,27 +53,13 @@ export class VoyagersGateway extends Common {
   async cancelRideEventHandler(
     @MessageBody() ridePID: CancelRide,
     @ConnectedSocket() socket: Socket,
-  ): Promise<{ status: string; error?: string; pendencie?: Pendencie["_id"] }> {
+  ): Promise<{ status: CanceledRide["status"] | "error"; error?: string }> {
     const now = Date.now();
-    const ride = await this.dataService.rides.get({ pid: ridePID });
-
-    /**
-     * Security checks
-     */
-    if (!ride) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.RIDE_NOT_FOUND };
-    }
-
-    // block cancel running ride
-    if (ride.status === RideStatus.RUNNING) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.RIDE_RUNNING };
-    }
+    const ride = (await this.rideRepository.get({ pid: ridePID })) as Ride;
 
     const { _id } = socket.connection;
 
-    if (ride.voyager !== _id) {
-      return { status: "error", error: CANCELATION_EXCEPTIONS.NOT_IN_RIDE };
-    }
+    this.cancelationSecutiryChecks(ride, _id, "voyager");
 
     const offer = await this.stateService.getOfferData(ridePID);
     const { driverSocketId, acceptTimestamp } = offer;
@@ -88,25 +76,22 @@ export class VoyagersGateway extends Common {
      * Safe cancel, no pendencie needed
      */
     if ((acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now) {
-      await this.dataService.rides.update(
-        { pid: ridePID },
-        { status: RideStatus.CANCELED },
-      );
+      this.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
 
       // Informe to driver the cancelation event
       this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
         ridePID,
-        pendencie: "",
+        status: "safe",
       });
 
-      return { status: "ok" };
+      return { status: "safe" };
     }
 
     /**
      * Creates a pendencie if the payment method is money
      */
     if (ride.payMethod === RidePayMethods.Money) {
-      const pendencie = await this.createPendencie({
+      this.createPendencie({
         ride,
         issuer: ride.voyager,
         affected: ride.driver,
@@ -115,14 +100,14 @@ export class VoyagersGateway extends Common {
       // Informe to driver the cancelation event
       this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
         ridePID,
-        pendencie: pendencie._id,
+        status: "pendencie-issued",
       });
 
-      return { status: "ok", pendencie: pendencie._id };
+      return { status: "pendencie-issued" };
     }
 
-    // TODO stripe api, request payment
+    // TODO stripe api, request payment charge
 
-    return { status: "ok" };
+    return { status: "safe" };
   }
 }

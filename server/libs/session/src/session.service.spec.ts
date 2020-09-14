@@ -7,14 +7,15 @@ import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
-import { UserModel, USERS_ROLES } from "@app/database";
-import { DatabaseService, Session } from "@app/database";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { SessionService } from "./session.service";
 import {
   SessionRepository,
   RepositoryModule,
   RepositoryService,
+  UserModel,
+  USERS_ROLES,
+  Session,
 } from "@app/repositories";
 import {
   SessionNotFoundException,
@@ -75,7 +76,7 @@ describe("SessionService", () => {
       .useValue(sessionRepositoryMock)
       .overrideProvider(CacheService)
       .useValue(cacheService)
-      .overrideProvider(DatabaseService)
+      .overrideProvider(RepositoryService)
       .useValue({})
       .compile();
 

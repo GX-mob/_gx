@@ -8,7 +8,7 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { User, USERS_ROLES } from "@app/database";
+import { User, USERS_ROLES } from "@app/repositories";
 import { AccountProfileController } from "./profile.controller";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
@@ -25,14 +25,13 @@ import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../constants";
 describe("AccountProfileController", () => {
   let profileController: AccountProfileController;
 
-  const dataServiceMock = {
-    users: {
-      get: jest.fn(),
-      update: jest.fn(),
-    },
-    sessions: {
-      updateCache: jest.fn(),
-    },
+  const userRepositoryMock = {
+    get: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const sessionRepositoryMock = {
+    updateCache: jest.fn(),
   };
 
   const storageServiceMock = {
@@ -89,7 +88,8 @@ describe("AccountProfileController", () => {
 
   beforeEach(() => {
     profileController = new AccountProfileController(
-      dataServiceMock as any,
+      userRepositoryMock as any,
+      sessionRepositoryMock as any,
       storageServiceMock as any,
     );
 
@@ -133,15 +133,13 @@ describe("AccountProfileController", () => {
 
       await profileController.updateHandler(fastifyRequestMock, requestBody);
 
-      const dataCalls = dataServiceMock.users.update.mock.calls;
+      const dataCalls = userRepositoryMock.update.mock.calls;
 
       expect(dataCalls[0][0]).toStrictEqual({
         _id: user._id,
       });
       expect(dataCalls[0][1]).toStrictEqual(requestBody);
-      expect(
-        dataServiceMock.sessions.updateCache.mock.calls[0][0],
-      ).toStrictEqual({
+      expect(sessionRepositoryMock.updateCache.mock.calls[0][0]).toStrictEqual({
         _id: fastifyRequestMock.session._id,
       });
     });

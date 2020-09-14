@@ -3,9 +3,11 @@ import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository-factory";
 import { Pendencie, PendencieModel } from "../models/pendencie";
 
-export interface PendencieQueryInterface extends Partial<Pendencie> {}
-export interface PendencieUpdateInterface extends Partial<Pendencie> {}
-export interface PendencieCreateInterface extends Omit<Pendencie, "resolved"> {}
+export interface PendencieQueryInterface
+  extends Partial<Pick<Pendencie, "affected" | "issuer" | "_id" | "ride">> {}
+export interface PendencieUpdateInterface extends Pick<Pendencie, "resolved"> {}
+export interface PendencieCreateInterface
+  extends Omit<Pendencie, "_id" | "resolved"> {}
 
 @Injectable()
 export class PendencieRepository extends RepositoryFactory<
@@ -13,7 +15,7 @@ export class PendencieRepository extends RepositoryFactory<
   {
     Query: PendencieQueryInterface;
     Update: PendencieUpdateInterface;
-    Create: Omit<Pendencie, "resolved">;
+    Create: PendencieCreateInterface;
   }
 > {
   constructor(private cacheService: CacheService) {

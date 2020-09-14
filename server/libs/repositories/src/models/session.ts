@@ -25,13 +25,11 @@ export interface Session {
   user: User;
   userAgent: string;
   ips: (string | null)[];
-  createdAt?: Date;
+  createdAt: Date;
   active: boolean;
 }
 
 export interface SessionDocument extends Session, Document {}
-
-export const SESSION_MODEL_PROVIDER = "SESSION_MODEL_PROVIDER";
 
 export const SessionSchema: Schema = new Schema(
   {

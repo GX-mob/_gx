@@ -14,20 +14,24 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { DataService } from "@app/data";
+import { User, UserRepository, SessionRepository } from "@app/repositories";
 import { AuthGuard, AuthorizedRequest } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
-import { User } from "@app/database";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../constants";
 import { Logger } from "pino";
+
 @Controller("account/profile")
 @UseGuards(AuthGuard)
 export class AccountProfileController {
   logger: Logger = logger;
-  constructor(readonly data: DataService, readonly storage: StorageService) {}
+  constructor(
+    readonly userRepository: UserRepository,
+    readonly sessionRepository: SessionRepository,
+    readonly storage: StorageService,
+  ) {}
 
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
@@ -45,8 +49,8 @@ export class AccountProfileController {
   ) {
     const { session } = req;
 
-    await this.data.users.update({ _id: session.user._id }, body);
-    await this.data.sessions.updateCache({ _id: session._id });
+    await this.userRepository.update({ _id: session.user._id }, body);
+    await this.sessionRepository.updateCache({ _id: session._id });
   }
 
   @Patch("avatar")

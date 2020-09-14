@@ -137,13 +137,3 @@ export interface Events {
   [EVENTS.DELAYED_OFFER_RESPONSE]: DelayedOfferReponse;
   [EVENTS.OFFER_GOT_TOO_LONG]: OfferGotTooLong;
 }
-
-declare module "socket.io" {
-  interface Socket {
-    emit<K extends keyof Events>(
-      event: keyof Events,
-      data: Events[K],
-      callback?: any,
-    ): void;
-  }
-}

@@ -1,2 +1,5 @@
-export type CanceledRide = { ridePID: string; pendencie: string };
-export const canceledRideSchema = { ridePID: "string", pendencie: "string" };
+export type CanceledRide = {
+  ridePID: string;
+  status: "safe" | "pendencie-issued";
+};
+export const canceledRideSchema = { ridePID: "string", status: "string" };

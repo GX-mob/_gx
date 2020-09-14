@@ -1,4 +1,4 @@
-import { Ride } from "@app/database";
+import { Ride } from "@app/repositories";
 
 export type OfferRequest = {
   /**

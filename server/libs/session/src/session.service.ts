@@ -2,11 +2,15 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import { Session, SessionRepository } from "@app/repositories";
+import {
+  User,
+  USERS_ROLES,
+  Session,
+  SessionRepository,
+} from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { CacheService } from "@app/cache";
-import { User, USERS_ROLES } from "@app/database";
 import { util } from "@app/helpers";
 import {
   SessionNotFoundException,

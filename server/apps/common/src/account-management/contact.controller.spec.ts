@@ -19,11 +19,9 @@ describe("AccountContactController", () => {
 
   let contactController: AccountContactController;
 
-  const dataServiceMock = {
-    users: {
-      get: jest.fn(),
-      update: jest.fn(),
-    },
+  const userRepositoryMock = {
+    get: jest.fn(),
+    update: jest.fn(),
   };
 
   const verifyServiceMock = {
@@ -39,14 +37,9 @@ describe("AccountContactController", () => {
     session: { user: {} },
   };
 
-  const fastifyResponseMock = {
-    code: jest.fn(),
-    send: jest.fn(),
-  };
-
   beforeEach(() => {
     contactController = new AccountContactController(
-      dataServiceMock as any,
+      userRepositoryMock as any,
       verifyServiceMock as any,
     );
   });
@@ -75,7 +68,7 @@ describe("AccountContactController", () => {
       const requestBody = new ContactVerifyRequestDto();
 
       requestBody.contact = "+5582988444444";
-      dataServiceMock.users.get.mockResolvedValue({});
+      userRepositoryMock.get.mockResolvedValue({});
 
       await expect(
         contactController.verifiContactRequest(requestBody),
@@ -116,10 +109,10 @@ describe("AccountContactController", () => {
 
       await contactController.addContact(fastifyRequestMock, requestBody);
 
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         phones: [requestBody.contact],
       });
     });
@@ -139,10 +132,10 @@ describe("AccountContactController", () => {
 
       await contactController.addContact(fastifyRequestMock, requestBody);
 
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         phones: [requestMock.session.user.phones[0], requestBody.contact],
       });
     });
@@ -161,10 +154,10 @@ describe("AccountContactController", () => {
 
       await contactController.addContact(fastifyRequestMock, requestBody);
 
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         emails: [requestBody.contact],
       });
     });
@@ -184,10 +177,10 @@ describe("AccountContactController", () => {
 
       await contactController.addContact(fastifyRequestMock, requestBody);
 
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         emails: [requestMock.session.user.emails[0], requestBody.contact],
       });
     });
@@ -267,10 +260,10 @@ describe("AccountContactController", () => {
       requestBody.contact = toRemove;
 
       await contactController.removeContact(fastifyRequestMock, requestBody);
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         phones: [],
       });
     });
@@ -294,10 +287,10 @@ describe("AccountContactController", () => {
       requestBody.contact = toRemove;
 
       await contactController.removeContact(fastifyRequestMock, requestBody);
-      expect(dataServiceMock.users.update.mock.calls[0][0]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
         _id,
       });
-      expect(dataServiceMock.users.update.mock.calls[0][1]).toStrictEqual({
+      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
         emails: [],
       });
     });

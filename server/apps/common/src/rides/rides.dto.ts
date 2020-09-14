@@ -4,7 +4,7 @@ import {
   RidePayMethods,
   TRoute,
   TRoutePoint,
-} from "@app/database";
+} from "@app/repositories";
 import {
   ValidateNested,
   IsNotEmpty,

@@ -4,14 +4,15 @@
  * @group unit/services/ride
  */
 import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigModule } from "@nestjs/config";
 import { parseISO } from "date-fns";
 import {
-  DatabaseModule,
-  DatabaseService,
+  RepositoryModule,
+  RepositoryService,
   Price,
   TRoutePoint,
   RideTypes,
-} from "@app/database";
+} from "@app/repositories";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
 
@@ -23,7 +24,7 @@ describe("RideService", () => {
 
   emitter.setMaxListeners(50);
 
-  const databaseServiceMock = {
+  const repositoryServiceMock = {
     priceModel: {
       find: () => ({
         lean: async (): Promise<Price[]> => [...prices],
@@ -34,11 +35,11 @@ describe("RideService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [DatabaseModule],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), RepositoryModule],
       providers: [RidesService],
     })
-      .overrideProvider(DatabaseService)
-      .useValue(databaseServiceMock)
+      .overrideProvider(RepositoryService)
+      .useValue(repositoryServiceMock)
       .compile();
 
     service = module.get<RidesService>(RidesService);
@@ -49,7 +50,7 @@ describe("RideService", () => {
   });
 
   it("should has rides types loaded", async () => {
-    const prices = await databaseServiceMock.priceModel.find().lean();
+    const prices = await repositoryServiceMock.priceModel.find().lean();
     const areas: { [area: string]: Price } = {};
 
     prices.forEach((price) => {
@@ -60,7 +61,7 @@ describe("RideService", () => {
   });
 
   it("should update area prices", async () => {
-    const prices = await databaseServiceMock.priceModel.find().lean();
+    const prices = await repositoryServiceMock.priceModel.find().lean();
 
     const newRideType1Values = {
       ...rideType1,

@@ -10,7 +10,7 @@ import {
   UnprocessableEntityException,
 } from "@nestjs/common";
 import { AuthGuard, AuthorizedRequest } from "@app/auth";
-import { DataService } from "@app/data";
+import { UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { util } from "@app/helpers";
 import {
@@ -24,7 +24,7 @@ import { EXCEPTIONS_MESSAGES } from "../constants";
 @UseGuards(AuthGuard)
 export class AccountContactController {
   constructor(
-    readonly data: DataService,
+    readonly userRepository: UserRepository,
     readonly verify: ContactVerificationService,
   ) {}
 
@@ -33,7 +33,7 @@ export class AccountContactController {
   async verifiContactRequest(@Body() body: ContactVerifyRequestDto) {
     const { field, value } = util.isValidContact(body.contact);
 
-    const user = await this.data.users.get({ [field]: value });
+    const user = await this.userRepository.get({ [field]: value });
 
     if (user) {
       throw new UnprocessableEntityException(
@@ -66,7 +66,7 @@ export class AccountContactController {
       [field]: [...(user[field] || []), contact],
     };
 
-    await this.data.users.update({ _id: user._id }, update);
+    await this.userRepository.update({ _id: user._id }, update);
   }
 
   @Delete()
@@ -95,6 +95,6 @@ export class AccountContactController {
 
     updated.splice(index, 1);
 
-    await this.data.users.update({ _id: user._id }, { [field]: updated });
+    await this.userRepository.update({ _id: user._id }, { [field]: updated });
   }
 }

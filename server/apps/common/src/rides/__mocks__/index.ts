@@ -1,4 +1,4 @@
-import { PriceDetail, Price } from "@app/database";
+import { PriceDetail, Price } from "@app/repositories";
 import { geometry } from "@app/helpers";
 //@ts-ignore
 const { decode } = require("google-polyline");

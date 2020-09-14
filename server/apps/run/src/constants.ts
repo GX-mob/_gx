@@ -9,8 +9,8 @@ export enum CACHE_NAMESPACES {
 }
 
 export enum CACHE_TTL {
-  CONNECTIONS = 1000 * 60 * 60 * 5, // 5 hours
-  OFFERS = 1000 * 60 * 15, // 15 minutes
+  CONNECTIONS = 1000 * 60 * 60 * 2, // 2 hours
+  OFFERS = 1000 * 60 * 60, // 1 hour
 }
 
 export enum CANCELATION {
@@ -27,4 +27,5 @@ export enum CANCELATION_EXCEPTIONS {
 export enum EXCEPTIONS {
   CONNECTION_DATA_NOT_FOUND = "CONNECTION_DATA_NOT_FOUND",
   RIDE_NOT_FOUND = "RIDE_NOT_FOUND",
+  UNCANCELABLE_RIDE = "UNCANCELABLE_RIDE",
 }

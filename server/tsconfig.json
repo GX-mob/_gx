@@ -26,8 +26,6 @@
       "@app/helpers/*": ["libs/helpers/src/*"],
       "@app/contact-verification": ["libs/contact-verification/src"],
       "@app/contact-verification/*": ["libs/contact-verification/src/*"],
-      "@app/database": ["libs/database/src"],
-      "@app/database/*": ["libs/database/src/*"],
       "@app/auth": ["libs/auth/src"],
       "@app/auth/*": ["libs/auth/src/*"],
       "@app/socket": ["libs/socket/src"],

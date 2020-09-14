@@ -1,7 +1,8 @@
 import { FastifyRequest } from "fastify";
-import { Session } from "@app/database";
+import { Session } from "@app/repositories";
 
-export * from "./auth.guard";
+export * from "./http-auth.guard";
+export * from "./ws-auth.guard";
 export * from "./auth.decorator";
 
 export interface AuthorizedRequest extends FastifyRequest {
