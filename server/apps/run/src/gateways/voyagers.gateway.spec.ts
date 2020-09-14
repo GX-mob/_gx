@@ -1,3 +1,0 @@
-describe("VoyagersGateway", () => {
-  it("shouldshouldshould", () => {});
-});

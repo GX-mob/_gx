@@ -95,7 +95,7 @@ export class Common implements OnGatewayInit<Server> {
     issuer,
     affected,
   }: {
-    ride: Ride;
+    ride: Ride["_id"];
     issuer: User["_id"];
     affected: User["_id"];
   }) {
@@ -105,7 +105,7 @@ export class Common implements OnGatewayInit<Server> {
           issuer,
           affected,
           amount: CANCELATION.FARE,
-          ride: ride._id,
+          ride,
         }),
       3,
       500,
@@ -129,5 +129,9 @@ export class Common implements OnGatewayInit<Server> {
     if (ride[target] !== _id) {
       throw new UncancelableRideException(ride.pid, "not-in-ride");
     }
+  }
+
+  isSafeCancel(acceptTimestamp: number, now: number) {
+    return (acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now;
   }
 }

@@ -11,10 +11,9 @@ export type ConnectionData = UserBasic & {
   observers: { socketId: string; p2p: boolean }[];
   config?: Configuration;
   /**
-   * Current rides
-   * * Voyager only
+   * Running user rides
    */
-  rides?: Ride["pid"][];
+  rides: Ride["pid"][];
   /**
    * Driver state
    * * Driver only

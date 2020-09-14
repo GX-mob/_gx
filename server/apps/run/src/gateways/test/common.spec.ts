@@ -5,20 +5,20 @@ import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";
 import IOClient from "socket.io-client";
 import faker from "faker";
-import { auth } from "extensor";
-import { Common } from "./common";
-import { USERS_ROLES, RideStatus } from "@app/repositories";
+import { Common } from "../common";
+import { RideStatus } from "@app/repositories";
 //@ts-ignore
 import IORedisMock from "ioredis-mock";
-import { EVENTS } from "../events";
-import { CANCELATION } from "../constants";
+import { EVENTS } from "../../events";
+import { CANCELATION } from "../../constants";
 import {
   RideNotFoundException,
   UncancelableRideException,
-} from "../exceptions";
+} from "../../exceptions";
+import { mockSocket, expectObservableFor } from "./util";
 
 describe("CommonsGateway", () => {
-  let common: Common;
+  let gateway: Common;
   let httpServer: HttpServer;
   let ioServer: Server;
 
@@ -62,7 +62,7 @@ describe("CommonsGateway", () => {
   }
 
   beforeEach(() => {
-    common = new Common(
+    gateway = new Common(
       socketServiceMock as any,
       rideRepositoryMock as any,
       pendencieRepositoryMock as any,
@@ -80,58 +80,39 @@ describe("CommonsGateway", () => {
   });
 
   describe("observables", () => {
-    function mockSocket(override: any = {}) {
-      return {
-        state: 0,
-        data: {
-          pid: faker.random.alphaNumeric(12),
-          observers: [
-            {
-              socketId: faker.random.alphaNumeric(12),
-              p2p: false,
-            },
-            {
-              socketId: faker.random.alphaNumeric(12),
-              p2p: true,
-            },
-          ],
-        },
-        ...override,
-      };
-    }
-
-    function expectObservableFor(socketMock: any, event: EVENTS) {
-      socketMock.data.observers.forEach((observer: any, index: number) => {
-        const emitCall = socketServiceMock.emit.mock.calls[index];
-
-        if (observer.p2p) {
-          return expect(emitCall).toBeUndefined();
-        }
-
-        expect(emitCall[0]).toBe(observer.socketId);
-        expect(emitCall[1]).toBe(event);
-        expect(emitCall[2]).toMatchObject({
-          state: 1,
-          pid: socketMock.data.pid,
-        });
-      });
-    }
-
     it("stateEventHandler", () => {
       const socketMock = mockSocket();
+      const eventBody = { state: 1 };
 
-      common.stateEventHandler({ state: 1 } as any, socketMock as any);
+      gateway.stateEventHandler(eventBody as any, socketMock as any);
       expect(socketMock.state).toBe(1);
 
-      expectObservableFor(socketMock, EVENTS.STATE);
+      expectObservableFor(
+        socketMock,
+        EVENTS.STATE,
+        eventBody,
+        socketServiceMock,
+      );
     });
 
     it("positionEventHandler", () => {
       const socketMock = mockSocket();
+      const eventBody = {
+        latLng: [1, 1],
+        heading: 0,
+        kmh: 30,
+        ignored: [],
+        pid: "",
+      };
 
-      common.positionEventHandler({ state: 1 } as any, socketMock as any);
+      gateway.positionEventHandler(eventBody as any, socketMock as any);
 
-      expectObservableFor(socketMock, EVENTS.POSITION);
+      expectObservableFor(
+        socketMock,
+        EVENTS.POSITION,
+        eventBody,
+        socketServiceMock,
+      );
     });
   });
 
@@ -142,7 +123,7 @@ describe("CommonsGateway", () => {
       const updateQuery = { _id };
       const updateData = { status: RideStatus.CANCELED };
 
-      common.updateRide(updateQuery, updateData);
+      gateway.updateRide(updateQuery, updateData);
 
       const [repositoryCall] = rideRepositoryMock.update.mock.calls;
 
@@ -157,7 +138,7 @@ describe("CommonsGateway", () => {
       const issuer = faker.random.alphaNumeric(12);
       const affected = faker.random.alphaNumeric(12);
 
-      common.createPendencie({ ride, issuer, affected });
+      gateway.createPendencie({ ride: ride._id, issuer, affected });
 
       const [repositoryCall] = pendencieRepositoryMock.create.mock.calls;
 
@@ -173,7 +154,7 @@ describe("CommonsGateway", () => {
   describe("cancelationSecutiryChecks", () => {
     it("should throw RideNotFoundException", () => {
       expect(() =>
-        common.cancelationSecutiryChecks(null, "", "voyager"),
+        gateway.cancelationSecutiryChecks(null, "", "voyager"),
       ).toThrow(new RideNotFoundException());
     });
 
@@ -184,7 +165,7 @@ describe("CommonsGateway", () => {
       };
 
       expect(() =>
-        common.cancelationSecutiryChecks(ride as any, "", "voyager"),
+        gateway.cancelationSecutiryChecks(ride as any, "", "voyager"),
       ).toThrow(new UncancelableRideException(ride.pid, "running"));
     });
 
@@ -197,7 +178,7 @@ describe("CommonsGateway", () => {
       };
 
       expect(() =>
-        common.cancelationSecutiryChecks(ride as any, random, "voyager"),
+        gateway.cancelationSecutiryChecks(ride as any, random, "voyager"),
       ).toThrow(new UncancelableRideException(ride.pid, "running"));
     });
 
@@ -210,7 +191,7 @@ describe("CommonsGateway", () => {
       };
 
       expect(() =>
-        common.cancelationSecutiryChecks(ride as any, random, "driver"),
+        gateway.cancelationSecutiryChecks(ride as any, random, "driver"),
       ).toThrow(new UncancelableRideException(ride.pid, "not-in-ride"));
     });
   });

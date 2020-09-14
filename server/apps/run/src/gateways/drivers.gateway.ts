@@ -17,6 +17,7 @@ import {
   OfferResponse,
   CancelRide,
   CanceledRide,
+  CANCELATION_RESPONSE,
 } from "../events";
 import { CANCELATION } from "../constants";
 import { Driver } from "@app/auth";
@@ -39,8 +40,6 @@ export class DriversGateway extends Common {
     @ConnectedSocket() client: Socket,
   ) {
     await this.stateService.setupDriverEvent(client.id, setup, client.data);
-
-    return client.data.state;
   }
 
   @SubscribeMessage(EVENTS.CONFIGURATION)
@@ -78,32 +77,29 @@ export class DriversGateway extends Common {
     const { requesterSocketId, acceptTimestamp } = offer;
 
     this.stateService.updateDriver(socket.id, { state: DriverState.SEARCHING });
+    this.updateRide({ pid: ridePID }, { driver: null });
 
-    /**
-     * Safe cancel, no pendencie needed
-     */
-    if ((acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now) {
-      this.updateRide({ pid: ridePID }, { driver: null });
+    const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
 
-      this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
-        ridePID,
-        status: "safe",
-      });
-
-      return { status: "safe" };
-    }
-
-    this.createPendencie({
-      ride: ride._id,
-      issuer: ride.driver,
-      affected: ride.voyager,
-    });
+    const status = isSafeCancel
+      ? CANCELATION_RESPONSE.SAFE
+      : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
 
     this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
       ridePID,
-      status: "pendencie-issued",
+      status,
     });
 
-    return { status: "pendencie-issued" };
+    /**
+     * No safe cancel, issue a pendencie
+     */
+    if (!isSafeCancel)
+      this.createPendencie({
+        ride: ride._id,
+        issuer: ride.driver,
+        affected: ride.voyager,
+      });
+
+    return { status };
   }
 }

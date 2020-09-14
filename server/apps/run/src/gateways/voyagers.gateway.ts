@@ -20,6 +20,8 @@ import {
   OfferRequest,
   CancelRide,
   CanceledRide,
+  CANCELATION_RESPONSE,
+  DriverState,
 } from "../events";
 import { Voyager } from "@app/auth";
 
@@ -33,7 +35,7 @@ export class VoyagersGateway extends Common {
     @MessageBody() position: Position,
     @ConnectedSocket() socket: Socket,
   ) {
-    this.positionEventHandler(position, socket);
+    super.positionEventHandler(position, socket);
   }
 
   @SubscribeMessage(EVENTS.OFFER)
@@ -41,12 +43,12 @@ export class VoyagersGateway extends Common {
     @MessageBody() offer: OfferRequest,
     @ConnectedSocket() socket: Socket,
   ) {
-    this.stateService.createOffer(offer, socket.connection);
+    this.stateService.createOffer(offer, socket.data);
   }
 
   @SubscribeMessage(EVENTS.AM_I_RUNNING)
   amIRunningHandler(@ConnectedSocket() socket: Socket) {
-    return socket.connection.rides;
+    return socket.data.rides;
   }
 
   @SubscribeMessage(EVENTS.CANCEL_RIDE)
@@ -57,7 +59,7 @@ export class VoyagersGateway extends Common {
     const now = Date.now();
     const ride = (await this.rideRepository.get({ pid: ridePID })) as Ride;
 
-    const { _id } = socket.connection;
+    const { _id, rides } = socket.data;
 
     this.cancelationSecutiryChecks(ride, _id, "voyager");
 
@@ -65,49 +67,42 @@ export class VoyagersGateway extends Common {
     const { driverSocketId, acceptTimestamp } = offer;
 
     // remove the ride from user rides list
-    const rides = socket.connection.rides as string[];
     const rideIdx = rides.indexOf(ride.pid);
 
     if (rideIdx > -1) {
       rides.splice(rideIdx, 1);
     }
 
-    /**
-     * Safe cancel, no pendencie needed
-     */
-    if ((acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now) {
-      this.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
+    const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
+    const isCreditPayment = ride.payMethod === RidePayMethods.CreditCard;
 
-      // Informe to driver the cancelation event
-      this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
-        ridePID,
-        status: "safe",
-      });
+    const status = isSafeCancel
+      ? CANCELATION_RESPONSE.SAFE
+      : isCreditPayment
+      ? CANCELATION_RESPONSE.CHARGE_REQUESTED
+      : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
 
-      return { status: "safe" };
+    this.stateService.updateDriver(socket.id, { state: DriverState.SEARCHING });
+    this.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
+
+    this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
+      ridePID,
+      status,
+    });
+
+    switch (status) {
+      case CANCELATION_RESPONSE.CHARGE_REQUESTED:
+        // TODO: this.paymentService.requestCharge();
+        break;
+      case CANCELATION_RESPONSE.PENDENCIE_ISSUED:
+        this.createPendencie({
+          ride: ride._id,
+          issuer: ride.voyager,
+          affected: ride.driver,
+        });
+        break;
     }
 
-    /**
-     * Creates a pendencie if the payment method is money
-     */
-    if (ride.payMethod === RidePayMethods.Money) {
-      this.createPendencie({
-        ride,
-        issuer: ride.voyager,
-        affected: ride.driver,
-      });
-
-      // Informe to driver the cancelation event
-      this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
-        ridePID,
-        status: "pendencie-issued",
-      });
-
-      return { status: "pendencie-issued" };
-    }
-
-    // TODO stripe api, request payment charge
-
-    return { status: "safe" };
+    return { status };
   }
 }
