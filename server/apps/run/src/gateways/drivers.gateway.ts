@@ -6,10 +6,17 @@ import {
 } from "@nestjs/websockets";
 import { NAMESPACES } from "../constants";
 import { Common } from "./common";
-import { Pendencie, Ride } from "@app/repositories";
+import {
+  Pendencie,
+  PendencieRepository,
+  Ride,
+  RideRepository,
+  USERS_ROLES,
+} from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
+  EventsInterface,
   DriverState,
   Position,
   Setup,
@@ -19,11 +26,38 @@ import {
   CanceledRide,
   CANCELATION_RESPONSE,
 } from "../events";
-import { Driver } from "@app/auth";
+import { CacheService } from "@app/cache";
+import { SessionService } from "@app/session";
+import { SocketService } from "@app/socket";
+import { StateService } from "../state.service";
+import { PinoLogger } from "nestjs-pino";
 
-@Driver()
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common {
+  role = USERS_ROLES.DRIVER;
+
+  constructor(
+    readonly socketService: SocketService<EventsInterface>,
+    readonly rideRepository: RideRepository,
+    readonly pendencieRepository: PendencieRepository,
+    readonly sessionService: SessionService,
+    readonly stateService: StateService,
+    readonly cacheService: CacheService,
+    readonly logger: PinoLogger,
+  ) {
+    super(
+      socketService,
+      rideRepository,
+      pendencieRepository,
+      sessionService,
+      stateService,
+      cacheService,
+      logger,
+    );
+
+    logger.setContext(DriversGateway.name);
+  }
+
   @SubscribeMessage(EVENTS.POSITION)
   positionEventHandler(
     @MessageBody() position: Position,

@@ -942,7 +942,7 @@ describe("StateService", () => {
       const socketId = "not-in-list";
       service.updateDriver(socketId, { state: DriverState.SEARCHING });
 
-      expect(loggerMock.error).toBeCalled();
+      expect(loggerMock.warn).toBeCalled();
     });
 
     it("should update from node event", async () => {
@@ -970,7 +970,16 @@ describe("StateService", () => {
 
     it("should update and emit", () => {
       const driverState = mockDriverPosition();
-      const updateTo = { state: DriverState.IDLE };
+      const updateTo = {
+        state: DriverState.IDLE,
+        position: {
+          latLng: [-9.575562, -35.779218],
+          heading: 0,
+          kmh: 30,
+          ignored: [],
+          pid: "",
+        },
+      } as any;
 
       service.drivers = [driverState];
 

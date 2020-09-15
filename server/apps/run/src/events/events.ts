@@ -121,7 +121,7 @@ export const serverEventsSchemas = {
   },
 };
 
-export interface Events {
+export interface EventsInterface {
   [EVENTS.CONFIGURATION]: Configuration;
   [EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE]: DriverRideAcceptedResponse;
   [EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE]: VoyagerRideAcceptedResponse;

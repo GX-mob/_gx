@@ -1,14 +1,16 @@
+import { ForbiddenException } from "@nestjs/common";
 import {
   MessageBody,
   SubscribeMessage,
   OnGatewayInit,
+  OnGatewayConnection,
   ConnectedSocket,
 } from "@nestjs/websockets";
 import { SocketService } from "@app/socket";
 import { Server, Socket } from "socket.io";
 import { SessionService } from "@app/session";
 import { CacheService } from "@app/cache";
-import { unique, storageAdapters } from "extensor";
+import { unique, storageAdapters, auth } from "extensor";
 import { StateService } from "../state.service";
 import {
   PendencieRepository,
@@ -20,7 +22,7 @@ import {
   RideQueryInterface,
   RideStatus,
 } from "@app/repositories";
-import { EVENTS, State, Position, Events } from "../events";
+import { EVENTS, State, Position, EventsInterface } from "../events";
 import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
 
@@ -28,26 +30,59 @@ import {
   RideNotFoundException,
   UncancelableRideException,
 } from "../exceptions";
-import { UseGuards } from "@nestjs/common";
-import { WsAuthGuard } from "@app/auth";
+import { PinoLogger } from "nestjs-pino";
 
-@UseGuards(WsAuthGuard)
-export class Common implements OnGatewayInit<Server> {
+export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
   public role!: USERS_ROLES;
 
   constructor(
-    readonly socketService: SocketService<Events>,
+    readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
     readonly sessionService: SessionService,
     readonly stateService: StateService,
     readonly cacheService: CacheService,
-  ) {}
+    readonly logger: PinoLogger,
+  ) {
+    logger.setContext(Common.name);
+  }
 
   afterInit(server: Server) {
+    auth.server(server, async ({ socket, data: { token, p2p } }) => {
+      const session = await this.sessionService.verify(
+        token,
+        socket.handshake.address,
+      );
+
+      const hasPermission = this.sessionService.hasPermission(session, [
+        this.role,
+      ]);
+
+      if (!hasPermission) {
+        throw new ForbiddenException();
+      }
+
+      const { pid, averageEvaluation } = session.user;
+
+      socket.data = await this.stateService.setConnectionData(pid, {
+        _id: session.user._id,
+        pid,
+        mode: this.role,
+        p2p,
+        rate: averageEvaluation,
+        socketId: socket.id,
+      });
+
+      return true;
+    });
     //unique(server, {
     //  storage: new storageAdapters.IORedis(this.cacheService.redis),
+    //  onError: (socket, error) => this.logger.error(error, socket.id)
     //});
+  }
+
+  handleConnection(socket: Socket) {
+    socket.auth.catch(this.logger.warn);
   }
 
   positionEventHandler(position: Position, socket: Socket) {
@@ -63,10 +98,10 @@ export class Common implements OnGatewayInit<Server> {
     this.dispachToObervers(EVENTS.STATE, socket, state);
   }
 
-  dispachToObervers<K extends keyof Events>(
-    event: keyof Events,
+  dispachToObervers<K extends keyof EventsInterface>(
+    event: keyof EventsInterface,
     client: Socket,
-    data: Events[K],
+    data: EventsInterface[K],
     considerP2P = true,
   ) {
     const { observers } = client.data;

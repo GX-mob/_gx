@@ -1,7 +1,7 @@
 import { parsers, auth } from "extensor";
 import io from "socket.io-client";
 
-import { serverEventsSchemas } from "./src/events";
+import { EVENTS, serverEventsSchemas } from "./src/events";
 
 const { parser } = parsers.schemapack(serverEventsSchemas);
 
@@ -13,8 +13,9 @@ client.on("connect", () => {
   console.log("connected");
 
   setInterval(() => {
-    client.emit("state", { state: 1, id: "" });
-  }, 1000);
+    console.log("emit state");
+    client.emit(EVENTS.STATE, { state: 1, id: "" });
+  }, 3000);
 
   setTimeout(() => {
     auth.client(client, { token: "fooba" });

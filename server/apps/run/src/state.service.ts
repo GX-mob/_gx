@@ -8,7 +8,7 @@ import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
 import {
   // Events interface,
-  Events,
+  EventsInterface,
   EVENTS,
   // Enums
   DriverState,
@@ -45,7 +45,7 @@ export class StateService {
   constructor(
     readonly cacheService: CacheService,
     readonly rideRepository: RideRepository,
-    readonly socketService: SocketService<Events>,
+    readonly socketService: SocketService<EventsInterface>,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
   ) {
@@ -74,9 +74,12 @@ export class StateService {
     /**
      * Internal nodes events
      */
-    this.socketService.nodes.on(NODES_EVENTS.UPDATE_DRIVER_STATE, (data) => {
-      this.updateDriver(data.socketId, data.state, true);
-    });
+    this.socketService.nodes.on(
+      NODES_EVENTS.UPDATE_DRIVER_STATE,
+      ({ socketId, state }) => {
+        this.updateDriver(socketId, state, true);
+      },
+    );
   }
 
   /**
@@ -581,7 +584,7 @@ export class StateService {
     // To prevent recursive propagation of the event
     isNodeEvent = false,
   ) {
-    const driver = this.findDriver(socketId, "error");
+    const driver = this.findDriver(socketId, "warn");
     if (!driver) return;
 
     const driverIndex = this.drivers.indexOf(driver);

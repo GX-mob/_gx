@@ -6,10 +6,18 @@ import {
 } from "@nestjs/websockets";
 import { NAMESPACES } from "../constants";
 import { Common } from "./common";
-import { RideStatus, RidePayMethods, Ride } from "@app/repositories";
+import {
+  RideStatus,
+  RidePayMethods,
+  Ride,
+  USERS_ROLES,
+  PendencieRepository,
+  RideRepository,
+} from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
+  EventsInterface,
   Position,
   OfferRequest,
   CancelRide,
@@ -17,12 +25,36 @@ import {
   CANCELATION_RESPONSE,
   DriverState,
 } from "../events";
-import { Voyager } from "@app/auth";
+import { CacheService } from "@app/cache";
+import { SessionService } from "@app/session";
+import { SocketService } from "@app/socket";
+import { StateService } from "../state.service";
+import { PinoLogger } from "nestjs-pino";
 
-@Voyager()
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
-  //public role = USERS_ROLES.VOYAGER;
+  role = USERS_ROLES.VOYAGER;
+  constructor(
+    readonly socketService: SocketService<EventsInterface>,
+    readonly rideRepository: RideRepository,
+    readonly pendencieRepository: PendencieRepository,
+    readonly sessionService: SessionService,
+    readonly stateService: StateService,
+    readonly cacheService: CacheService,
+    readonly logger: PinoLogger,
+  ) {
+    super(
+      socketService,
+      rideRepository,
+      pendencieRepository,
+      sessionService,
+      stateService,
+      cacheService,
+      logger,
+    );
+
+    logger.setContext(VoyagersGateway.name);
+  }
 
   @SubscribeMessage(EVENTS.POSITION)
   positionEventHandler(

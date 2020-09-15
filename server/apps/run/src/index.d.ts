@@ -1,12 +1,12 @@
-import { ConnectionData, Events, State } from "./events";
+import { ConnectionData, EventsInterface, State } from "./events";
 
 declare module "socket.io" {
   interface Socket {
     state: State["state"];
     data: ConnectionData;
-    emit<K extends keyof Events>(
-      event: keyof Events,
-      data: Events[K],
+    emit<K extends keyof EventsInterface>(
+      event: keyof EventsInterface,
+      data: EventsInterface[K],
       callback?: any,
     ): boolean;
   }
