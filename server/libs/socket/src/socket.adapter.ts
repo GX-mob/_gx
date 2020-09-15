@@ -13,9 +13,7 @@ export class SocketAdapter extends IoAdapter {
   ) {
     super(app);
 
-    this.socketService = app
-      .select(SocketModule)
-      .get(SocketService, { strict: true });
+    this.socketService = app.select(SocketModule).get(SocketService);
   }
   createIOServer(port: number, options: any = {}): any {
     const server: Server = super.createIOServer(port, {

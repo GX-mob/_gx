@@ -7,12 +7,6 @@ import { SocketModule, SocketService } from "@app/socket";
 
 @Module({
   imports: [SocketModule],
-  providers: [
-    StateService,
-    SessionService,
-    SocketService,
-    VoyagersGateway,
-    DriversGateway,
-  ],
+  providers: [StateService, SessionService, VoyagersGateway, DriversGateway],
 })
 export class GatewaysModule {}

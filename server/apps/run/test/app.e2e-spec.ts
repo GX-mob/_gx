@@ -3,29 +3,33 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import { PinoLogger } from "nestjs-pino";
+import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { AppModule } from "../src/app.module";
 import IOClient, { Socket } from "socket.io-client";
-//@ts-ignore
-import IORedisMock from "ioredis-mock";
+import IORedis from "ioredis";
 import { Server } from "http";
 import { parsers, auth } from "extensor";
-import { serverEventsSchemas } from "../src/events";
+import { EVENTS, serverEventsSchemas, Position } from "../src/events";
 import { NAMESPACES } from "../src/constants";
-import { SocketAdapter } from "@app/socket";
-import { RepositoryService, User, USERS_ROLES } from "@app/repositories";
+import { SocketAdapter, SocketModule, SocketService } from "@app/socket";
+import {
+  RepositoryModule,
+  RepositoryService,
+  User,
+  USERS_ROLES,
+} from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 //import { startDatabase } from "scripts/setup-dev-database";
-import { SessionService } from "@app/session";
+import { SessionModule, SessionService } from "@app/session";
+import { StateService } from "../src/state.service";
+import { ConfigModule } from "@nestjs/config";
+import { MATCH, OFFER } from "../src/configuration/state.config";
+import { GatewaysModule } from "../src/gateways/gateways.module";
+import { CacheModule } from "@app/cache";
 
 describe("RunService (e2e)", () => {
   const parser = parsers.schemapack(serverEventsSchemas);
-
-  const redis = {
-    pubClient: new IORedisMock(),
-    subClient: new IORedisMock(),
-  };
 
   let httpServerNode1: Server;
   let httpServerNode2: Server;
@@ -40,9 +44,8 @@ describe("RunService (e2e)", () => {
     hasPermission: jest.fn(),
   };
 
-  const stateService = {
-    setConnectionData: jest.fn(),
-  };
+  let stateService1: StateService;
+  let stateService2: StateService;
 
   function mockUser(override: Partial<User> = {}): User {
     const user: User = {
@@ -63,7 +66,20 @@ describe("RunService (e2e)", () => {
 
   async function mockNodeApplication() {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: ".development.env",
+          load: [MATCH, OFFER],
+        }),
+        LoggerModule.forRoot({
+          pinoHttp: { prettyPrint: process.env.NODE_ENV !== "production" },
+        }),
+        CacheModule,
+        RepositoryModule,
+        SessionModule,
+        GatewaysModule,
+      ],
     })
       .overrideProvider(PinoLogger)
       .useValue({
@@ -80,6 +96,13 @@ describe("RunService (e2e)", () => {
 
     const appNode = moduleFixture.createNestApplication();
 
+    const redis = {
+      pubClient: new IORedis(process.env.REDIS_HOST),
+      subClient: new IORedis(process.env.REDIS_HOST),
+    };
+
+    const parser = parsers.schemapack(serverEventsSchemas);
+
     appNode.useWebSocketAdapter(
       new SocketAdapter(appNode, {
         parser,
@@ -93,12 +116,17 @@ describe("RunService (e2e)", () => {
       }),
     );
 
+    await appNode.init();
+
     return appNode;
   }
 
   beforeEach(async () => {
     appNode1 = await mockNodeApplication();
     appNode2 = await mockNodeApplication();
+
+    stateService1 = appNode1.get(StateService);
+    stateService2 = appNode2.get(StateService);
 
     await appNode1.listen(0);
     await appNode2.listen(0);
@@ -127,7 +155,11 @@ describe("RunService (e2e)", () => {
   });
 
   afterEach(async () => {
+    jest.resetAllMocks();
+    voyagerClient.close();
+    driverClient.close();
     await appNode1.close();
+    await appNode2.close();
   });
 
   describe("Authorizations", () => {
@@ -186,8 +218,82 @@ describe("RunService (e2e)", () => {
     });
   });
 
-  describe("Observables dispatchs", () => {
-    it("should dispatch", () => {});
-    it("should ignore p2p connected users", () => {});
+  describe("Observables events", () => {
+    it("should dispatch", async (done) => {
+      const voyagerMock = mockUser();
+      const driverMock = mockUser({
+        roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
+      });
+      const voyagerToken = "voyagerToken";
+      const driverToken = "driverToken";
+
+      sessionService.verify.mockImplementation((token) => {
+        return ({
+          [voyagerToken]: { user: voyagerMock },
+          [driverToken]: { user: driverMock },
+        } as any)[token];
+      });
+
+      // Voyager node call
+      jest.spyOn(stateService1, "setConnectionData").mockImplementation(
+        async () =>
+          ({
+            pid: voyagerMock.pid,
+            observers: [{ socketId: driverClient.id, p2p: false }],
+          } as any),
+      );
+
+      // Driver node call
+      jest.spyOn(stateService2, "setConnectionData").mockImplementation(
+        async () =>
+          ({
+            pid: driverMock.pid,
+            observers: [{ socketId: voyagerClient.id, p2p: false }],
+          } as any),
+      );
+
+      sessionService.hasPermission.mockReturnValue(true);
+
+      const voyagerConnect = fromEvent(voyagerClient, "connect");
+      const driverConnect = fromEvent(driverClient, "connect");
+
+      voyagerClient.connect();
+      driverClient.connect();
+
+      await new Promise((resolve) =>
+        combineLatest([voyagerConnect, driverConnect]).subscribe(resolve),
+      );
+
+      const voyagerAuth = from(
+        auth.client(voyagerClient, { token: voyagerToken }).catch(() => {}),
+      );
+      const driverAuth = from(
+        auth.client(driverClient, { token: driverToken }).catch(() => {}),
+      );
+
+      await new Promise((resolve) =>
+        combineLatest([voyagerAuth, driverAuth]).subscribe(resolve),
+      );
+
+      const positionBody: Position = {
+        latLng: [1, 1],
+        heading: 0,
+        kmh: 30,
+        ignore: [],
+        pid: "foo",
+      };
+
+      driverClient.emit(EVENTS.POSITION, positionBody);
+
+      fromEvent(voyagerClient, EVENTS.POSITION).subscribe((position) => {
+        expect(position).toStrictEqual({
+          ...positionBody,
+          pid: driverMock.pid,
+        });
+
+        done();
+      });
+    });
+    //it("should ignore p2p connected users", () => {});
   });
 });

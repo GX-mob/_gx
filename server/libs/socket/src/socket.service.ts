@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 import Redis from "ioredis";
-import { Server, Adapter } from "socket.io";
+import { Server, Adapter, Socket } from "socket.io";
 import redisIoAdapter from "socket.io-redis";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
@@ -118,10 +118,11 @@ export class SocketService<Events = { [k: string]: any }> {
   private handleDispatchedSocketEvent(content: DispatchedEvent, cb: Callback) {
     const { socketId, event, data, ack } = content;
 
-    if (!(socketId in this.server.sockets.connected)) {
+    const socket = this.getSocket(socketId);
+
+    if (!socket) {
       return cb(null);
     }
-    const socket = this.server.sockets.connected[socketId];
 
     if (!ack) {
       socket.emit(event, data);
@@ -158,13 +159,30 @@ export class SocketService<Events = { [k: string]: any }> {
     data: Events[K],
     callback?: Callback,
   ) {
-    const { connected } = this.server.sockets;
+    const socket = this.getSocket(socketId);
 
-    if (socketId in connected) {
-      return (connected[socketId] as any).emit(event, data, callback);
+    if (!socket) {
+      return this.dispatchSocketEvent(
+        socketId,
+        event as string,
+        data,
+        callback,
+      );
     }
 
-    this.dispatchSocketEvent(socketId, event as string, data, callback);
+    return (socket as any).emit(event, data, callback);
+  }
+
+  getSocket(id: string): Socket | null {
+    const split = id.split("#");
+
+    if (split.length === 0) {
+      return this.server.of("/").sockets[id] || null;
+    }
+
+    const [namespace] = split;
+
+    return this.server.of(namespace).sockets[id] || null;
   }
 
   private dispatchSocketEvent(

@@ -6,6 +6,7 @@ import { MATCH, OFFER } from "./configuration/state.config";
 import { RepositoryModule } from "@app/repositories";
 import { CacheModule } from "@app/cache";
 import { SessionModule } from "@app/session";
+import { SocketModule } from "@app/socket";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SessionModule } from "@app/session";
     }),
     CacheModule,
     RepositoryModule,
+    SocketModule,
     SessionModule,
     GatewaysModule,
   ],

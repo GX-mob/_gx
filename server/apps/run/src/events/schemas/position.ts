@@ -19,7 +19,7 @@ export type Position = {
   /**
    * Ignored watchers that already receive the event by the P2P connection
    */
-  ignored: string[];
+  ignore: string[];
   pid: string;
 };
 

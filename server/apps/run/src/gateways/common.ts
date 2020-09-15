@@ -25,7 +25,6 @@ import {
 import { EVENTS, State, Position, EventsInterface } from "../events";
 import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
-
 import {
   RideNotFoundException,
   UncancelableRideException,
@@ -62,10 +61,10 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
         throw new ForbiddenException();
       }
 
-      const { pid, averageEvaluation } = session.user;
+      const { _id, pid, averageEvaluation } = session.user;
 
       socket.data = await this.stateService.setConnectionData(pid, {
-        _id: session.user._id,
+        _id,
         pid,
         mode: this.role,
         p2p,
