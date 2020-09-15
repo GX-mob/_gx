@@ -8,7 +8,7 @@ import { SocketService } from "@app/socket";
 import { Server, Socket } from "socket.io";
 import { SessionService } from "@app/session";
 import { CacheService } from "@app/cache";
-import { auth, unique, storageAdapters } from "extensor";
+import { unique, storageAdapters } from "extensor";
 import { StateService } from "../state.service";
 import {
   PendencieRepository,

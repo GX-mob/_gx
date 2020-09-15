@@ -1,9 +1,0 @@
-{
-  "title": "Update Profile Body Schema",
-  "type": "object",
-  "properties": {
-    "firstName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" },
-    "lastName": { "type": "string", "pattern": "^[A-Za-z'-]{2,}$" }
-  },
-  "additionalProperties": false
-}

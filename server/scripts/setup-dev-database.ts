@@ -6,6 +6,7 @@ import {
   PriceModel,
   UserModel,
   RideModel,
+  //@ts-ignore
 } from "../dist/apps/common/libs/repositories/src";
 import chalk from "chalk";
 import faker from "faker";

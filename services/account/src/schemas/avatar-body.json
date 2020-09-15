@@ -1,9 +1,0 @@
-{
-  "title": "Update Avatar Body Schema",
-  "type": "object",
-  "properties": {
-    "file": { "type": "object" }
-  },
-  "additionalProperties": false,
-  "required": ["file"]
-}

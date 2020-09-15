@@ -4,15 +4,9 @@ import {
   WebSocketGateway,
   ConnectedSocket,
 } from "@nestjs/websockets";
-import { NAMESPACES, CANCELATION, CANCELATION_EXCEPTIONS } from "../constants";
+import { NAMESPACES } from "../constants";
 import { Common } from "./common";
-import {
-  USERS_ROLES,
-  Pendencie,
-  RideStatus,
-  RidePayMethods,
-  Ride,
-} from "@app/repositories";
+import { RideStatus, RidePayMethods, Ride } from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,

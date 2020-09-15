@@ -19,7 +19,6 @@ import {
   CanceledRide,
   CANCELATION_RESPONSE,
 } from "../events";
-import { CANCELATION } from "../constants";
 import { Driver } from "@app/auth";
 
 @Driver()

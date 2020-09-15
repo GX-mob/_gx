@@ -1,9 +1,0 @@
-{
-  "title": "Disable 2FA Body Schema",
-  "type": "object",
-  "properties": {
-    "password": { "type": "string", "pattern": "^(?=.*\\d)(?=.*[a-z]).{4,}$" }
-  },
-  "additionalProperties": false,
-  "required": ["password"]
-}

@@ -5,6 +5,7 @@ import { LoggerModule } from "nestjs-pino";
 import { MATCH, OFFER } from "./configuration/state.config";
 import { RepositoryModule } from "@app/repositories";
 import { CacheModule } from "@app/cache";
+import { SessionModule } from "@app/session";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CacheModule } from "@app/cache";
     }),
     CacheModule,
     RepositoryModule,
+    SessionModule,
     GatewaysModule,
   ],
   providers: [],
