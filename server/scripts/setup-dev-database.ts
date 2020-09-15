@@ -22,8 +22,8 @@ export async function createReplSetServer() {
   return mongoReplSetServer.getUri();
 }
 
-export async function startDatabase() {
-  log("MongoDB", chalk`{yellow Starting Server}`);
+export async function startDatabase(logging: boolean = true) {
+  logging && log("MongoDB", chalk`{yellow Starting Server}`);
 
   const mongoReplSetServer = new MongoMemoryReplSet({
     replSet: { storageEngine: "wiredTiger" },
@@ -33,16 +33,21 @@ export async function startDatabase() {
 
   process.env.DATABASE_URI = await mongoReplSetServer.getUri();
 
-  log("MongoDB", chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`);
-  log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
-  log("MongoDB", chalk`{yellow Seeding...}`);
-  await seedDatabase();
-  log("MongoDB", chalk`{yellow Seeded.}`);
+  logging &&
+    log(
+      "MongoDB",
+      chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`,
+    );
+  logging &&
+    log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
+  logging && log("MongoDB", chalk`{yellow Seeding...}`);
+  await seedDatabase(logging);
+  logging && log("MongoDB", chalk`{yellow Seeded.}`);
 
   return mongoReplSetServer;
 }
 
-export async function seedDatabase() {
+export async function seedDatabase(logging: boolean = true) {
   const db = new RepositoryService(
     { get: () => process.env.DATABASE_URI },
     { setContext: () => {}, error: console.log, info: () => {} },
@@ -50,7 +55,8 @@ export async function seedDatabase() {
 
   await Promise.all(db.connections);
 
-  log("MongoDB", chalk`{yellow Seeding rides service configuration...}`);
+  logging &&
+    log("MongoDB", chalk`{yellow Seeding rides service configuration...}`);
 
   const rideType1: PriceDetail = {
     type: 1,
@@ -97,7 +103,7 @@ export async function seedDatabase() {
 
   await Promise.all([PriceModel.create(prices)]);
 
-  log("MongoDB", chalk`{yellow Seeding users...}`);
+  logging && log("MongoDB", chalk`{yellow Seeding users...}`);
   // Create voyager user
   const voyager = await UserModel.create({
     pid: "1",
@@ -121,7 +127,7 @@ export async function seedDatabase() {
     roles: ["voyager", "driver"],
   });
 
-  log("MongoDB", chalk`{yellow Seeding some rides...}`);
+  logging && log("MongoDB", chalk`{yellow Seeding some rides...}`);
   // generate some user rides
   for (let i = 0; i < 5; ++i) {
     const durationTotal = faker.random.number({ min: 1, max: 7 });

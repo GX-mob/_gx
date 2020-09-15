@@ -45,9 +45,9 @@ export class Common implements OnGatewayInit<Server> {
   ) {}
 
   afterInit(server: Server) {
-    unique(server, {
-      storage: new storageAdapters.IORedis(this.cacheService.redis),
-    });
+    //unique(server, {
+    //  storage: new storageAdapters.IORedis(this.cacheService.redis),
+    //});
   }
 
   positionEventHandler(position: Position, socket: Socket) {

@@ -1,9 +1,9 @@
 import { parsers, auth } from "extensor";
 import io from "socket.io-client";
 
-import { schemas } from "./src/schemas/index";
+import { serverEventsSchemas } from "./src/events";
 
-const { parser } = parsers.schemapack(schemas);
+const { parser } = parsers.schemapack(serverEventsSchemas);
 
 const client = io("http://localhost:3001/voyagers", { parser } as any);
 

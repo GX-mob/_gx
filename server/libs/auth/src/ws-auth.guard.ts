@@ -27,7 +27,8 @@ export class WsAuthGuard implements CanActivate {
     const wsContext = context.switchToWs();
     const data = wsContext.getData();
 
-    console.log(data);
+    console.log("@@", roles);
+    console.log("@@", data);
     return true;
     /*
     const request: FastifyRequest = context.switchToHttp().getRequest();
