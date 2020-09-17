@@ -1,3 +1,5 @@
+import { EVENTS } from "./events";
+
 export enum NAMESPACES {
   VOYAGERS = "/voyagers",
   DRIVERS = "/drivers",
@@ -34,3 +36,12 @@ export enum EXCEPTIONS {
   RIDE_NOT_FOUND = "RIDE_NOT_FOUND",
   UNCANCELABLE_RIDE = "UNCANCELABLE_RIDE",
 }
+
+export const BROADCASTED_EVENTS = {
+  [NAMESPACES.DRIVERS]: [
+    EVENTS.POSITION,
+    EVENTS.DRIVER_SETUP,
+    EVENTS.OFFER_RESPONSE,
+    EVENTS.CONFIGURATION,
+  ],
+};

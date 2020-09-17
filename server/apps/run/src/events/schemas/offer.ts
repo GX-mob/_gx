@@ -50,5 +50,5 @@ export type OfferServer = {
 };
 
 export const offerSchema = {
-  riderPID: "string",
+  ridePID: "string",
 };

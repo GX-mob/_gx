@@ -65,11 +65,12 @@ export class VoyagersGateway extends Common {
   }
 
   @SubscribeMessage(EVENTS.OFFER)
-  offerEventHandler(
+  async offerEventHandler(
     @MessageBody() offer: OfferRequest,
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() client: Socket,
   ) {
-    this.stateService.createOffer(offer, socket.data);
+    await this.stateService.createOffer(offer, client);
+    return true;
   }
 
   @SubscribeMessage(EVENTS.AM_I_RUNNING)

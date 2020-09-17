@@ -30,6 +30,7 @@ import {
   ConnectionDataNotFoundException,
   RideNotFoundException,
 } from "./exceptions";
+import { Socket } from "socket.io";
 
 @Injectable()
 export class StateService {
@@ -97,15 +98,17 @@ export class StateService {
     }
 
     const driver = this.findDriver(socketId);
-    const driverObject = {
+    const driverObject: Driver = {
       ...connectionData,
       socketId,
       position: setup.position,
       config: setup.config,
+      state: DriverState.SEARCHING,
     };
 
     if (!driver) {
-      return this.drivers.push(driverObject);
+      this.drivers.push(driverObject);
+      return;
     }
 
     const driverIndex = this.drivers.indexOf(driver);
@@ -197,13 +200,14 @@ export class StateService {
     const acceptTimestamp = Date.now();
 
     // Store to decide in the future whether to generate a pendencie in a cancelation event
+    const { offerResponseTimeout, ...offerStoreData } = offer;
     await util.retry(
       () =>
         this.cacheService.set(
           CACHE_NAMESPACES.OFFERS,
           offer.ride.pid,
           {
-            ...offer,
+            ...offerStoreData,
             driverSocketId: (driverConnectionData as ConnectionData).socketId,
             acceptTimestamp,
           },
@@ -279,7 +283,7 @@ export class StateService {
 
   async createOffer(
     offer: OfferRequest,
-    connection: ConnectionData,
+    client: Socket,
     startOffer = true,
   ): Promise<boolean> {
     const ride = await this.rideRepository.get({ pid: offer.ridePID });
@@ -290,7 +294,7 @@ export class StateService {
 
     const offerObject: OfferServer = {
       ride,
-      requesterSocketId: connection.socketId,
+      requesterSocketId: client.id,
       ignoreds: [],
       offeredTo: null,
       offerResponseTimeout: null,
@@ -429,15 +433,17 @@ export class StateService {
          * Not match with the driver configured district
          */
         (current.config.drops[0] !== "any" &&
-          !current.config.drops.includes(ride.route.end.district)) ||
+          !(current.config.drops as string[]).includes(
+            ride.route.end.district,
+          )) ||
         /**
          * Not match with the driver configured pay method
          */
-        current.config.payMethods.includes(ride.payMethod) ||
+        !current.config.payMethods.includes(ride.payMethod) ||
         /**
          * The driver not accept or cannot serve the ride type
          */
-        current.config.types.includes(ride.type) ||
+        !current.config.types.includes(ride.type) ||
         /**
          * Not eligible, for now, but can be in future
          */
@@ -484,7 +490,7 @@ export class StateService {
       );
 
       await new Promise((resolve) => setTimeout(resolve, iterationInterval));
-      return await this.match(offer, nextList, runTimes);
+      return this.match(offer, nextList, runTimes);
     }
 
     return choiced;
@@ -554,7 +560,7 @@ export class StateService {
     data: Partial<ConnectionData>,
   ): Promise<ConnectionData> {
     return this.setOrUpdateCache(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
-      link: ["socketId"],
+      link: [data.socketId as string],
       ex: CACHE_TTL.CONNECTIONS,
     });
   }

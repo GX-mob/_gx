@@ -127,10 +127,7 @@ export async function retry<T>(
         exponential ? interval * 2 : interval,
         exponential,
       );
-    } else
-      throw new Error(
-        `Max retries reached for function ${fn.name}, last error: ${error.message}`,
-      );
+    } else throw error;
   }
 }
 

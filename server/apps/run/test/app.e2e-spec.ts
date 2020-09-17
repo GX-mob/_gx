@@ -1,100 +1,78 @@
 /**
  * @group e2e/run
  */
+import { Server as HttpServer } from "http";
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import { LoggerModule, PinoLogger } from "nestjs-pino";
+import { PinoLogger } from "nestjs-pino";
 import { AppModule } from "../src/app.module";
+import { Server } from "socket.io";
 import IOClient, { Socket } from "socket.io-client";
 import IORedis from "ioredis";
-import { Server } from "http";
 import { parsers, auth } from "extensor";
-import { EVENTS, serverEventsSchemas, Position } from "../src/events";
-import { NAMESPACES } from "../src/constants";
-import { SocketAdapter, SocketModule, SocketService } from "@app/socket";
 import {
-  RepositoryModule,
+  EVENTS,
+  serverEventsSchemas,
+  Position,
+  OfferRequest,
+  Setup,
+  ConnectionData,
+  OfferResponse,
+} from "../src/events";
+import { EXCEPTIONS, NAMESPACES } from "../src/constants";
+import { SocketAdapter, SocketService } from "@app/socket";
+import {
   RepositoryService,
+  Ride,
+  RidePayMethods,
+  RideRepository,
+  RideStatus,
+  RideTypes,
+  TRoute,
   User,
   USERS_ROLES,
 } from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
-//import { startDatabase } from "scripts/setup-dev-database";
-import { SessionModule, SessionService } from "@app/session";
+import { SessionService } from "@app/session";
 import { StateService } from "../src/state.service";
-import { ConfigModule } from "@nestjs/config";
-import { MATCH, OFFER } from "../src/configuration/state.config";
-import { GatewaysModule } from "../src/gateways/gateways.module";
-import { CacheModule } from "@app/cache";
+import { BROADCASTED_EVENTS } from "../src/constants";
+import { CacheService } from "@app/cache";
+import { UserRepository } from "@app/repositories";
+import { AddressInfo } from "net";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 
-describe("RunService (e2e)", () => {
+import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
+
+describe("RidesWSService (e2e)", () => {
+  let replSetServer: MongoMemoryReplSet;
+
+  const appsNodes: {
+    httpServer: HttpServer;
+    app: INestApplication;
+    userRepository: UserRepository;
+    rideRepository: RideRepository;
+    sessionService: SessionService;
+  }[] = [];
+  // Voyager, Voyager, Driver, Driver
+  let users: User[] = [];
+
   const parser = parsers.schemapack(serverEventsSchemas);
 
-  let httpServerNode1: Server;
-  let httpServerNode2: Server;
-  let appNode1: INestApplication;
-  let appNode2: INestApplication;
-
-  let voyagerClient: typeof Socket; // connects to node 1
-  let driverClient: typeof Socket; // connects to node 2
-
-  const sessionService = {
-    verify: jest.fn(),
-    hasPermission: jest.fn(),
-  };
-
-  let stateService1: StateService;
-  let stateService2: StateService;
-
-  function mockUser(override: Partial<User> = {}): User {
-    const user: User = {
-      _id: faker.random.alphaNumeric(12),
-      pid: faker.random.alphaNumeric(12),
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      cpf: "123.456.789-09",
-      phones: [faker.phone.phoneNumber()],
-      emails: [faker.internet.email()],
-      birth: faker.date.past(18),
-      averageEvaluation: faker.random.number({ min: 1, max: 5 }),
-      roles: [USERS_ROLES.VOYAGER],
-      ...override,
-    };
-    return user;
-  }
-
-  async function mockNodeApplication() {
+  async function createAppNode() {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          envFilePath: ".development.env",
-          load: [MATCH, OFFER],
-        }),
-        LoggerModule.forRoot({
-          pinoHttp: { prettyPrint: process.env.NODE_ENV !== "production" },
-        }),
-        CacheModule,
-        RepositoryModule,
-        SessionModule,
-        GatewaysModule,
-      ],
+      imports: [AppModule],
     })
       .overrideProvider(PinoLogger)
       .useValue({
         setContext: () => {},
-        error: () => {},
+        error: console.log,
         info: () => {},
         warn: () => {},
       })
-      .overrideProvider(RepositoryService)
-      .useValue({})
-      .overrideProvider(SessionService)
-      .useValue(sessionService)
       .compile();
 
-    const appNode = moduleFixture.createNestApplication();
+    const app = moduleFixture.createNestApplication();
 
     const redis = {
       pubClient: new IORedis(process.env.REDIS_HOST),
@@ -103,197 +81,245 @@ describe("RunService (e2e)", () => {
 
     const parser = parsers.schemapack(serverEventsSchemas);
 
-    appNode.useWebSocketAdapter(
-      new SocketAdapter(appNode, {
+    app.useWebSocketAdapter(
+      new SocketAdapter(app, {
         parser,
         redis,
-        broadcastedEvents: [
-          "setup",
-          "position",
-          "offerResponse",
-          "configuration",
-        ],
+        broadcastedEvents: BROADCASTED_EVENTS,
       }),
     );
 
-    await appNode.init();
+    await app.init();
 
-    return appNode;
+    const httpServer = app.getHttpServer();
+    // Repositories
+    const userRepository = app.get(UserRepository);
+    const rideRepository = app.get(RideRepository);
+    // Services
+    const sessionService = app.get(SessionService);
+    const appIdx = appsNodes.push({
+      app,
+      httpServer,
+      userRepository,
+      rideRepository,
+      sessionService,
+    });
+
+    app.get(SocketService).nodeId = `APP_NODE_${appIdx}`;
+
+    return appsNodes[appIdx];
   }
 
-  beforeEach(async () => {
-    appNode1 = await mockNodeApplication();
-    appNode2 = await mockNodeApplication();
+  async function createMockUsers() {
+    const [{ userRepository }] = appsNodes;
 
-    stateService1 = appNode1.get(StateService);
-    stateService2 = appNode2.get(StateService);
-
-    await appNode1.listen(0);
-    await appNode2.listen(0);
-
-    httpServerNode1 = appNode1.getHttpServer();
-    httpServerNode2 = appNode2.getHttpServer();
-
-    const httpServerAddr1 = httpServerNode1.address() as any;
-    const httpServerAddr2 = httpServerNode2.address() as any;
-
-    voyagerClient = IOClient(
-      `ws://localhost:${httpServerAddr1.port}${NAMESPACES.VOYAGERS}`,
-      {
-        autoConnect: false,
-        parser: parser.parser,
-      } as any,
-    );
-
-    driverClient = IOClient(
-      `ws://localhost:${httpServerAddr2.port}${NAMESPACES.DRIVERS}`,
-      {
-        autoConnect: false,
-        parser: parser.parser,
-      } as any,
-    );
-  });
-
-  afterEach(async () => {
-    jest.resetAllMocks();
-    voyagerClient.close();
-    driverClient.close();
-    await appNode1.close();
-    await appNode2.close();
-  });
-
-  describe("Authorizations", () => {
-    it("should connect", (done) => {
-      const voyagerMock = mockUser();
-      const driverMock = mockUser({
-        roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
-      });
-      const voyagerToken = "voyagerToken";
-      const driverToken = "driverToken";
-
-      sessionService.verify.mockImplementation((token) => {
-        return ({
-          [voyagerToken]: { user: voyagerMock },
-          [driverToken]: { user: driverMock },
-        } as any)[token];
-      });
-
-      sessionService.hasPermission.mockReturnValue(true);
-
-      const voyagerConnect = fromEvent(voyagerClient, "connect");
-      const driverConnect = fromEvent(driverClient, "connect");
-
-      combineLatest([voyagerConnect, driverConnect]).subscribe(() => {
-        const voyagerAuth = from(
-          auth.client(voyagerClient, { token: voyagerToken }).catch(() => {}),
-        );
-        const driverAuth = from(
-          auth.client(driverClient, { token: driverToken }).catch(() => {}),
-        );
-
-        combineLatest([voyagerAuth, driverAuth]).subscribe(() => {
-          expect(voyagerClient.connected).toBeTruthy();
-          expect(driverClient.connected).toBeTruthy();
-          done();
-        });
-      });
-
-      voyagerClient.connect();
-      driverClient.connect();
+    const voyager1 = mockUser();
+    const voyager2 = mockUser();
+    const driver1 = mockUser({
+      roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
+    });
+    const driver2 = mockUser({
+      roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
     });
 
-    it("should throw ForbiddenException", (done) => {
-      const voyagerMock = mockUser();
-      sessionService.verify.mockResolvedValue({ user: voyagerMock });
+    users = await Promise.all([
+      userRepository.create(voyager1),
+      userRepository.create(voyager2),
+      userRepository.create(driver1),
+      userRepository.create(driver2),
+    ]);
+  }
 
-      sessionService.hasPermission.mockReturnValue(false);
+  beforeAll(async () => {
+    replSetServer = await createReplSetServer();
+    process.env.DATABASE_URI = await replSetServer.getUri();
+    process.env.REDIS_URI = `redis://${process.env.REDIS_HOST}:6379/0`;
 
-      voyagerClient.connect();
-      voyagerClient.on("connect", () => {
-        auth.client(voyagerClient, { token: 1 }, (err) => {
-          expect((err as Error).message).toBe("Forbidden");
-          done();
-        });
-      });
+    await createAppNode();
+    await createAppNode();
+
+    const [node1, node2] = appsNodes;
+
+    await createMockUsers();
+
+    await node1.app.listen(0);
+    await node2.app.listen(0);
+  });
+
+  function createUserSocket(
+    appNodeIndex: number,
+    user: User,
+    namespace?: NAMESPACES,
+    options: SocketIOClient.ConnectOpts = {},
+  ) {
+    const { httpServer } = appsNodes[appNodeIndex];
+    const { port } = httpServer.address() as AddressInfo;
+
+    namespace =
+      namespace || user.roles.includes(USERS_ROLES.DRIVER)
+        ? NAMESPACES.DRIVERS
+        : NAMESPACES.VOYAGERS;
+
+    return IOClient(`ws://localhost:${port}${namespace}`, {
+      ...options,
+      parser: parser.parser,
+    } as any);
+  }
+
+  async function authorizeClient(
+    appNodeIdx: number,
+    socket: SocketIOClient.Socket,
+    user: User | string,
+  ) {
+    const { sessionService } = appsNodes[appNodeIdx];
+    const token =
+      typeof user === "string"
+        ? user
+        : (
+            await sessionService.create(
+              user,
+              `Testing Client ${appNodeIdx}/${user.pid}`,
+              faker.internet.ip(),
+            )
+          ).token;
+
+    await auth.client(socket, { token });
+
+    return token;
+  }
+
+  afterAll(async () => {
+    await Promise.all(appsNodes.map(({ app }) => app.close()));
+    await replSetServer.stop();
+  });
+
+  let voyager1Token: string;
+
+  describe("Connection", () => {
+    it("should deny due to provide an invalid token", async () => {
+      const [voyager] = users;
+      const voyagerSocket = createUserSocket(0, voyager);
+
+      await expect(
+        auth.client(voyagerSocket, {
+          token: "xxxxx.yyyyy.zzzzz",
+        }),
+      ).rejects.toStrictEqual(new Error("invalid token"));
+    });
+
+    it("should authorize", async () => {
+      const [voyager] = users;
+      const voyagerSocket = createUserSocket(0, voyager);
+
+      voyager1Token = await authorizeClient(0, voyagerSocket, voyager);
+    });
+
+    it("should throw ForbiddenException due to voyager trys acces drivers namesáce", async () => {
+      const [voyager] = users;
+      const voyagerSocket = createUserSocket(0, voyager, NAMESPACES.DRIVERS);
+
+      await expect(
+        authorizeClient(0, voyagerSocket, voyager1Token),
+      ).rejects.toStrictEqual(new Error("Forbidden"));
     });
   });
 
-  describe("Observables events", () => {
-    it("should dispatch", async (done) => {
-      const voyagerMock = mockUser();
-      const driverMock = mockUser({
-        roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
+  describe("Ride workflows", () => {
+    it("Simple offer workflow", async () => {
+      const [voyager, , driver1, driver2] = users;
+      const voyagerSocket = createUserSocket(0, voyager);
+      const driver1Socket = createUserSocket(1, driver1);
+      const driver2Socket = createUserSocket(0, driver2);
+
+      const rideVoyager1 = mockRide({ voyager: voyager._id });
+
+      await appsNodes[0].rideRepository.create(rideVoyager1);
+
+      await Promise.all([
+        authorizeClient(0, voyagerSocket, voyager1Token),
+        authorizeClient(1, driver1Socket, driver1),
+        authorizeClient(0, driver2Socket, driver2),
+      ]);
+
+      const driver1Setup: Setup = mockDriverSetup();
+      const driver2Setup: Setup = mockDriverSetup({
+        config: {
+          payMethods: [RidePayMethods.CreditCard],
+          types: [RideTypes.Normal],
+          drops: ["any"],
+        },
       });
-      const voyagerToken = "voyagerToken";
-      const driverToken = "driverToken";
 
-      sessionService.verify.mockImplementation((token) => {
-        return ({
-          [voyagerToken]: { user: voyagerMock },
-          [driverToken]: { user: driverMock },
-        } as any)[token];
-      });
-
-      // Voyager node call
-      jest.spyOn(stateService1, "setConnectionData").mockImplementation(
-        async () =>
-          ({
-            pid: voyagerMock.pid,
-            observers: [{ socketId: driverClient.id, p2p: false }],
-          } as any),
-      );
-
-      // Driver node call
-      jest.spyOn(stateService2, "setConnectionData").mockImplementation(
-        async () =>
-          ({
-            pid: driverMock.pid,
-            observers: [{ socketId: voyagerClient.id, p2p: false }],
-          } as any),
-      );
-
-      sessionService.hasPermission.mockReturnValue(true);
-
-      const voyagerConnect = fromEvent(voyagerClient, "connect");
-      const driverConnect = fromEvent(driverClient, "connect");
-
-      voyagerClient.connect();
-      driverClient.connect();
-
+      // Drivers setup
       await new Promise((resolve) =>
-        combineLatest([voyagerConnect, driverConnect]).subscribe(resolve),
+        driver1Socket.emit(EVENTS.DRIVER_SETUP, driver1Setup, resolve),
       );
-
-      const voyagerAuth = from(
-        auth.client(voyagerClient, { token: voyagerToken }).catch(() => {}),
-      );
-      const driverAuth = from(
-        auth.client(driverClient, { token: driverToken }).catch(() => {}),
-      );
-
       await new Promise((resolve) =>
-        combineLatest([voyagerAuth, driverAuth]).subscribe(resolve),
+        driver2Socket.emit(EVENTS.DRIVER_SETUP, driver2Setup, resolve),
       );
 
-      const positionBody: Position = {
-        latLng: [1, 1],
-        heading: 0,
-        kmh: 30,
-        ignore: [],
-        pid: "foo",
-      };
+      // Voyager 1 offer request
+      voyagerSocket.emit(EVENTS.OFFER, { ridePID: rideVoyager1.pid });
 
-      driverClient.emit(EVENTS.POSITION, positionBody);
+      const offer = await fromEventAsync(driver1Socket, EVENTS.OFFER);
 
-      fromEvent(voyagerClient, EVENTS.POSITION).subscribe((position) => {
-        expect(position).toStrictEqual({
-          ...positionBody,
-          pid: driverMock.pid,
-        });
+      expect(offer).toStrictEqual({ ridePID: rideVoyager1.pid });
 
-        done();
+      driver1Socket.emit(EVENTS.OFFER_RESPONSE, {
+        ridePID: offer.ridePID,
+        response: true,
+      } as OfferResponse);
+
+      const voyagerAcceptResponseListener = fromEvent(
+        voyagerSocket,
+        EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE,
+      );
+      const driverAcceptResponseListener = fromEvent(
+        driver1Socket,
+        EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE,
+      );
+
+      const [
+        voyagerAcceptResponse,
+        driverAcceptResponse,
+      ] = (await combineLatestAsync([
+        voyagerAcceptResponseListener,
+        driverAcceptResponseListener,
+      ])) as any;
+
+      expect(voyagerAcceptResponse).toMatchObject({
+        driverPID: driver1.pid,
+        ridePID: rideVoyager1.pid,
       });
+      expect(driverAcceptResponse).toMatchObject({ ridePID: rideVoyager1.pid });
     });
-    //it("should ignore p2p connected users", () => {});
   });
 });
+
+function mockDriverSetup(override: Partial<Setup> = {}) {
+  const setup: Setup = {
+    position: {
+      latLng: [-9.573, -35.77997],
+      heading: 0,
+      kmh: 30,
+      ignore: [],
+      pid: "foo",
+    },
+    config: {
+      payMethods: [RidePayMethods.Money, RidePayMethods.CreditCard],
+      types: [RideTypes.Normal],
+      drops: ["any"],
+    },
+    ...override,
+  };
+  return setup;
+}
+
+/**
+ * Utils
+ */
+const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
+const fromEventAsync = <T = any>(emitter: any, event: string): Promise<T> =>
+  new Promise((resolve) => fromEvent(emitter, event).subscribe(resolve as any));
+const combineLatestAsync = (observables: any[]) =>
+  new Promise((resolve) => combineLatest(observables).subscribe(resolve));

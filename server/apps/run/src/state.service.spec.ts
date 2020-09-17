@@ -171,7 +171,7 @@ describe("StateService", () => {
         latLng: [-9.575557, -35.779208],
         heading: 0,
         kmh: 30,
-        ignored: [],
+        ignore: [],
         pid: "",
       },
       config: {
@@ -635,12 +635,11 @@ describe("StateService", () => {
     it("should create an offer", async () => {
       const ridePID = shortid.generate();
       const socketId = shortid.generate();
-      const connection = { socketId };
       const offerRequest: OfferRequest = { ridePID };
 
       rideRepository.get.mockResolvedValueOnce({ pid: ridePID });
 
-      await service.createOffer(offerRequest, connection as any, false);
+      await service.createOffer(offerRequest, { id: socketId } as any, false);
 
       const offer = service.offers.find((offer) => offer.ride.pid === ridePID);
 
@@ -661,7 +660,7 @@ describe("StateService", () => {
     const driverToAway = mockDriverPosition({
       pid: "toAway",
       position: { ...basePosition, latLng: tooAwayPoint },
-    });
+    } as any);
     const driverIgnored = mockDriverPosition({
       pid: "ignored",
     });
@@ -695,14 +694,14 @@ describe("StateService", () => {
     });
     const driverSecondElegible = mockDriverPosition({
       pid: "secondElegible",
-      position: { ...basePosition, latLng: [-9.574551, -35.779852] },
+      position: { ...basePosition, latLng: [-9.574551, -35.779852] } as any,
     });
     const driverMoreNearElegible = mockDriverPosition({
       pid: "moreNearElegible",
       position: {
         ...basePosition,
         latLng: [-9.573539, -35.778969],
-      },
+      } as any,
     });
     const driverBetterRated = mockDriverPosition({
       pid: "betterRated",
@@ -710,7 +709,7 @@ describe("StateService", () => {
       position: {
         ...basePosition,
         latLng: [-9.573539, -35.778969],
-      },
+      } as any,
     });
 
     const ride: Partial<Ride> = {

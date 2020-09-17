@@ -5,7 +5,9 @@ export type ConfigOptions = {
   /**
    * List of events that are auto broadcasted to another server nodes
    */
-  broadcastedEvents: string[];
+  broadcastedEvents: {
+    [namespace: string]: string[];
+  };
   redis: string | { pubClient: Redis; subClient: Redis };
   ackTimeout?: number;
   parser: ReturnType<typeof parsers.schemapack>;

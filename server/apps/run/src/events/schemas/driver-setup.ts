@@ -8,5 +8,5 @@ export type Setup = {
 
 export const driverSetupSchema = {
   position: positionSchema,
-  configuration: configurationSchema,
+  config: configurationSchema,
 };

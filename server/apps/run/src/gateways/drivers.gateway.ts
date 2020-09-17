@@ -73,6 +73,7 @@ export class DriversGateway extends Common {
     @ConnectedSocket() client: Socket,
   ) {
     await this.stateService.setupDriverEvent(client.id, setup, client.data);
+    return true;
   }
 
   @SubscribeMessage(EVENTS.CONFIGURATION)
@@ -84,7 +85,7 @@ export class DriversGateway extends Common {
   }
 
   @SubscribeMessage(EVENTS.OFFER_RESPONSE)
-  offerResponseEventHandler(
+  async offerResponseEventHandler(
     @MessageBody() offerResponse: OfferResponse,
     @ConnectedSocket() client: Socket,
   ) {

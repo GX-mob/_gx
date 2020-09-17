@@ -147,7 +147,9 @@
       "@app/auth/(.*)": "<rootDir>/libs/auth/src/$1",
       "@app/auth": "<rootDir>/libs/auth/src",
       "@app/socket/(.*)": "<rootDir>/libs/socket/src/$1",
-      "@app/socket": "<rootDir>/libs/socket/src"
+      "@app/socket": "<rootDir>/libs/socket/src",
+      "@testing/testing/(.*)": "<rootDir>/libs/testing/src/$1",
+      "@testing/testing": "<rootDir>/libs/testing/src"
     }
   }
 }

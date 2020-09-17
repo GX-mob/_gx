@@ -2,9 +2,10 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { SocketAdapter } from "@app/socket";
 import { parsers } from "extensor";
-import { serverEventsSchemas } from "./events";
+import { EVENTS, serverEventsSchemas } from "./events";
 import { logger } from "@app/helpers";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
+import { BROADCASTED_EVENTS } from "./constants";
 
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
@@ -27,12 +28,7 @@ async function bootstrap() {
     new SocketAdapter(app, {
       parser,
       redis,
-      broadcastedEvents: [
-        "setup",
-        "position",
-        "offerResponse",
-        "configuration",
-      ],
+      broadcastedEvents: BROADCASTED_EVENTS,
     }),
   );
 

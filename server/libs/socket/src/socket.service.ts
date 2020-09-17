@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 import Redis from "ioredis";
-import { Server, Adapter, Socket } from "socket.io";
+import { Server, Adapter, Socket, Namespace } from "socket.io";
 import redisIoAdapter from "socket.io-redis";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
@@ -222,11 +222,23 @@ export class SocketService<Events = { [k: string]: any }> {
    * Registry events middleware to broadcast configured events
    */
   private configureEventsMiddleware() {
-    this.server.use((socket, next) => {
+    for (let namespace in this.options.broadcastedEvents) {
+      this.configureMiddleware(
+        this.server.of(namespace),
+        this.options.broadcastedEvents[namespace],
+      );
+    }
+  }
+
+  private configureMiddleware(
+    namespace: Namespace,
+    broadcastedEvents: string[],
+  ) {
+    namespace.use((socket, next) => {
       socket.use((packet, next) => {
         const [event, data] = packet;
 
-        if (this.options.broadcastedEvents.includes(event)) {
+        if (broadcastedEvents.includes(event)) {
           this.dispatchBroadcastedEvent({
             socketId: socket.id,
             event,

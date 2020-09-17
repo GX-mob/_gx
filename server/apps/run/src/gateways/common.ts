@@ -103,12 +103,12 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     data: EventsInterface[K],
     considerP2P = true,
   ) {
-    const { observers } = client.data;
+    const { observers, p2p: selfP2P } = client.data;
 
     data = this.signObservableEvent(data, client);
 
     observers.forEach((observer) => {
-      if (considerP2P && observer.p2p) {
+      if (considerP2P && selfP2P && observer.p2p) {
         return;
       }
 

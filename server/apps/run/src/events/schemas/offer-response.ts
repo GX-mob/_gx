@@ -6,4 +6,4 @@ export type OfferResponse = {
   response: boolean;
 };
 
-export const offerReponseSchema = { id: "string", response: "boolean" };
+export const offerReponseSchema = { ridePID: "string", response: "boolean" };

@@ -21,10 +21,11 @@ export type Configuration = {
    * A list of districts that drivers choose as their
    * destination for receive only offers that match
    */
-  drops: string[];
+  drops: ["any"] | string[];
 };
 
 export const configurationSchema = {
   payMethods: ["uint8"],
   types: ["uint8"],
+  drops: ["string"],
 };
