@@ -1,3 +1,5 @@
+import { SchemaObject } from "schemapack";
+
 export type OfferResponse = {
   /**
    * Ride public id
@@ -6,4 +8,7 @@ export type OfferResponse = {
   response: boolean;
 };
 
-export const offerReponseSchema = { ridePID: "string", response: "boolean" };
+export const offerReponseSchema: SchemaObject<OfferResponse> = {
+  ridePID: "string",
+  response: "bool",
+};

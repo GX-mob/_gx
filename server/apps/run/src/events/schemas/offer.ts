@@ -1,3 +1,4 @@
+import { SchemaObject } from "schemapack";
 import { Ride } from "@app/repositories";
 
 export type OfferRequest = {
@@ -49,6 +50,6 @@ export type OfferServer = {
   acceptTimestamp?: number;
 };
 
-export const offerSchema = {
+export const offerSchema: SchemaObject<OfferRequest> = {
   ridePID: "string",
 };

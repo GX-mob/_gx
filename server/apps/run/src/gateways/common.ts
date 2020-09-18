@@ -30,11 +30,13 @@ import {
   UncancelableRideException,
 } from "../exceptions";
 import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 
 export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
   public role!: USERS_ROLES;
 
   constructor(
+    readonly configService: ConfigService,
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
@@ -70,6 +72,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
         p2p,
         rate: averageEvaluation,
         socketId: socket.id,
+        rides: [],
       });
 
       return true;
@@ -160,12 +163,15 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
       throw new UncancelableRideException(ride.pid, "running");
     }
 
-    if (ride[target] !== _id) {
+    if (ride[target]._id !== _id) {
       throw new UncancelableRideException(ride.pid, "not-in-ride");
     }
   }
 
   isSafeCancel(acceptTimestamp: number, now: number) {
-    return (acceptTimestamp as number) + CANCELATION.SAFE_TIME_MS > now;
+    const cancelationSafeTime = this.configService.get(
+      "OFFER.SAFE_CANCELATION_WINDOW",
+    ) as number;
+    return acceptTimestamp + cancelationSafeTime > now;
   }
 }

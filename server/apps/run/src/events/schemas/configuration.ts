@@ -1,3 +1,4 @@
+import { SchemaObject } from "schemapack";
 import { RidePayMethods, RideTypes } from "@app/repositories";
 
 export type Configuration = {
@@ -24,7 +25,7 @@ export type Configuration = {
   drops: ["any"] | string[];
 };
 
-export const configurationSchema = {
+export const configurationSchema: SchemaObject<Configuration> = {
   payMethods: ["uint8"],
   types: ["uint8"],
   drops: ["string"],

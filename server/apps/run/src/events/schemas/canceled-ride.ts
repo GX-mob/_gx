@@ -1,3 +1,5 @@
+import { SchemaObject } from "schemapack";
+
 export enum CANCELATION_RESPONSE {
   SAFE = "safe",
   PENDENCIE_ISSUED = "pendencie-issued",
@@ -8,4 +10,7 @@ export type CanceledRide = {
   ridePID: string;
   status: CANCELATION_RESPONSE;
 };
-export const canceledRideSchema = { ridePID: "string", status: "string" };
+export const canceledRideSchema: SchemaObject<CanceledRide> = {
+  ridePID: "string",
+  status: "string",
+};

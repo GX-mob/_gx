@@ -6,6 +6,7 @@ declare module "schemapack" {
 
   export type Types =
     | "bool"
+    | "boolean"
     | "int8"
     | "uint8"
     | "int16"
@@ -19,9 +20,11 @@ declare module "schemapack" {
     | "varint"
     | "buffer";
 
-  export interface SchemaObject {
-    [k: string]: Types | Types[] | SchemaObject | SchemaObject[];
-  }
+  export type SchemaObject<T> = {
+    [K in keyof T]: Types | Array<Types> | SchemaObject<T[K]>;
+  };
 
-  function build<T = any>(schema: SchemaObject): Parser<T>;
+  function build<T = any>(
+    schema: SchemaObject<{ [k: string]: any }>,
+  ): Parser<T>;
 }

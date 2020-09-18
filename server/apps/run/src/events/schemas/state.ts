@@ -1,3 +1,5 @@
+import { SchemaObject } from "schemapack";
+
 /**
  * User state event schema
  */
@@ -15,4 +17,7 @@ export type State = {
   pid: string;
 };
 
-export const stateSchema = { state: "int8", id: "string" };
+export const stateSchema: SchemaObject<State> = {
+  state: "int8",
+  pid: "string",
+};

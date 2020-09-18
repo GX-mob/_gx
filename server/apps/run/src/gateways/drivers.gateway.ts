@@ -31,12 +31,14 @@ import { SessionService } from "@app/session";
 import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
 import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common {
   role = USERS_ROLES.DRIVER;
 
   constructor(
+    readonly configService: ConfigService,
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
@@ -46,6 +48,7 @@ export class DriversGateway extends Common {
     readonly logger: PinoLogger,
   ) {
     super(
+      configService,
       socketService,
       rideRepository,
       pendencieRepository,
@@ -65,6 +68,7 @@ export class DriversGateway extends Common {
   ) {
     super.positionEventHandler(position, client);
     this.stateService.positionEvent(client.id, position);
+    //this.trackingService.track(client.data, position);
   }
 
   @SubscribeMessage(EVENTS.DRIVER_SETUP)

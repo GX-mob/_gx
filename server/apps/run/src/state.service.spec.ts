@@ -37,6 +37,7 @@ import {
   RideNotFoundException,
 } from "./exceptions";
 import { NODES_EVENTS } from "./events/nodes";
+import ms from "ms";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -189,14 +190,15 @@ describe("StateService", () => {
           load: [
             registerAs("MATCH", () => ({
               MAX_ITERATION: 10,
-              ITERATION_INTERVAL: 100,
+              ITERATION_INTERVAL: ms("100 milliseconds"),
               TOO_AWAY: 2000,
             })),
             registerAs("OFFER", () => ({
-              DRIVER_RESPONSE_TIMEOUT: 3000, // 3 seconds
+              DRIVER_RESPONSE_TIMEOUT: ms("3 seconds"), // 3 seconds
               INITIAL_RADIUS_SIZE: 1000,
               ADD_RADIUS_SIZE_EACH_ITERATION: 200,
               MAX_RADIUS_SIZE: 1800,
+              SAFE_CANCELATION_WINDOW: ms("3 minutes"), // 3 minutes,
             })),
           ],
         }),

@@ -6,43 +6,36 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 import { AppModule } from "../src/app.module";
-import { Server } from "socket.io";
-import IOClient, { Socket } from "socket.io-client";
+import IOClient from "socket.io-client";
 import IORedis from "ioredis";
 import { parsers, auth } from "extensor";
 import {
   EVENTS,
   serverEventsSchemas,
-  Position,
-  OfferRequest,
   Setup,
-  ConnectionData,
   OfferResponse,
+  CANCELATION_RESPONSE,
 } from "../src/events";
-import { EXCEPTIONS, NAMESPACES } from "../src/constants";
+import { NAMESPACES } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
 import {
-  RepositoryService,
   Ride,
   RidePayMethods,
   RideRepository,
-  RideStatus,
   RideTypes,
-  TRoute,
   User,
   USERS_ROLES,
 } from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 import { SessionService } from "@app/session";
-import { StateService } from "../src/state.service";
 import { BROADCASTED_EVENTS } from "../src/constants";
-import { CacheService } from "@app/cache";
 import { UserRepository } from "@app/repositories";
 import { AddressInfo } from "net";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
-
 import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
+import { ConfigModule, registerAs } from "@nestjs/config";
+import ms from "ms";
 
 describe("RidesWSService (e2e)", () => {
   let replSetServer: MongoMemoryReplSet;
@@ -61,7 +54,26 @@ describe("RidesWSService (e2e)", () => {
 
   async function createAppNode() {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [
+            registerAs("MATCH", () => ({
+              MAX_ITERATION: 10,
+              ITERATION_INTERVAL: 100,
+              TOO_AWAY: 2000,
+            })),
+            registerAs("OFFER", () => ({
+              DRIVER_RESPONSE_TIMEOUT: ms("3 seconds"), // 3 seconds
+              INITIAL_RADIUS_SIZE: 1000,
+              ADD_RADIUS_SIZE_EACH_ITERATION: 200,
+              MAX_RADIUS_SIZE: 1800,
+              SAFE_CANCELATION_WINDOW: ms("3 seconds"), // 3 minutes,
+            })),
+          ],
+        }),
+        AppModule,
+      ],
     })
       .overrideProvider(PinoLogger)
       .useValue({
@@ -194,6 +206,9 @@ describe("RidesWSService (e2e)", () => {
   });
 
   let voyager1Token: string;
+  let voyager2Token: string;
+  let driver1Token: string;
+  let driver2Token: string;
 
   describe("Connection", () => {
     it("should deny due to provide an invalid token", async () => {
@@ -214,7 +229,7 @@ describe("RidesWSService (e2e)", () => {
       voyager1Token = await authorizeClient(0, voyagerSocket, voyager);
     });
 
-    it("should throw ForbiddenException due to voyager trys acces drivers namesáce", async () => {
+    it("should throw ForbiddenException due to voyager trys access drivers namespace", async () => {
       const [voyager] = users;
       const voyagerSocket = createUserSocket(0, voyager, NAMESPACES.DRIVERS);
 
@@ -225,47 +240,42 @@ describe("RidesWSService (e2e)", () => {
   });
 
   describe("Ride workflows", () => {
-    it("Simple offer workflow", async () => {
-      const [voyager, , driver1, driver2] = users;
+    async function standardOfferNAccept(overrides?: {
+      rideOverride: Partial<Ride>;
+    }) {
+      const [voyager, , driver] = users;
       const voyagerSocket = createUserSocket(0, voyager);
-      const driver1Socket = createUserSocket(1, driver1);
-      const driver2Socket = createUserSocket(0, driver2);
+      const driverSocket = createUserSocket(1, driver);
 
-      const rideVoyager1 = mockRide({ voyager: voyager._id });
+      const ride = mockRide({
+        voyager: voyager._id,
+        ...(overrides?.rideOverride || {}),
+      });
 
-      await appsNodes[0].rideRepository.create(rideVoyager1);
+      await appsNodes[0].rideRepository.create(ride);
 
-      await Promise.all([
+      const [, driverToken1] = await Promise.all([
         authorizeClient(0, voyagerSocket, voyager1Token),
-        authorizeClient(1, driver1Socket, driver1),
-        authorizeClient(0, driver2Socket, driver2),
+        authorizeClient(1, driverSocket, driver),
       ]);
 
+      driver1Token = driverToken1;
+
       const driver1Setup: Setup = mockDriverSetup();
-      const driver2Setup: Setup = mockDriverSetup({
-        config: {
-          payMethods: [RidePayMethods.CreditCard],
-          types: [RideTypes.Normal],
-          drops: ["any"],
-        },
-      });
 
       // Drivers setup
       await new Promise((resolve) =>
-        driver1Socket.emit(EVENTS.DRIVER_SETUP, driver1Setup, resolve),
-      );
-      await new Promise((resolve) =>
-        driver2Socket.emit(EVENTS.DRIVER_SETUP, driver2Setup, resolve),
+        driverSocket.emit(EVENTS.DRIVER_SETUP, driver1Setup, resolve),
       );
 
       // Voyager 1 offer request
-      voyagerSocket.emit(EVENTS.OFFER, { ridePID: rideVoyager1.pid });
+      voyagerSocket.emit(EVENTS.OFFER, { ridePID: ride.pid });
 
-      const offer = await fromEventAsync(driver1Socket, EVENTS.OFFER);
+      const offer = await fromEventAsync(driverSocket, EVENTS.OFFER);
 
-      expect(offer).toStrictEqual({ ridePID: rideVoyager1.pid });
+      expect(offer).toStrictEqual({ ridePID: ride.pid });
 
-      driver1Socket.emit(EVENTS.OFFER_RESPONSE, {
+      driverSocket.emit(EVENTS.OFFER_RESPONSE, {
         ridePID: offer.ridePID,
         response: true,
       } as OfferResponse);
@@ -275,7 +285,7 @@ describe("RidesWSService (e2e)", () => {
         EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE,
       );
       const driverAcceptResponseListener = fromEvent(
-        driver1Socket,
+        driverSocket,
         EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE,
       );
 
@@ -288,10 +298,94 @@ describe("RidesWSService (e2e)", () => {
       ])) as any;
 
       expect(voyagerAcceptResponse).toMatchObject({
-        driverPID: driver1.pid,
-        ridePID: rideVoyager1.pid,
+        driverPID: driver.pid,
+        ridePID: ride.pid,
       });
-      expect(driverAcceptResponse).toMatchObject({ ridePID: rideVoyager1.pid });
+      expect(driverAcceptResponse).toMatchObject({ ridePID: ride.pid });
+
+      return { ride, voyager, driver, voyagerSocket, driverSocket };
+    }
+
+    it("Handle ride workflow: offer -> accept -> picking-up -> running -> arrive", async () => {
+      await standardOfferNAccept();
+      // TODO: driver position events, driver arrive event
+    });
+
+    describe("Cancelations", () => {
+      it("Handle voyager safe cancelation", async () => {
+        const {
+          ride,
+          voyagerSocket,
+          driverSocket,
+        } = await standardOfferNAccept();
+
+        await expect(
+          new Promise((resolve) =>
+            voyagerSocket.emit(EVENTS.CANCEL_RIDE, ride.pid, resolve),
+          ),
+        ).resolves.toStrictEqual({
+          status: CANCELATION_RESPONSE.SAFE,
+        });
+
+        await expect(
+          fromEventAsync(driverSocket, EVENTS.CANCELED_RIDE),
+        ).resolves.toStrictEqual({
+          ridePID: ride.pid,
+          status: CANCELATION_RESPONSE.SAFE,
+        });
+      });
+
+      it("Handle voyager no-safe cancelation money pay method", async () => {
+        const {
+          ride,
+          voyagerSocket,
+          driverSocket,
+        } = await standardOfferNAccept();
+
+        await wait(3001);
+
+        await expect(
+          new Promise((resolve) =>
+            voyagerSocket.emit(EVENTS.CANCEL_RIDE, ride.pid, resolve),
+          ),
+        ).resolves.toStrictEqual({
+          status: CANCELATION_RESPONSE.PENDENCIE_ISSUED,
+        });
+
+        await expect(
+          fromEventAsync(driverSocket, EVENTS.CANCELED_RIDE),
+        ).resolves.toStrictEqual({
+          ridePID: ride.pid,
+          status: CANCELATION_RESPONSE.PENDENCIE_ISSUED,
+        });
+      }, 8000);
+
+      it("Handle voyager no-safe cancelation credit card pay method", async () => {
+        const {
+          ride,
+          voyagerSocket,
+          driverSocket,
+        } = await standardOfferNAccept({
+          rideOverride: { payMethod: RidePayMethods.CreditCard },
+        });
+
+        await wait(3001);
+
+        await expect(
+          new Promise((resolve) =>
+            voyagerSocket.emit(EVENTS.CANCEL_RIDE, ride.pid, resolve),
+          ),
+        ).resolves.toStrictEqual({
+          status: CANCELATION_RESPONSE.CHARGE_REQUESTED,
+        });
+
+        await expect(
+          fromEventAsync(driverSocket, EVENTS.CANCELED_RIDE),
+        ).resolves.toStrictEqual({
+          ridePID: ride.pid,
+          status: CANCELATION_RESPONSE.CHARGE_REQUESTED,
+        });
+      }, 8000);
     });
   });
 });

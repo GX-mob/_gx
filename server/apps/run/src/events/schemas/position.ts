@@ -1,3 +1,4 @@
+import { SchemaObject } from "schemapack";
 import { latLngSchema, LatLng } from "./common";
 
 /**
@@ -23,7 +24,7 @@ export type Position = {
   pid: string;
 };
 
-export const positionSchema = {
+export const positionSchema: SchemaObject<Position> = {
   latLng: latLngSchema,
   heading: "uint8",
   kmh: "int16",

@@ -1,6 +1,6 @@
-import { UserBasic } from "./common/user-basic";
-import user from "./common/user-basic";
+import { SchemaObject } from "schemapack";
+import { userSchema, SendableUserData } from "./common";
 
-export type OfferSent = UserBasic;
+export type OfferSent = SendableUserData;
 
-export const offerSentSchema = user;
+export const offerSentSchema: SchemaObject<OfferSent> = userSchema;

@@ -134,9 +134,14 @@ export function percurredDistance(
 
   const now = convertLatLng(point);
 
-  let idx = workDistanceRoutePoints("prox", Path, now, (point) => {
-    internalRouteArr.push([point[0], point[1]]);
-  });
+  let idx = workDistanceRoutePoints(
+    "prox",
+    Path,
+    now,
+    ([latitude, longitude]) => {
+      internalRouteArr.push([latitude, longitude]);
+    },
+  );
 
   let length = internalRouteArr.length;
   let nextIdx = idx + 1;

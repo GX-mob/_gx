@@ -300,6 +300,8 @@ export class StateService {
       offerResponseTimeout: null,
     };
 
+    client.data.rides.push(ride.pid);
+
     this.offers.push(offerObject);
 
     await this.cacheService.set(

@@ -30,11 +30,13 @@ import { SessionService } from "@app/session";
 import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
 import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
   role = USERS_ROLES.VOYAGER;
   constructor(
+    readonly configService: ConfigService,
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
@@ -44,6 +46,7 @@ export class VoyagersGateway extends Common {
     readonly logger: PinoLogger,
   ) {
     super(
+      configService,
       socketService,
       rideRepository,
       pendencieRepository,
@@ -88,7 +91,7 @@ export class VoyagersGateway extends Common {
 
     const { _id, rides } = socket.data;
 
-    this.cancelationSecutiryChecks(ride, _id, "voyager");
+    super.cancelationSecutiryChecks(ride, _id, "voyager");
 
     const offer = await this.stateService.getOfferData(ridePID);
     const { driverSocketId, acceptTimestamp } = offer;
