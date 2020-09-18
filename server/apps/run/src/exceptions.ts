@@ -18,3 +18,9 @@ export class UncancelableRideException extends WsException {
     super({ error: EXCEPTIONS.UNCANCELABLE_RIDE, ridePID, cause });
   }
 }
+
+export class NotInRideException extends WsException {
+  constructor(ridePID: string, userPID: string) {
+    super({ error: EXCEPTIONS.NOT_IN_RIDE, ridePID, userPID });
+  }
+}

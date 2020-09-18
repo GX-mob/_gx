@@ -31,6 +31,7 @@ import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
 import { PinoLogger } from "nestjs-pino";
 import { ConfigService } from "@nestjs/config";
+import { UncancelableRideException } from "../exceptions";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
@@ -87,11 +88,16 @@ export class VoyagersGateway extends Common {
     @ConnectedSocket() socket: Socket,
   ): Promise<{ status: CanceledRide["status"] | "error"; error?: string }> {
     const now = Date.now();
-    const ride = (await this.rideRepository.get({ pid: ridePID })) as Ride;
+    const ride = await super.getRide({ pid: ridePID });
 
     const { _id, rides } = socket.data;
 
-    super.cancelationSecutiryChecks(ride, _id, "voyager");
+    super.checkIfInRide(ride, _id, "driver");
+
+    // block cancel running ride
+    if (ride.status === RideStatus.RUNNING) {
+      throw new UncancelableRideException(ride.pid, "running");
+    }
 
     const offer = await this.stateService.getOfferData(ridePID);
     const { driverSocketId, acceptTimestamp } = offer;
@@ -113,7 +119,7 @@ export class VoyagersGateway extends Common {
       : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
 
     this.stateService.updateDriver(socket.id, { state: DriverState.SEARCHING });
-    this.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
+    super.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
 
     this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
       ridePID,

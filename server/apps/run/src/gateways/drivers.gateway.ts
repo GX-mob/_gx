@@ -11,6 +11,7 @@ import {
   PendencieRepository,
   Ride,
   RideRepository,
+  RideStatus,
   USERS_ROLES,
 } from "@app/repositories";
 import { Socket } from "socket.io";
@@ -25,6 +26,7 @@ import {
   CancelRide,
   CanceledRide,
   CANCELATION_RESPONSE,
+  PickingUpPath,
 } from "../events";
 import { CacheService } from "@app/cache";
 import { SessionService } from "@app/session";
@@ -32,6 +34,10 @@ import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
 import { PinoLogger } from "nestjs-pino";
 import { ConfigService } from "@nestjs/config";
+import {
+  RideNotFoundException,
+  UncancelableRideException,
+} from "../exceptions";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common {
@@ -96,26 +102,54 @@ export class DriversGateway extends Common {
     this.stateService.offerResponseEvent(client.id, offerResponse, client.data);
   }
 
+  @SubscribeMessage(EVENTS.PICKING_UP_PATH)
+  async pickingUpPathEventHandler(
+    @MessageBody() pickingUp: PickingUpPath,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const ride = await super.getRide({ pid: pickingUp.ridePID });
+
+    super.checkIfInRide(ride, client.data._id, "driver");
+
+    const { requesterSocketId } = await this.stateService.setOfferData(
+      pickingUp.ridePID,
+      {
+        pickingUpPath: pickingUp,
+      },
+    );
+
+    this.socketService.emit(
+      requesterSocketId,
+      EVENTS.PICKING_UP_PATH,
+      pickingUp,
+    );
+  }
+
   @SubscribeMessage(EVENTS.CANCEL_RIDE)
   async cancelRideEventHandler(
     @MessageBody() ridePID: CancelRide,
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() client: Socket,
   ): Promise<{
     status: CanceledRide["status"] | "error";
     error?: string;
     pendencie?: Pendencie["_id"];
   }> {
     const now = Date.now();
-    const ride = (await this.rideRepository.get({ pid: ridePID })) as Ride;
-    const { _id } = socket.data;
+    const ride = await super.getRide({ pid: ridePID });
+    const { _id } = client.data;
 
-    this.cancelationSecutiryChecks(ride, _id, "driver");
+    super.checkIfInRide(ride, _id, "driver");
+
+    // block cancel running ride
+    if (ride.status === RideStatus.RUNNING) {
+      throw new UncancelableRideException(ride.pid, "running");
+    }
 
     const offer = await this.stateService.getOfferData(ridePID);
     const { requesterSocketId, acceptTimestamp } = offer;
 
-    this.stateService.updateDriver(socket.id, { state: DriverState.SEARCHING });
-    this.updateRide({ pid: ridePID }, { driver: null });
+    this.stateService.updateDriver(client.id, { state: DriverState.SEARCHING });
+    super.updateRide({ pid: ridePID }, { driver: null });
 
     const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
 

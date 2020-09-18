@@ -1,5 +1,6 @@
 import { SchemaObject } from "schemapack";
 import { Ride } from "@app/repositories";
+import { PickingUpPath } from "./picking-up-path";
 
 export type OfferRequest = {
   /**
@@ -48,6 +49,7 @@ export type OfferServer = {
    * Accepted timestamp, used to define a safe cancelation without fares
    */
   acceptTimestamp?: number;
+  pickingUpPath?: PickingUpPath;
 };
 
 export const offerSchema: SchemaObject<OfferRequest> = {

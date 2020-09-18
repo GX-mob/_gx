@@ -24,7 +24,7 @@ export class CacheService {
    * @param name schema namespace
    * @param structure schema structure
    */
-  buildSchema<T = any>(name: string, structure: SchemaObject): Parser<T> {
+  buildSchema<T = any>(name: string, structure: SchemaObject<any>): Parser<T> {
     return (this.schemas[name] = schemapack.build<T>(structure));
   }
 

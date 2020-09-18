@@ -522,8 +522,8 @@ export class StateService {
 
   setOfferData(
     ridePID: string,
-    data: Omit<OfferServer, "offerResponseTimeout">,
-  ) {
+    data: Partial<Omit<OfferServer, "offerResponseTimeout">>,
+  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
     return this.setOrUpdateCache(CACHE_NAMESPACES.OFFERS, ridePID, data, {
       ex: CACHE_TTL.OFFERS,
     });

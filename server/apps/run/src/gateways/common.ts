@@ -26,6 +26,7 @@ import { EVENTS, State, Position, EventsInterface } from "../events";
 import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
 import {
+  NotInRideException,
   RideNotFoundException,
   UncancelableRideException,
 } from "../exceptions";
@@ -149,22 +150,23 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     );
   }
 
-  cancelationSecutiryChecks(
-    ride: Ride | null,
-    _id: User["_id"],
-    target: keyof Pick<Ride, "voyager" | "driver">,
-  ) {
+  async getRide(query: RideQueryInterface): Promise<Ride> {
+    const ride = await this.rideRepository.get(query);
+
     if (!ride) {
       throw new RideNotFoundException();
     }
 
-    // block cancel running ride
-    if (ride.status === RideStatus.RUNNING) {
-      throw new UncancelableRideException(ride.pid, "running");
-    }
+    return ride;
+  }
 
+  checkIfInRide(
+    ride: Ride,
+    _id: User["_id"],
+    target: keyof Pick<Ride, "voyager" | "driver">,
+  ) {
     if (ride[target]._id !== _id) {
-      throw new UncancelableRideException(ride.pid, "not-in-ride");
+      throw new NotInRideException(ride.pid, _id);
     }
   }
 

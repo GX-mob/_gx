@@ -1,11 +1,11 @@
 import { SchemaObject } from "schemapack";
 
-export type SetPickingUpPath = {
+export type PickingUpPath = {
   ridePID: string;
   path: string;
   duration: number;
 };
-export const setPickingUpPathSchema: SchemaObject<SetPickingUpPath> = {
+export const setPickingUpPathSchema: SchemaObject<PickingUpPath> = {
   ridePID: "string",
   path: "string",
   duration: "uint8",

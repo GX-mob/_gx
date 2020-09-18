@@ -15,6 +15,7 @@ import {
   Setup,
   OfferResponse,
   CANCELATION_RESPONSE,
+  PickingUpPath,
 } from "../src/events";
 import { NAMESPACES } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
@@ -36,6 +37,8 @@ import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
 import ms from "ms";
+//@ts-ignore
+const polyline = require("google-polyline");
 
 describe("RidesWSService (e2e)", () => {
   let replSetServer: MongoMemoryReplSet;
@@ -50,7 +53,7 @@ describe("RidesWSService (e2e)", () => {
   // Voyager, Voyager, Driver, Driver
   let users: User[] = [];
 
-  const parser = parsers.schemapack(serverEventsSchemas);
+  const parser = parsers.schemapack(serverEventsSchemas as any);
 
   async function createAppNode() {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -90,8 +93,6 @@ describe("RidesWSService (e2e)", () => {
       pubClient: new IORedis(process.env.REDIS_HOST),
       subClient: new IORedis(process.env.REDIS_HOST),
     };
-
-    const parser = parsers.schemapack(serverEventsSchemas);
 
     app.useWebSocketAdapter(
       new SocketAdapter(app, {
@@ -307,7 +308,30 @@ describe("RidesWSService (e2e)", () => {
     }
 
     it("Handle ride workflow: offer -> accept -> picking-up -> running -> arrive", async () => {
-      await standardOfferNAccept();
+      const {
+        ride,
+        voyager,
+        voyagerSocket,
+        driver,
+        driverSocket,
+      } = await standardOfferNAccept();
+
+      const pickingUpPath: PickingUpPath = {
+        ridePID: ride.pid,
+        duration: 10,
+        path: "fvly@xgkyEg@Ko@Gc@AB]Fk@B{@Dm@Hm@Bi@Bm@H{@F_AFi@Hq@Dy@Da@?MWEUE",
+      };
+
+      const pathDecoded = polyline.decode(pickingUpPath.path);
+
+      driverSocket.emit(EVENTS.PICKING_UP_PATH, pickingUpPath);
+
+      const pickingUpVoyagerEvent = await fromEventAsync(
+        voyagerSocket,
+        EVENTS.PICKING_UP_PATH,
+      );
+
+      expect(pickingUpVoyagerEvent).toStrictEqual(pickingUpPath);
       // TODO: driver position events, driver arrive event
     });
 

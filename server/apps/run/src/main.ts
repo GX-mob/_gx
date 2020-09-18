@@ -14,7 +14,7 @@ const FastifyAdapterInstance = new FastifyAdapter({
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
 
-  const parser = parsers.schemapack(serverEventsSchemas);
+  const parser = parsers.schemapack(serverEventsSchemas as any);
 
   const redis =
     process.env.NODE_ENV !== "production" && !process.env.REDIS_URI
