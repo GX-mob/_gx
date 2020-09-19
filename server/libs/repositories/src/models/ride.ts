@@ -19,7 +19,14 @@ import mongoose, { Document, Schema } from "mongoose";
 import shortid from "shortid";
 import { util } from "@app/helpers";
 import Connections from "../connections";
-import { Pendencie } from "./pendencie";
+import {
+  RideInterface,
+  RideStatus,
+  RideTypes,
+  RidePayMethods,
+  RouteInterface,
+  RoutePointInterface,
+} from "@shared/interfaces";
 import { UserModel } from "./user";
 
 class Route extends mongoose.SchemaType {
@@ -27,7 +34,7 @@ class Route extends mongoose.SchemaType {
     super(key, options, "Route");
   }
 
-  cast(route: TRoute) {
+  cast(route: RouteInterface) {
     if (!(route instanceof Object) || Object.keys(route).length < 3) {
       throw new Error(
         'Route must be an object with "start", "path", "end" and "distance" props',
@@ -57,17 +64,21 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("end", route.end);
 
     if (util.hasProp(route, "waypoints")) {
-      for (let i = 0; i < (route.waypoints as TRoutePoint[]).length; ++i)
+      for (
+        let i = 0;
+        i < (route.waypoints as RoutePointInterface[]).length;
+        ++i
+      )
         this.checkPoint(
           `waypoints[${i}]`,
-          (route.waypoints as TRoutePoint[])[i],
+          (route.waypoints as RoutePointInterface[])[i],
         );
     }
 
     return route;
   }
 
-  checkPoint(name: string, point: TRoutePoint) {
+  checkPoint(name: string, point: RoutePointInterface) {
     if (
       !util.hasProp(point, "coord") ||
       !util.hasProp(point, "primary") ||
@@ -82,98 +93,7 @@ class Route extends mongoose.SchemaType {
 
 (mongoose.Schema.Types as any).Route = Route;
 
-export type TRoutePoint = {
-  /**
-   * Latitude and longitude
-   */
-  coord: [number, number];
-  /**
-   * Primary title
-   */
-  primary: string;
-  /**
-   * Secondary title
-   */
-  secondary: string;
-  /**
-   * Slug name of district
-   */
-  district: string;
-};
-
-export type TRoute = {
-  start: TRoutePoint;
-  waypoints?: TRoutePoint[];
-  end: TRoutePoint;
-  path: string;
-  distance: number;
-  duration: number;
-};
-
-export enum RideTypes {
-  Normal = 1,
-  VIG = 2,
-}
-
-export enum RidePayMethods {
-  Money = 1,
-  CreditCard = 2,
-}
-
-export enum RideStatus {
-  CREATED,
-  RUNNING,
-  COMPLETED,
-  CANCELED,
-}
-
-export interface Ride {
-  _id: any;
-  pid: string;
-  voyager: any;
-  route: TRoute;
-  /**
-   * * 1 = Normal
-   * * 2 = VIG - Very important gx
-   */
-  type: RideTypes;
-  /**
-   * * 1 = Money
-   * * 2 = Credit card
-   */
-  payMethod: RidePayMethods;
-  /**
-   * Ride costs
-   */
-  costs: {
-    /**
-     * Ride cost, distance + duration
-     */
-    base: number;
-    distance: {
-      total: number;
-      aditionalForLongRide: number;
-      aditionalForOutBusinessTime: number;
-    };
-    duration: {
-      total: number;
-      aditionalForLongRide: number;
-      aditionalForOutBusinessTime: number;
-    };
-    /**
-     * Total cost, ride costs + pendencies costs
-     */
-    total: number;
-  };
-  country: string;
-  area: string;
-  subArea: string;
-  status: RideStatus;
-  driver?: any;
-  pendencies?: Pendencie[];
-}
-
-export interface RideDocument extends Ride, Document {}
+export interface RideDocument extends RideInterface, Document {}
 
 export const RideSchema: Schema = new Schema(
   {
@@ -183,8 +103,12 @@ export const RideSchema: Schema = new Schema(
       required: true,
       ref: UserModel,
     },
-    type: { type: Number, enum: [1, 2], required: true },
-    payMethod: { type: Number, enum: [1, 2], required: true },
+    type: { type: Number, enum: Object.values(RideTypes), required: true },
+    payMethod: {
+      type: Number,
+      enum: Object.values(RidePayMethods),
+      required: true,
+    },
     route: { type: Route, required: true },
     driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {

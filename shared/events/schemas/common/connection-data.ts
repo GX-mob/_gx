@@ -1,10 +1,10 @@
 import { Configuration } from "../configuration";
 import { UserBasic } from "./user-basic";
 import { Driver } from "./driver";
-import { Ride, USERS_ROLES } from "@app/repositories";
+import { UserRoles } from "../../../interfaces";
 
 export type ConnectionData = UserBasic & {
-  mode: USERS_ROLES;
+  mode: UserRoles;
   /**
    * Sockets that observe some events of this socket
    */
@@ -13,7 +13,7 @@ export type ConnectionData = UserBasic & {
   /**
    * Running user rides
    */
-  rides: Ride["pid"][];
+  rides: string[];
   /**
    * Driver state
    * * Driver only

@@ -6,15 +6,11 @@ import IOServer, { Server } from "socket.io";
 import IOClient from "socket.io-client";
 import faker from "faker";
 import { Common } from "../common";
-import { RideStatus } from "@app/repositories";
+import { RideStatus } from "@shared/interfaces";
 //@ts-ignore
 import IORedisMock from "ioredis-mock";
-import { EVENTS } from "../../events";
+import { EVENTS } from "@shared/events";
 import { CANCELATION } from "../../constants";
-import {
-  RideNotFoundException,
-  UncancelableRideException,
-} from "../../exceptions";
 import { mockSocket, expectObservableFor } from "./util";
 
 describe("CommonsGateway", () => {

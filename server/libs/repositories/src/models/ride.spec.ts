@@ -1,9 +1,10 @@
 /**
  * Ride model
  *
- * @group unit/services/database/models/ride
+ * @group unit/models/ride
  */
-import { RideModel, RideTypes, RidePayMethods } from "./ride";
+import { RideTypes, RidePayMethods } from "@shared/interfaces";
+import { RideModel } from "./ride";
 
 describe("Model: Ride", () => {
   const mockRoutePoint = {

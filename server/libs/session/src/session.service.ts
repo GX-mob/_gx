@@ -2,12 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import {
-  User,
-  USERS_ROLES,
-  Session,
-  SessionRepository,
-} from "@app/repositories";
+import { UserInterface, UserRoles, SessionInterface } from "@shared/interfaces";
+import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
 import { CacheService } from "@app/cache";
@@ -51,10 +47,10 @@ export class SessionService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user: User,
+    user: UserInterface,
     userAgent: string | null,
     ip: string | null,
-  ): Promise<{ token: string; session: Session }> {
+  ): Promise<{ token: string; session: SessionInterface }> {
     const session = await this.sessionRepository.create({
       user: user._id,
       userAgent: userAgent || "",
@@ -105,7 +101,7 @@ export class SessionService {
   private async checkState(
     session_id: Types.ObjectId,
     ip: string | null,
-  ): Promise<Session> {
+  ): Promise<SessionInterface> {
     const sessionData = await this.get(session_id);
 
     if (!sessionData) {
@@ -130,7 +126,7 @@ export class SessionService {
     return session;
   }
 
-  public hasPermission(session: Session, roles: USERS_ROLES[]) {
+  public hasPermission(session: SessionInterface, roles: UserRoles[]) {
     return !!roles.find((role) => session.user.roles.includes(role));
   }
 
@@ -140,12 +136,12 @@ export class SessionService {
 
   async update(
     session_id: Types.ObjectId,
-    data: Partial<Omit<Session, "_id" | "user" | "createdAt">>,
+    data: Partial<Omit<SessionInterface, "_id" | "user" | "createdAt">>,
   ) {
     await this.sessionRepository.update({ _id: session_id }, data);
   }
 
-  async delete(session_id: Types.ObjectId) {
+  async delete(session_id: string) {
     await this.sessionRepository.remove({ _id: session_id });
   }
 }

@@ -14,7 +14,8 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { User, UserRepository, SessionRepository } from "@app/repositories";
+import { UserInterface } from "@shared/interfaces";
+import { UserRepository, SessionRepository } from "@app/repositories";
 import { AuthGuard, AuthorizedRequest } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
@@ -38,7 +39,7 @@ export class AccountProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getHandler(@Request() req: AuthorizedRequest): User {
+  getHandler(@Request() req: AuthorizedRequest): UserInterface {
     return new UserEntity(req.session.user);
   }
 

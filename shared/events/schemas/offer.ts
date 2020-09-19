@@ -1,5 +1,4 @@
 import { SchemaObject } from "schemapack";
-import { Ride } from "@app/repositories";
 import { PickingUpPath } from "./picking-up-path";
 
 export type OfferRequest = {
@@ -11,9 +10,9 @@ export type OfferRequest = {
 
 export type OfferServer = {
   /**
-   * Ride data
+   * Ride public id
    */
-  ride: Ride;
+  ridePID: string;
   /**
    * Usefull requester data
    */

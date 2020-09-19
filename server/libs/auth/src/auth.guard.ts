@@ -9,7 +9,7 @@ import { Reflector } from "@nestjs/core";
 import { SessionService } from "@app/session";
 import { getClientIp } from "request-ip";
 import { FastifyRequest } from "fastify";
-import { USERS_ROLES } from "@app/repositories";
+import { UserRoles } from "@shared/interfaces";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -19,7 +19,7 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const roles = this.reflector.get<USERS_ROLES[]>(
+    const roles = this.reflector.get<UserRoles[]>(
       "roles",
       context.getHandler(),
     );

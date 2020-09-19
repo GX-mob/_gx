@@ -10,31 +10,24 @@ import { SocketService } from "@app/socket";
 import { Server, Socket } from "socket.io";
 import { SessionService } from "@app/session";
 import { CacheService } from "@app/cache";
-import { unique, storageAdapters, auth } from "extensor";
+import { auth, storageAdapters, unique } from "extensor";
 import { StateService } from "../state.service";
+import { UserInterface, RideInterface, UserRoles } from "@shared/interfaces";
 import {
   PendencieRepository,
-  Ride,
-  User,
-  USERS_ROLES,
   RideRepository,
   RideUpdateInterface,
   RideQueryInterface,
-  RideStatus,
 } from "@app/repositories";
-import { EVENTS, State, Position, EventsInterface } from "../events";
+import { EVENTS, State, Position, EventsInterface } from "@shared/events";
 import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
-import {
-  NotInRideException,
-  RideNotFoundException,
-  UncancelableRideException,
-} from "../exceptions";
+import { NotInRideException, RideNotFoundException } from "../exceptions";
 import { PinoLogger } from "nestjs-pino";
 import { ConfigService } from "@nestjs/config";
 
 export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
-  public role!: USERS_ROLES;
+  public role!: UserRoles;
 
   constructor(
     readonly configService: ConfigService,
@@ -78,10 +71,14 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
 
       return true;
     });
-    //unique(server, {
-    //  storage: new storageAdapters.IORedis(this.cacheService.redis),
-    //  onError: (socket, error) => this.logger.error(error, socket.id)
-    //});
+
+    if (process.env.NODE_ENV === "production") {
+      unique(server, {
+        storage: new storageAdapters.IORedis(this.cacheService.redis),
+        onError: (local, error, socket) =>
+          this.logger.error(error.message, { local, socketId: socket.id }),
+      });
+    }
   }
 
   handleConnection(socket: Socket) {
@@ -133,9 +130,9 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     issuer,
     affected,
   }: {
-    ride: Ride["_id"];
-    issuer: User["_id"];
-    affected: User["_id"];
+    ride: RideInterface["_id"];
+    issuer: UserInterface["_id"];
+    affected: UserInterface["_id"];
   }) {
     return retryUnderHood(
       () =>
@@ -150,7 +147,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     );
   }
 
-  async getRide(query: RideQueryInterface): Promise<Ride> {
+  async getRide(query: RideQueryInterface): Promise<RideInterface> {
     const ride = await this.rideRepository.get(query);
 
     if (!ride) {
@@ -160,7 +157,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     return ride;
   }
 
-  checkIfInRide(ride: Ride, _id: User["_id"]) {
+  checkIfInRide(ride: RideInterface, _id: UserInterface["_id"]) {
     if (ride.voyager._id !== _id && ride.driver?._id !== _id) {
       throw new NotInRideException(ride.pid, _id);
     }

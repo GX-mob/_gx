@@ -6,20 +6,17 @@ import IOServer, { Server } from "socket.io";
 import IOClient from "socket.io-client";
 import faker from "faker";
 import { VoyagersGateway } from "../voyagers.gateway";
-import { RideStatus, RidePayMethods, RideTypes } from "@app/repositories";
+import { RideStatus, RidePayMethods } from "@shared/interfaces";
 //@ts-ignore
 import IORedisMock from "ioredis-mock";
 import {
   EVENTS,
-  Setup,
-  Configuration,
-  OfferResponse,
+  Position,
   DriverState,
   CANCELATION_RESPONSE,
   OfferRequest,
-} from "../../events";
+} from "@shared/events";
 import { CANCELATION } from "../../constants";
-import { Position } from "../../events";
 import { expectObservableFor, mockSocket, mockRide } from "./util";
 import ms from "ms";
 

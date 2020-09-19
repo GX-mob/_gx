@@ -5,7 +5,7 @@
  */
 import { Types } from "mongoose";
 import { UnprocessableEntityException } from "@nestjs/common";
-import { User, USERS_ROLES } from "@app/repositories";
+import { UserInterface, UserRoles } from "@shared/interfaces";
 import { util } from "@app/helpers";
 import { AccountSecurityController } from "./security.controller";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
@@ -37,7 +37,7 @@ describe("AccountProfileController", () => {
     send: jest.fn(),
   };
 
-  function mockUser(): User {
+  function mockUser(): UserInterface {
     return {
       _id: new Types.ObjectId(),
       pid: shortid.generate(),
@@ -48,7 +48,7 @@ describe("AccountProfileController", () => {
       emails: ["valid@email.com"],
       birth: new Date("06/13/1994"),
       averageEvaluation: 5.0,
-      roles: [USERS_ROLES.VOYAGER],
+      roles: [UserRoles.VOYAGER],
     };
   }
   beforeEach(() => {

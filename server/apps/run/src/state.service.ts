@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
+import { RideInterface } from "@shared/interfaces";
 import { RideRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
@@ -23,7 +24,7 @@ import {
   OfferRequest,
   Configuration,
   UserState,
-} from "./events";
+} from "@shared/events";
 import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
 import {
   NODES_EVENTS,
@@ -39,12 +40,14 @@ import {
 import { Socket } from "socket.io";
 import { retryUnderHood } from "@app/helpers/util";
 
+export type DriverObject = Driver & { updatedAt: number };
+
 @Injectable()
 export class StateService {
   /**
    * Drivers list
    */
-  public drivers: Driver[] = [];
+  public drivers: DriverObject[] = [];
   /**
    * Offers list
    */
@@ -103,6 +106,27 @@ export class StateService {
         client.data = { ...client.data, ...data };
       },
     );
+
+    /**
+     * Driver list cleanup
+     */
+    const driverObjectLifetime = this.configService.get(
+      "DRIVERS_OBJECTS.OBJECT_LIFETIME",
+    ) as number;
+    const driversObjectListCleanUpInterval = this.configService.get(
+      "DRIVERS_OBJECTS.LIST_CLEANUP_INTERVAL",
+    ) as number;
+
+    setInterval(() => {
+      for (let index = 0; index < this.drivers.length; ++index) {
+        const { updatedAt } = this.drivers[index];
+        const expireTimestamp = updatedAt + driverObjectLifetime;
+
+        if (expireTimestamp > Date.now()) {
+          this.drivers.splice(index, 1);
+        }
+      }
+    }, driversObjectListCleanUpInterval);
   }
 
   /**
@@ -120,12 +144,13 @@ export class StateService {
     }
 
     const driver = this.findDriver(socketId);
-    const driverObject: Driver = {
+    const driverObject: DriverObject = {
       ...connectionData,
       socketId,
       position: setup.position,
       config: setup.config,
       state: DriverState.SEARCHING,
+      updatedAt: Date.now(),
     };
 
     if (!driver) {
@@ -141,7 +166,7 @@ export class StateService {
   findDriver(
     socketId: string,
     logLevel: "error" | "info" | "warn" = "info",
-  ): Driver | undefined {
+  ): DriverObject | undefined {
     const driver = this.drivers.find((driver) => socketId === driver.socketId);
 
     if (driver) {
@@ -163,6 +188,7 @@ export class StateService {
     if (!driver) return;
 
     driver.position = position;
+    driver.updatedAt = Date.now();
   }
 
   /**
@@ -214,7 +240,9 @@ export class StateService {
     if (!offerResponse.response) {
       offer.ignoreds.push(driverConnectionData.pid);
 
-      this.offerRide(offer);
+      const ride = await this.rideRepository.get({ pid: offer.ridePID });
+
+      this.offerRide(offer, ride as RideInterface);
       return;
     }
 
@@ -229,7 +257,7 @@ export class StateService {
       () =>
         this.cacheService.set(
           CACHE_NAMESPACES.OFFERS,
-          offer.ride.pid,
+          offer.ridePID,
           {
             ...offerStoreData,
             driverSocketId: (driverConnectionData as ConnectionData).socketId,
@@ -247,7 +275,7 @@ export class StateService {
     await util.retry(
       () =>
         this.rideRepository.update(
-          { pid: offer.ride.pid },
+          { pid: offer.ridePID },
           { driver: (driverConnectionData as ConnectionData)._id },
         ),
       3,
@@ -259,7 +287,7 @@ export class StateService {
 
     // Emit to driver
     this.socketService.emit(socketId, EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE, {
-      ridePID: offer.ride.pid,
+      ridePID: offer.ridePID,
       timestamp,
     });
 
@@ -268,7 +296,7 @@ export class StateService {
       offer.requesterSocketId,
       EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE,
       {
-        ridePID: offer.ride.pid,
+        ridePID: offer.ridePID,
         driverPID: driverConnectionData.pid,
         timestamp,
       },
@@ -318,7 +346,7 @@ export class StateService {
     ridePID: string,
     logLevel: "error" | "info" | "warn" = "info",
   ) {
-    const offer = this.offers.find((offer) => ridePID === offer.ride.pid);
+    const offer = this.offers.find((offer) => ridePID === offer.ridePID);
 
     if (offer) {
       return offer;
@@ -339,7 +367,7 @@ export class StateService {
     }
 
     const offerObject: OfferServer = {
-      ride,
+      ridePID: offer.ridePID,
       requesterSocketId: client.id,
       ignoreds: [],
       offeredTo: null,
@@ -359,7 +387,7 @@ export class StateService {
       },
     );
 
-    startOffer && this.offerRide(offerObject);
+    startOffer && this.offerRide(offerObject, ride);
 
     // acknownlegment
     return true;
@@ -370,8 +398,8 @@ export class StateService {
    * @param {OfferServer} offer
    * @param {string} requesterSocketId SocketId of requester
    */
-  async offerRide(offer: OfferServer): Promise<void> {
-    const driver = await this.match(offer);
+  async offerRide(offer: OfferServer, ride: RideInterface): Promise<void> {
+    const driver = await this.match(offer, ride);
 
     /**
      * If don't have a match, informes to user the break time,
@@ -396,7 +424,7 @@ export class StateService {
      * Emit the offer to driver
      */
     this.socketService.emit(driver.socketId, EVENTS.OFFER, {
-      ridePID: offer.ride.pid,
+      ridePID: offer.ridePID,
     });
 
     /**
@@ -411,7 +439,7 @@ export class StateService {
       (rider, offer) => {
         offer.ignoreds.push(rider.pid);
         offer.offeredTo = null;
-        this.offerRide(offer);
+        this.offerRide(offer, ride);
       },
       this.configService.get("OFFER.DRIVER_RESPONSE_TIMEOUT") as number,
       driver,
@@ -427,6 +455,7 @@ export class StateService {
    */
   async match(
     offer: OfferServer,
+    ride: RideInterface,
     list: Driver[] = this.drivers,
     runTimes = 0,
   ): Promise<Driver | null> {
@@ -439,7 +468,6 @@ export class StateService {
 
     for (let i = 0; i < list.length; ++i) {
       const current = list[i];
-      const { ride } = offer;
 
       const distance = geometry.distance.calculate(
         current.position.latLng,
@@ -538,7 +566,7 @@ export class StateService {
       );
 
       await new Promise((resolve) => setTimeout(resolve, iterationInterval));
-      return this.match(offer, nextList, runTimes);
+      return this.match(offer, ride, nextList, runTimes);
     }
 
     return choiced;
@@ -643,7 +671,10 @@ export class StateService {
 
     const driverIndex = this.drivers.indexOf(driver);
 
-    this.drivers[driverIndex] = deepmerge(driver, state);
+    this.drivers[driverIndex] = deepmerge(driver, {
+      ...state,
+      updatedAt: Date.now(),
+    });
 
     if (!isNodeEvent) {
       this.socketService.nodes.emit(NODES_EVENTS.UPDATE_DRIVER_STATE, {

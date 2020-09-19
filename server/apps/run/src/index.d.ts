@@ -1,4 +1,4 @@
-import { ConnectionData, EventsInterface, State } from "./events";
+import { ConnectionData, EventsInterface, State } from "@shared/events";
 
 declare module "socket.io" {
   interface Socket {

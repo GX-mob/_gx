@@ -8,7 +8,7 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { User, USERS_ROLES } from "@app/repositories";
+import { UserInterface, UserRoles } from "@shared/interfaces";
 import { AccountProfileController } from "./profile.controller";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
@@ -56,7 +56,7 @@ describe("AccountProfileController", () => {
     send: jest.fn(),
   };
 
-  function mockUser(): User {
+  function mockUser(): UserInterface {
     return {
       _id: new Types.ObjectId(),
       pid: shortid.generate(),
@@ -68,7 +68,7 @@ describe("AccountProfileController", () => {
       birth: new Date("06/13/1994"),
       password: Buffer.from("test"),
       averageEvaluation: 5.0,
-      roles: [USERS_ROLES.VOYAGER],
+      roles: [UserRoles.VOYAGER],
     };
   }
 

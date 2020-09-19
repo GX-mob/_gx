@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository-factory";
-import { Session, SessionModel } from "../models/session";
+import { SessionInterface as Session } from "@shared/interfaces";
+import { SessionModel } from "../models/session";
 
 export interface SessionQueryInterface
   extends Partial<Pick<Session, "_id" | "user">> {}

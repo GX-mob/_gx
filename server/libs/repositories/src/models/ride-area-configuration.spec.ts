@@ -1,14 +1,15 @@
 /**
  * Session model
  *
- * @group unit/services/database/models/prices
+ * @group unit/models/prices
  */
 import { Types } from "mongoose";
-import { PriceModel, PriceDetail } from "./prices";
+import { RideTypeConfigurationInterface } from "@shared/interfaces";
+import { RideAreaConfigurationModel } from "./ride-area-configuration";
 
 describe("Model: Price", () => {
   it("should throw error due to empty required fields", (done) => {
-    const price = new PriceModel();
+    const price = new RideAreaConfigurationModel();
 
     price.validate((err) => {
       expect(Object.keys(err.errors).length).toBe(4);
@@ -17,7 +18,7 @@ describe("Model: Price", () => {
   });
 
   it("should validate", () => {
-    const rideType1: PriceDetail = {
+    const rideType1: RideTypeConfigurationInterface = {
       type: 1,
       available: true,
       perKilometer: 1.1,
@@ -28,7 +29,7 @@ describe("Model: Price", () => {
       overBusinessTimeMinuteAdd: 0.3,
     };
 
-    const rideType2: PriceDetail = {
+    const rideType2: RideTypeConfigurationInterface = {
       type: 2,
       available: true,
       perKilometer: 1.6,
@@ -39,7 +40,7 @@ describe("Model: Price", () => {
       overBusinessTimeMinuteAdd: 0.5,
     };
 
-    const price = new PriceModel({
+    const price = new RideAreaConfigurationModel({
       area: "AL",
       currency: "BRL",
       timezone: "America/Maceio",

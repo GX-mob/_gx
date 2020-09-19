@@ -2,7 +2,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { SocketAdapter } from "@app/socket";
 import { parsers } from "extensor";
-import { EVENTS, serverEventsSchemas } from "./events";
+import { serverEventsSchemas } from "@shared/events";
 import { logger } from "@app/helpers";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { BROADCASTED_EVENTS } from "./constants";

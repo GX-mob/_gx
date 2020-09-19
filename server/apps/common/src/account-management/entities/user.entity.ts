@@ -1,7 +1,7 @@
 import { Exclude } from "class-transformer";
-import { User, USERS_ROLES } from "@app/repositories";
+import { UserInterface, UserRoles } from "@shared/interfaces";
 
-export class UserEntity implements User {
+export class UserEntity implements UserInterface {
   _id!: string;
   pid!: string;
   firstName!: string;
@@ -11,13 +11,13 @@ export class UserEntity implements User {
   cpf!: string;
   birth!: Date;
   avatar!: string;
-  roles!: USERS_ROLES[];
+  roles!: UserRoles[];
   averageEvaluation!: number;
 
   @Exclude()
   password!: Buffer;
 
-  constructor(partial: Partial<User>) {
+  constructor(partial: Partial<UserInterface>) {
     Object.assign(this, partial);
   }
 }

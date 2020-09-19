@@ -29,7 +29,8 @@ import {
 import { FastifyRequest, FastifyReply } from "fastify";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import { util } from "@app/helpers";
-import { User, UserRepository } from "@app/repositories";
+import { UserInterface } from "@shared/interfaces";
+import { UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
 import { EXCEPTIONS_MESSAGES } from "../constants";
@@ -143,7 +144,7 @@ export class SignInController {
     return;
   }
 
-  private createSession(user: User, request: FastifyRequest) {
+  private createSession(user: UserInterface, request: FastifyRequest) {
     return this.session.create(
       user,
       request.headers["user-agent"] as string,

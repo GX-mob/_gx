@@ -1,12 +1,12 @@
 import faker from "faker";
 import {
-  Ride,
+  RideInterface,
   RideTypes,
   RidePayMethods,
   RideStatus,
-  User,
-  USERS_ROLES,
-} from "@app/repositories";
+  UserInterface,
+  UserRoles,
+} from "@shared/interfaces";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 
 faker.setLocale("pt_BR");
@@ -21,8 +21,8 @@ export async function createReplSetServer() {
   return mongoReplSetServer;
 }
 
-export function mockRide(override: Partial<Ride> = {}): Ride {
-  const ride: Ride = {
+export function mockRide(override: Partial<RideInterface> = {}): RideInterface {
+  const ride: RideInterface = {
     _id: faker.random.alphaNumeric(12),
     pid: faker.random.alphaNumeric(12),
     voyager: faker.random.alphaNumeric(12),
@@ -75,8 +75,8 @@ function genNumber() {
   return `5582988${String(random).padEnd(6, "0")}`;
 }
 
-export function mockUser(override: Partial<User> = {}): User {
-  const user: User = {
+export function mockUser(override: Partial<UserInterface> = {}): UserInterface {
+  const user: UserInterface = {
     _id: faker.random.alphaNumeric(12),
     pid: faker.random.alphaNumeric(12),
     firstName: faker.name.firstName(),
@@ -86,7 +86,7 @@ export function mockUser(override: Partial<User> = {}): User {
     emails: [faker.internet.email()],
     birth: faker.date.past(18),
     averageEvaluation: faker.random.number({ min: 1, max: 5 }),
-    roles: [USERS_ROLES.VOYAGER],
+    roles: [UserRoles.VOYAGER],
     ...override,
   };
   return user;

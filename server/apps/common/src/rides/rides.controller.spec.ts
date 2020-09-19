@@ -7,11 +7,11 @@ import { RidesController } from "./rides.controller";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
 import {
-  Price,
+  RideAreaConfigurationInterface,
   RidePayMethods,
   RideTypes,
-  TRoutePoint,
-} from "@app/repositories";
+  RoutePointInterface,
+} from "@shared/interfaces";
 import { GetRidesPricesParams, CreateRideDto } from "./rides.dto";
 import { prices, path } from "./__mocks__";
 import shortid from "shortid";
@@ -34,9 +34,11 @@ describe("RidesController", () => {
     pendencieModel: {
       find: jest.fn(),
     },
-    priceModel: {
+    rideAreaConfigurationModel: {
       find: () => ({
-        lean: async (): Promise<Price[]> => [...prices],
+        lean: async (): Promise<RideAreaConfigurationInterface[]> => [
+          ...prices,
+        ],
       }),
       watch: () => emitter,
     },
@@ -61,7 +63,7 @@ describe("RidesController", () => {
   };
 
   const mockRoute = () => {
-    const point: TRoutePoint = {
+    const point: RoutePointInterface = {
       coord: [0, 0],
       primary: "foo",
       secondary: "foo",

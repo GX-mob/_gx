@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository-factory";
-import { Pendencie, PendencieModel } from "../models/pendencie";
+import { PendencieInterface as Pendencie } from "@shared/interfaces";
+import { PendencieModel } from "../models/pendencie";
 
 export interface PendencieQueryInterface
   extends Partial<Pick<Pendencie, "affected" | "issuer" | "_id" | "ride">> {}

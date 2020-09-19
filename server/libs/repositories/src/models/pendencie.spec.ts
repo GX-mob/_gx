@@ -1,7 +1,7 @@
 /**
  * Session model
  *
- * @group unit/services/database/models/pendencie
+ * @group unit/models/pendencie
  */
 import { Types } from "mongoose";
 import { PendencieModel } from "./pendencie";

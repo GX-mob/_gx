@@ -1,9 +1,9 @@
 import { FastifyRequest } from "fastify";
-import { Session } from "@app/repositories";
+import { SessionInterface } from "@shared/interfaces";
 
 export * from "./auth.guard";
 export * from "./auth.decorator";
 
 export interface AuthorizedRequest extends FastifyRequest {
-  session: Session;
+  session: SessionInterface;
 }

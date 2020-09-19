@@ -1,6 +1,11 @@
 import { registerAs } from "@nestjs/config";
 import ms from "ms";
 
+export const DRIVERS_OBJECTS = registerAs("DRIVERS_OBJECTS", () => ({
+  OBJECT_LIFETIME: ms("5 mintues"),
+  LIST_CLEANUP_INTERVAL: ms("5 mintues"),
+}));
+
 export const MATCH = registerAs("MATCH", () => ({
   MAX_ITERATION: 60,
   ITERATION_INTERVAL: ms("1 second"),

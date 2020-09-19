@@ -6,13 +6,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
+import { UserInterface, SessionInterface, UserRoles } from "@shared/interfaces";
 import {
   RepositoryModule,
   RepositoryService,
-  User,
   UserModel,
-  USERS_ROLES,
-  Session,
   UserRepository,
   SessionRepository,
 } from "@app/repositories";
@@ -37,7 +35,7 @@ describe("RepositoryFactory", () => {
     phones: ["+5582988888888", "+5582988444445"],
     emails: [],
     birth: new Date("06/13/1994"),
-    roles: [USERS_ROLES.VOYAGER],
+    roles: [UserRoles.VOYAGER],
   };
 
   const mockSession = {
@@ -98,10 +96,12 @@ describe("RepositoryFactory", () => {
 
     expect(cached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
 
-    const persistent = (await userRepository.get({ _id: cached._id })) as User;
+    const persistent = (await userRepository.get({
+      _id: cached._id,
+    })) as UserInterface;
     const fromCache = (await cacheService.get("users", {
       _id: cached._id,
-    })) as User;
+    })) as UserInterface;
 
     expect(persistent.firstName).toBe(cached.firstName);
     expect(fromCache.firstName).toBe(cached.firstName);
@@ -125,7 +125,9 @@ describe("RepositoryFactory", () => {
   });
 
   it("should get cached record", async () => {
-    const user = (await userRepository.get({ _id: cached._id })) as User;
+    const user = (await userRepository.get({
+      _id: cached._id,
+    })) as UserInterface;
 
     expect(user.cpf).toBe(cached.cpf);
   });
@@ -139,13 +141,15 @@ describe("RepositoryFactory", () => {
       averageEvaluation: 4.5,
     });
 
-    const user = (await userRepository.get({ _id: nonCached._id })) as User;
+    const user = (await userRepository.get({
+      _id: nonCached._id,
+    })) as UserInterface;
 
     expect(user.cpf).toBe(nonCached.cpf);
 
     const fromCache = (await cacheService.get("users", {
       _id: nonCached._id,
-    })) as User;
+    })) as UserInterface;
 
     expect(user.cpf).toBe(fromCache.cpf);
   });
@@ -153,7 +157,7 @@ describe("RepositoryFactory", () => {
   it("get by a linking key", async () => {
     const user2 = (await userRepository.get({
       phones: mockUser.phones[0],
-    })) as User;
+    })) as UserInterface;
 
     expect(user2.firstName).toBe(mockUser.firstName);
     expect(user2.cpf).toBe(mockUser.cpf);
@@ -164,7 +168,7 @@ describe("RepositoryFactory", () => {
 
     await userRepository.update(query, { firstName: "Second" });
 
-    const persistent = (await UserModel.findOne(query)) as User;
+    const persistent = (await UserModel.findOne(query)) as UserInterface;
     const fromCache = await cacheService.get("users", query);
 
     expect(persistent.firstName).toBe("Second");
@@ -174,7 +178,7 @@ describe("RepositoryFactory", () => {
   it("should do auto populate", async () => {
     const sessionPopulated = (await sessionRepository.get({
       _id: session._id,
-    })) as Session;
+    })) as SessionInterface;
 
     expect(sessionPopulated.user._id.toString()).toBe(cached._id.toString());
   });

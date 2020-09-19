@@ -1,17 +1,9 @@
 import { Document, Schema } from "mongoose";
+import { PendencieInterface } from "@shared/interfaces";
 import Connections from "../connections";
 import { UserModel } from "./user";
 
-export interface Pendencie {
-  _id: any;
-  ride: string;
-  issuer: any;
-  amount: number;
-  affected: any;
-  resolved: boolean;
-}
-
-export interface PendencieDocument extends Pendencie, Document {}
+export interface PendencieDocument extends PendencieInterface, Document {}
 
 export const PendencieSchema: Schema = new Schema(
   {

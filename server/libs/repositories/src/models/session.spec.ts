@@ -1,7 +1,7 @@
 /**
  * Session model
  *
- * @group unit/services/database/models/session
+ * @group unit/models/session
  */
 import { Types } from "mongoose";
 import { SessionModel } from "./session";

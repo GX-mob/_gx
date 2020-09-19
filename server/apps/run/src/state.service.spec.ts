@@ -6,15 +6,17 @@ import { ConfigModule, registerAs } from "@nestjs/config";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
 import { SocketModule, SocketService } from "@app/socket";
-import { StateService } from "./state.service";
+import { DriverObject, StateService } from "./state.service";
 import EventEmitter from "eventemitter3";
 import shortid from "shortid";
 import {
-  RideRepository,
+  RideInterface,
   RidePayMethods,
   RideTypes,
-  USERS_ROLES,
-  Ride,
+  UserRoles,
+} from "@shared/interfaces";
+import {
+  RideRepository,
   RepositoryModule,
   RepositoryService,
 } from "@app/repositories";
@@ -28,7 +30,7 @@ import {
   OfferServer,
   DriverState,
   UserState,
-} from "./events";
+} from "@shared/events";
 import faker from "faker";
 import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
 import deepmerge from "deepmerge";
@@ -122,7 +124,7 @@ describe("StateService", () => {
         rate: faker.random.number({ min: 1, max: 5 }),
         p2p: faker.random.boolean(),
         socketId: shortid.generate(),
-        mode: USERS_ROLES.VOYAGER,
+        mode: UserRoles.VOYAGER,
         observers: [],
       },
       override,
@@ -162,8 +164,9 @@ describe("StateService", () => {
     );
   }
 
-  function mockDriverPosition(override: Partial<Driver> = {}): Driver {
+  function mockDriverPosition(override: Partial<Driver> = {}): DriverObject {
     return {
+      updatedAt: Date.now(),
       _id: shortid.generate(),
       state: DriverState.SEARCHING,
       pid: shortid.generate(),
@@ -265,7 +268,7 @@ describe("StateService", () => {
       cacheMock.get.mockResolvedValue(null);
 
       const setup = mockSetup();
-      const connection = mockConnection({ mode: USERS_ROLES.DRIVER });
+      const connection = mockConnection({ mode: UserRoles.DRIVER });
 
       await service.setupDriverEvent(connection.socketId, setup, connection);
 
@@ -282,14 +285,14 @@ describe("StateService", () => {
       const setup3 = mockSetup();
       const setupOverride = mockSetup();
 
-      const connection1 = mockConnection({ mode: USERS_ROLES.DRIVER });
-      const connection2 = mockConnection({ mode: USERS_ROLES.DRIVER });
-      const connection3 = mockConnection({ mode: USERS_ROLES.DRIVER });
+      const connection1 = mockConnection({ mode: UserRoles.DRIVER });
+      const connection2 = mockConnection({ mode: UserRoles.DRIVER });
+      const connection3 = mockConnection({ mode: UserRoles.DRIVER });
 
       service.drivers = [
-        { ...setup1, ...connection1 },
-        { ...setup2, ...connection2 },
-        { ...setup3, ...connection3 },
+        { ...setup1, ...connection1, updatedAt: Date.now() },
+        { ...setup2, ...connection2, updatedAt: Date.now() },
+        { ...setup3, ...connection3, updatedAt: Date.now() },
       ];
 
       await service.setupDriverEvent(
@@ -298,15 +301,16 @@ describe("StateService", () => {
         connection2,
       );
 
-      expect(
-        service.drivers.find(
-          (driver) => driver.socketId === connection2.socketId,
-        ),
-      ).toStrictEqual({
+      const driverObject = service.drivers.find(
+        (driver) => driver.socketId === connection2.socketId,
+      );
+
+      expect(driverObject).toMatchObject({
         ...connection2,
         ...setupOverride,
         state: UserState.SEARCHING,
       });
+      expect(typeof (driverObject as any).updatedAt).toBe("number");
 
       cacheMock.get.mockResolvedValueOnce(connection3);
 
@@ -323,7 +327,7 @@ describe("StateService", () => {
         service.drivers.find(
           (driver) => driver.socketId === connection3.socketId,
         ),
-      ).toStrictEqual({
+      ).toMatchObject({
         ...connection3,
         ...fromAnotherNodeData,
         state: UserState.SEARCHING,
@@ -334,18 +338,18 @@ describe("StateService", () => {
   describe("findDriver", () => {
     it("should find", () => {
       const setup = mockSetup();
-      const connection = mockConnection({ mode: USERS_ROLES.DRIVER });
+      const connection = mockConnection({ mode: UserRoles.DRIVER });
 
-      service.drivers = [{ ...setup, ...connection }];
+      service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
 
       expect(service.findDriver(connection.socketId)).toBeDefined();
     });
 
     it("should don't find", () => {
       const setup = mockSetup();
-      const connection = mockConnection({ mode: USERS_ROLES.DRIVER });
+      const connection = mockConnection({ mode: UserRoles.DRIVER });
 
-      service.drivers = [{ ...setup, ...connection }];
+      service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
 
       expect(service.findDriver(shortid.generate())).toBeUndefined();
       expect(loggerMock.info).toBeCalledTimes(1);
@@ -371,10 +375,10 @@ describe("StateService", () => {
     describe(functionName, () => {
       it("should don't do nothing due to not found driver", async () => {
         const setup = mockSetup();
-        const connection = mockConnection({ mode: USERS_ROLES.DRIVER });
+        const connection = mockConnection({ mode: UserRoles.DRIVER });
         const data = (setup as any)[field];
 
-        service.drivers = [{ ...setup, ...connection }];
+        service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
         service[functionName](shortid.generate(), data);
         expect(loggerMock.info).toBeCalledTimes(1);
 
@@ -390,10 +394,10 @@ describe("StateService", () => {
 
       it("should update", async () => {
         const setup = mockSetup();
-        const connection = mockConnection({ mode: USERS_ROLES.DRIVER });
+        const connection = mockConnection({ mode: UserRoles.DRIVER });
         const expected = mockSetup()[field];
 
-        service.drivers = [{ ...setup, ...connection }];
+        service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
         service[functionName](connection.socketId, expected as any);
 
         const driver = service.findDriver(connection.socketId) as any;
@@ -437,7 +441,7 @@ describe("StateService", () => {
 
     it("should throw ConnectionDataNotFoundException", async () => {
       const ridePID = shortid.generate();
-      (service as any).offers = [{ ride: { pid: ridePID } }];
+      (service as any).offers = [{ ridePID }];
 
       const offerResponse: OfferResponse = {
         ridePID,
@@ -467,9 +471,7 @@ describe("StateService", () => {
       const otherDriverPID = shortid.generate();
       const driverConnectionData = { pid: driverPID };
 
-      (service as any).offers = [
-        { ride: { pid: ridePID }, offeredTo: otherDriverPID },
-      ];
+      (service as any).offers = [{ ridePID, offeredTo: otherDriverPID }];
 
       const offerResponse: OfferResponse = {
         ridePID,
@@ -497,7 +499,7 @@ describe("StateService", () => {
       const driverConnectionData = { pid: driverPID };
 
       const offer: OfferServer = {
-        ride: { pid: ridePID } as any,
+        ridePID,
         offeredTo: driverPID,
         requesterSocketId: shortid.generate(),
         ignoreds: [""],
@@ -549,7 +551,7 @@ describe("StateService", () => {
       cacheMock.set.mockResolvedValue(true);
 
       const offer: OfferServer = {
-        ride: { pid: ridePID } as any,
+        ridePID,
         offeredTo: driverPID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [""],
@@ -576,7 +578,7 @@ describe("StateService", () => {
 
       expect((offer.offerResponseTimeout as any)._destroyed).toBeTruthy();
       expect(cacheCalls[0][0]).toBe(CACHE_NAMESPACES.OFFERS);
-      expect(cacheCalls[0][1]).toBe(offer.ride.pid);
+      expect(cacheCalls[0][1]).toBe(offer.ridePID);
       expect(cacheCalls[0][2]).toMatchObject({
         ...offerCacheSaveCall,
         driverSocketId,
@@ -586,20 +588,20 @@ describe("StateService", () => {
 
       const rideDataCalls = rideRepository.update.mock.calls;
 
-      expect(rideDataCalls[0][0]).toStrictEqual({ pid: offer.ride.pid });
+      expect(rideDataCalls[0][0]).toStrictEqual({ pid: offer.ridePID });
       expect(rideDataCalls[0][1]).toStrictEqual({ driver: driverID });
 
       const [driverEmit, voyagerEmit] = socketService.emit.mock.calls;
 
       expect(driverEmit[0]).toBe(driverSocketId);
       expect(driverEmit[1]).toBe(EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE);
-      expect(driverEmit[2]).toMatchObject({ ridePID: offer.ride.pid });
+      expect(driverEmit[2]).toMatchObject({ ridePID: offer.ridePID });
       expect(typeof driverEmit[2].timestamp).toBe("number");
 
       expect(voyagerEmit[0]).toBe(voyagerSocketId);
       expect(voyagerEmit[1]).toBe(EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE);
       expect(voyagerEmit[2]).toMatchObject({
-        ridePID: offer.ride.pid,
+        ridePID: offer.ridePID,
         driverPID: driverPID,
       });
       expect(typeof voyagerEmit[2].timestamp).toBe("number");
@@ -689,7 +691,7 @@ describe("StateService", () => {
 
       await service.createOffer(offerRequest, socket as any, false);
 
-      const offer = service.offers.find((offer) => offer.ride.pid === ridePID);
+      const offer = service.offers.find((offer) => offer.ridePID === ridePID);
 
       expect(offer).toBeDefined();
       expect(socket.data.rides.includes(ridePID)).toBeTruthy();
@@ -786,19 +788,21 @@ describe("StateService", () => {
     });
 
     it(`should get a ${EVENTS.OFFER_GOT_TOO_LONG}`, async () => {
-      const ride: Partial<Ride> = {};
+      const ride: Partial<RideInterface> = {
+        pid: faker.random.alphaNumeric(12),
+      };
 
       const voyagerSocketId = shortid.generate();
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID: ride.pid as string,
         requesterSocketId: voyagerSocketId,
         ignoreds: [],
         offeredTo: null,
         offerResponseTimeout: null,
       };
 
-      await service.offerRide(offerObject);
+      await service.offerRide(offerObject, ride as RideInterface);
 
       const [tooLongEvent] = socketService.emit.mock.calls;
 
@@ -824,14 +828,14 @@ describe("StateService", () => {
       const voyagerSocketId = shortid.generate();
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID: ride.pid,
         requesterSocketId: voyagerSocketId,
         ignoreds: [driverIgnored.pid],
         offeredTo: null,
         offerResponseTimeout: null,
       };
 
-      await service.offerRide(offerObject);
+      await service.offerRide(offerObject, ride);
 
       expect(offerObject.offeredTo).toBe(driverBetterRated.pid);
 
@@ -866,14 +870,14 @@ describe("StateService", () => {
       const voyagerSocketId = shortid.generate();
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID: ride.pid,
         requesterSocketId: voyagerSocketId,
         ignoreds: [driverIgnored.pid],
         offeredTo: null,
         offerResponseTimeout: null,
       };
 
-      await service.offerRide(offerObject);
+      await service.offerRide(offerObject, ride);
 
       expect(offerObject.offeredTo).toBe(driverBetterRated.pid);
 
@@ -904,7 +908,7 @@ describe("StateService", () => {
       const ride = {};
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [],
         offeredTo: null,
@@ -932,7 +936,7 @@ describe("StateService", () => {
       const ride = {};
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [],
         offeredTo: null,
@@ -940,7 +944,7 @@ describe("StateService", () => {
       };
 
       cacheMock.get.mockResolvedValue({
-        ride: ride as any,
+        ridePID,
         requesterSocketId: voyagerSocketId,
         ignoreds: ["currentIgnored"],
         offeredTo: null,
@@ -971,7 +975,7 @@ describe("StateService", () => {
       const ride = {};
 
       const offerObject: OfferServer = {
-        ride: ride as any,
+        ridePID,
         requesterSocketId: voyagerSocketId,
         ignoreds: [],
         offeredTo: null,

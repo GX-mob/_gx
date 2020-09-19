@@ -1,7 +1,7 @@
 import faker from "faker";
 import deepmerge from "deepmerge";
-import { EVENTS } from "../../events";
-import { RidePayMethods } from "@app/repositories";
+import { EVENTS } from "@shared/events";
+import { RidePayMethods } from "@shared/interfaces";
 
 export function mockSocket(override: any = {}) {
   return deepmerge(

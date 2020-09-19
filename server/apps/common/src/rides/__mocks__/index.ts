@@ -1,9 +1,12 @@
-import { PriceDetail, Price } from "@app/repositories";
+import {
+  RideAreaConfigurationInterface,
+  RideTypeConfigurationInterface,
+} from "@shared/interfaces";
 import { geometry } from "@app/helpers";
 //@ts-ignore
 const { decode } = require("google-polyline");
 
-export const rideType1: PriceDetail = {
+export const rideType1: RideTypeConfigurationInterface = {
   type: 1,
   available: true,
   perKilometer: 1.1,
@@ -14,7 +17,7 @@ export const rideType1: PriceDetail = {
   overBusinessTimeMinuteAdd: 0.3,
 };
 
-export const rideType2: PriceDetail = {
+export const rideType2: RideTypeConfigurationInterface = {
   type: 2,
   available: true,
   perKilometer: 1.6,
@@ -25,7 +28,7 @@ export const rideType2: PriceDetail = {
   overBusinessTimeMinuteAdd: 0.5,
 };
 
-export const prices: Price[] = [
+export const prices: RideAreaConfigurationInterface[] = [
   {
     area: "AL",
     currency: "BRL",

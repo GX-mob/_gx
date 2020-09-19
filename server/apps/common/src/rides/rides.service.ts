@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { utcToZonedTime } from "date-fns-tz";
-import { RepositoryService, Price, PriceDetail, Ride } from "@app/repositories";
+import {
+  RideInterface,
+  RideAreaConfigurationInterface,
+  RideTypeConfigurationInterface,
+} from "@shared/interfaces";
+import { RepositoryService } from "@app/repositories";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
 import {
@@ -11,19 +16,19 @@ import {
 
 @Injectable()
 export class RidesService {
-  readonly areas: { [area: string]: Price } = {};
+  readonly areas: { [area: string]: RideAreaConfigurationInterface } = {};
 
   constructor(readonly repositoryService: RepositoryService) {
     this.init();
   }
 
   private async init() {
-    const { priceModel } = this.repositoryService;
+    const { rideAreaConfigurationModel } = this.repositoryService;
 
     /**
      * Get and store all rides types and prices
      */
-    const prices = await priceModel.find().lean();
+    const prices = await rideAreaConfigurationModel.find().lean();
 
     if (!prices.length) {
       throw new Error("Empty rides types list");
@@ -36,7 +41,7 @@ export class RidesService {
     /**
      * Watch prices update
      */
-    priceModel.watch().on("change", (data) => {
+    rideAreaConfigurationModel.watch().on("change", (data) => {
       switch (data.operationType) {
         case "update":
         case "insert":
@@ -55,11 +60,14 @@ export class RidesService {
    * @param subArea
    * @returns {PriceDetail[] | PriceDetail | undefined} Price list, price for provided ride type or undefined
    */
-  getRideStatusPrice<T extends Ride["type"]>(
+  getRideStatusPrice<T extends RideInterface["type"]>(
     area: string,
     subArea?: string,
     rideType?: T,
-  ): PriceDetail | PriceDetail[] | undefined {
+  ):
+    | RideTypeConfigurationInterface
+    | RideTypeConfigurationInterface[]
+    | undefined {
     if (!util.hasProp(this.areas, area) || !this.areas[area]) {
       return;
     }
@@ -85,7 +93,11 @@ export class RidesService {
      * The costs of ride type
      */
     const timezone = this.areas[area].timezone;
-    const costs = this.getRideStatusPrice(area, subArea, type) as PriceDetail;
+    const costs = this.getRideStatusPrice(
+      area,
+      subArea,
+      type,
+    ) as RideTypeConfigurationInterface;
     const isBusinessTime = this.isBusinessTime(timezone);
 
     const duration = this.durationPrice(
@@ -122,7 +134,7 @@ export class RidesService {
    */
   durationPrice(
     duration: number,
-    price: PriceDetail,
+    price: RideTypeConfigurationInterface,
     isBusinessTime: boolean,
   ): {
     total: number;
@@ -167,7 +179,7 @@ export class RidesService {
    */
   distancePrice(
     distance: number,
-    price: PriceDetail,
+    price: RideTypeConfigurationInterface,
     isBusinessTime: boolean,
   ): {
     total: number;

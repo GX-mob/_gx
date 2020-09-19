@@ -1,4 +1,5 @@
-import { EVENTS } from "./events";
+import ms from "ms";
+import { EVENTS } from "@shared/events";
 
 export enum NAMESPACES {
   VOYAGERS = "/voyagers",
@@ -50,3 +51,6 @@ export const BROADCASTED_EVENTS = {
 
 export const DISTANCE_TOLERANCE_TO_FINISH_RIDE = 50; // in meters
 export const DISTANCE_TOLERANCE_TO_START_RIDE = 20; // in meters
+
+export const DRIVER_OBJECT_LIST_CLEANUP_INTERVAL = ms("5 minutes");
+export const DRIVER_OBJECT_LIFETIME = ms("5 minutes");

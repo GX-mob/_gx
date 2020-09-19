@@ -6,14 +6,8 @@ import {
 } from "@nestjs/websockets";
 import { NAMESPACES } from "../constants";
 import { Common } from "./common";
-import {
-  RideStatus,
-  RidePayMethods,
-  Ride,
-  USERS_ROLES,
-  PendencieRepository,
-  RideRepository,
-} from "@app/repositories";
+import { RideStatus, RidePayMethods, UserRoles } from "@shared/interfaces";
+import { PendencieRepository, RideRepository } from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
@@ -24,7 +18,7 @@ import {
   CanceledRide,
   CANCELATION_RESPONSE,
   DriverState,
-} from "../events";
+} from "@shared/events";
 import { CacheService } from "@app/cache";
 import { SessionService } from "@app/session";
 import { SocketService } from "@app/socket";
@@ -35,7 +29,7 @@ import { UncancelableRideException } from "../exceptions";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
-  role = USERS_ROLES.VOYAGER;
+  role = UserRoles.VOYAGER;
   constructor(
     readonly configService: ConfigService,
     readonly socketService: SocketService<EventsInterface>,
@@ -56,7 +50,6 @@ export class VoyagersGateway extends Common {
       cacheService,
       logger,
     );
-
     logger.setContext(VoyagersGateway.name);
   }
 

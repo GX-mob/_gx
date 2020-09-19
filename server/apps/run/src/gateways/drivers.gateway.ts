@@ -3,17 +3,13 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   ConnectedSocket,
+  OnGatewayDisconnect,
   WsException,
 } from "@nestjs/websockets";
 import { DISTANCE_TOLERANCE_TO_START_RIDE, NAMESPACES } from "../constants";
 import { Common } from "./common";
-import {
-  Pendencie,
-  PendencieRepository,
-  RideRepository,
-  RideStatus,
-  USERS_ROLES,
-} from "@app/repositories";
+import { PendencieInterface, RideStatus, UserRoles } from "@shared/interfaces";
+import { PendencieRepository, RideRepository } from "@app/repositories";
 import { Socket } from "socket.io";
 import {
   EVENTS,
@@ -29,7 +25,7 @@ import {
   PickingUpPath,
   StartRide,
   UserState,
-} from "../events";
+} from "@shared/events";
 import { CacheService } from "@app/cache";
 import { SessionService } from "@app/session";
 import { SocketService } from "@app/socket";
@@ -44,8 +40,8 @@ import { geometry } from "@app/helpers";
 import { DISTANCE_TOLERANCE_TO_FINISH_RIDE } from "../constants";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
-export class DriversGateway extends Common {
-  role = USERS_ROLES.DRIVER;
+export class DriversGateway extends Common implements OnGatewayDisconnect {
+  role = UserRoles.DRIVER;
 
   constructor(
     readonly configService: ConfigService,
@@ -182,7 +178,7 @@ export class DriversGateway extends Common {
   ): Promise<{
     status: CanceledRide["status"] | "error";
     error?: string;
-    pendencie?: Pendencie["_id"];
+    pendencie?: PendencieInterface["_id"];
   }> {
     const now = Date.now();
     const ride = await super.getRide({ pid: ridePID });
@@ -223,5 +219,16 @@ export class DriversGateway extends Common {
       });
 
     return { status };
+  }
+
+  handleDisconnect(client: Socket) {
+    if (!client.data) return;
+
+    switch (client.data.state) {
+      case UserState.SEARCHING:
+        return this.stateService.updateDriver(client.id, {
+          state: UserState.IDLE,
+        });
+    }
   }
 }

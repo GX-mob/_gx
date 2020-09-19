@@ -17,17 +17,17 @@ import {
   CANCELATION_RESPONSE,
   PickingUpPath,
   Position,
-} from "../src/events";
+} from "@shared/events";
 import { NAMESPACES } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
 import {
-  Ride,
+  RideInterface,
   RidePayMethods,
-  RideRepository,
   RideTypes,
-  User,
-  USERS_ROLES,
-} from "@app/repositories";
+  UserInterface,
+  UserRoles,
+} from "@shared/interfaces";
+import { RideRepository } from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 import { SessionService } from "@app/session";
@@ -53,7 +53,7 @@ describe("RidesWSService (e2e)", () => {
     sessionService: SessionService;
   }[] = [];
   // Voyager, Voyager, Driver, Driver
-  let users: User[] = [];
+  let users: UserInterface[] = [];
 
   const parser = parsers.schemapack(serverEventsSchemas as any);
 
@@ -131,10 +131,10 @@ describe("RidesWSService (e2e)", () => {
     const voyager1 = mockUser();
     const voyager2 = mockUser();
     const driver1 = mockUser({
-      roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
+      roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
     });
     const driver2 = mockUser({
-      roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER],
+      roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
     });
 
     users = await Promise.all([
@@ -163,7 +163,7 @@ describe("RidesWSService (e2e)", () => {
 
   function createUserSocket(
     appNodeIndex: number,
-    user: User,
+    user: UserInterface,
     namespace?: NAMESPACES,
     options: SocketIOClient.ConnectOpts = {},
   ) {
@@ -171,7 +171,7 @@ describe("RidesWSService (e2e)", () => {
     const { port } = httpServer.address() as AddressInfo;
 
     namespace =
-      namespace || user.roles.includes(USERS_ROLES.DRIVER)
+      namespace || user.roles.includes(UserRoles.DRIVER)
         ? NAMESPACES.DRIVERS
         : NAMESPACES.VOYAGERS;
 
@@ -184,7 +184,7 @@ describe("RidesWSService (e2e)", () => {
   async function authorizeClient(
     appNodeIdx: number,
     socket: SocketIOClient.Socket,
-    user: User | string,
+    user: UserInterface | string,
   ) {
     const { sessionService } = appsNodes[appNodeIdx];
     const token =
@@ -244,7 +244,7 @@ describe("RidesWSService (e2e)", () => {
 
   describe("Ride workflows", () => {
     async function standardOfferNAccept(overrides?: {
-      rideOverride: Partial<Ride>;
+      rideOverride: Partial<RideInterface>;
     }) {
       const [voyager, , driver] = users;
       const voyagerSocket = createUserSocket(0, voyager);

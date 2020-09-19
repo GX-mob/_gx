@@ -6,19 +6,19 @@ import IOServer, { Server } from "socket.io";
 import IOClient from "socket.io-client";
 import faker from "faker";
 import { DriversGateway } from "../drivers.gateway";
-import { RidePayMethods, RideTypes } from "@app/repositories";
+import { RidePayMethods, RideTypes } from "@shared/interfaces";
 //@ts-ignore
 import IORedisMock from "ioredis-mock";
 import {
   EVENTS,
   Setup,
+  Position,
   Configuration,
   OfferResponse,
   DriverState,
   CANCELATION_RESPONSE,
-} from "../../events";
+} from "@shared/events";
 import { CANCELATION } from "../../constants";
-import { Position } from "../../events";
 import { expectObservableFor, mockSocket, mockRide } from "./util";
 import ms from "ms";
 

@@ -1,7 +1,7 @@
 /**
  * User model
  *
- * @group unit/services/database/models/user
+ * @group unit/models/user
  */
 import { UserModel } from "./user";
 

@@ -1,4 +1,4 @@
-import { ConnectionData, Driver } from ".";
+import { ConnectionData, Driver } from "@shared/events";
 import { NAMESPACES } from "../constants";
 
 export enum NODES_EVENTS {

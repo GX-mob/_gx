@@ -8,7 +8,7 @@ import {
   SessionModel,
   RideModel,
   PendencieModel,
-  PriceModel,
+  RideAreaConfigurationModel,
 } from "./models";
 
 const options: ConnectionOptions = {
@@ -25,7 +25,7 @@ export class RepositoryService {
   readonly sessionModel = SessionModel;
   readonly rideModel = RideModel;
   readonly pendencieModel = PendencieModel;
-  readonly priceModel = PriceModel;
+  readonly rideAreaConfigurationModel = RideAreaConfigurationModel;
 
   readonly connections = [
     Connections.Configuration,

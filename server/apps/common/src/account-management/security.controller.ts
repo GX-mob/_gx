@@ -5,7 +5,8 @@ import {
   Request,
   Body,
 } from "@nestjs/common";
-import { User, UserRepository } from "@app/repositories";
+import { UserInterface } from "@shared/interfaces";
+import { UserRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { AuthorizedRequest } from "@app/auth";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
@@ -106,7 +107,7 @@ export class AccountSecurityController {
     this.userRepository.update({ _id: user._id }, { "2fa": "" });
   }
 
-  private passwordRequired(user: User): void {
+  private passwordRequired(user: UserInterface): void {
     if (!user.password) {
       throw new UnprocessableEntityException(
         EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED,

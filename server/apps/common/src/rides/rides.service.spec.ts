@@ -7,12 +7,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { parseISO } from "date-fns";
 import {
-  RepositoryModule,
-  RepositoryService,
-  Price,
-  TRoutePoint,
   RideTypes,
-} from "@app/repositories";
+  RoutePointInterface,
+  RideAreaConfigurationInterface,
+} from "@shared/interfaces";
+import { RepositoryModule, RepositoryService } from "@app/repositories";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
 
@@ -25,9 +24,11 @@ describe("RideService", () => {
   emitter.setMaxListeners(50);
 
   const repositoryServiceMock = {
-    priceModel: {
+    rideAreaConfigurationModel: {
       find: () => ({
-        lean: async (): Promise<Price[]> => [...prices],
+        lean: async (): Promise<RideAreaConfigurationInterface[]> => [
+          ...prices,
+        ],
       }),
       watch: () => emitter,
     },
@@ -50,8 +51,10 @@ describe("RideService", () => {
   });
 
   it("should has rides types loaded", async () => {
-    const prices = await repositoryServiceMock.priceModel.find().lean();
-    const areas: { [area: string]: Price } = {};
+    const prices = await repositoryServiceMock.rideAreaConfigurationModel
+      .find()
+      .lean();
+    const areas: { [area: string]: RideAreaConfigurationInterface } = {};
 
     prices.forEach((price) => {
       areas[price.area] = price;
@@ -61,7 +64,9 @@ describe("RideService", () => {
   });
 
   it("should update area prices", async () => {
-    const prices = await repositoryServiceMock.priceModel.find().lean();
+    const prices = await repositoryServiceMock.rideAreaConfigurationModel
+      .find()
+      .lean();
 
     const newRideType1Values = {
       ...rideType1,
@@ -261,7 +266,7 @@ describe("RideService", () => {
 
   describe("getRideCosts", () => {
     it("should calculate ", () => {
-      const point: TRoutePoint = {
+      const point: RoutePointInterface = {
         coord: [0, 0],
         primary: "foo",
         secondary: "foo",

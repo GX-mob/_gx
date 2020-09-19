@@ -1,10 +1,10 @@
 import {
-  Ride,
+  RideInterface,
   RideTypes,
   RidePayMethods,
-  TRoute,
-  TRoutePoint,
-} from "@app/repositories";
+  RouteInterface,
+  RoutePointInterface,
+} from "@shared/interfaces";
 import {
   ValidateNested,
   IsNotEmpty,
@@ -13,7 +13,7 @@ import {
   IsArray,
 } from "class-validator";
 
-class Point implements TRoutePoint {
+class Point implements RoutePointInterface {
   @IsArray()
   coord!: [number, number];
 
@@ -27,7 +27,7 @@ class Point implements TRoutePoint {
   district!: string;
 }
 
-class Route implements TRoute {
+class Route implements RouteInterface {
   @ValidateNested()
   start!: Point;
 
@@ -63,11 +63,11 @@ export class CreateRideDto {
   payMethod!: RidePayMethods;
 
   @IsNotEmpty()
-  country!: Ride["country"];
+  country!: RideInterface["country"];
 
   @IsNotEmpty()
-  area!: Ride["area"];
+  area!: RideInterface["area"];
 
   @IsNotEmpty()
-  subArea!: Ride["subArea"];
+  subArea!: RideInterface["subArea"];
 }

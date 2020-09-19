@@ -9,13 +9,12 @@ import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { SessionService } from "./session.service";
+import { UserRoles, SessionInterface } from "@shared/interfaces";
 import {
   SessionRepository,
   RepositoryModule,
   RepositoryService,
   UserModel,
-  USERS_ROLES,
-  Session,
 } from "@app/repositories";
 import {
   SessionNotFoundException,
@@ -103,20 +102,20 @@ describe("SessionService", () => {
     await service.update(sid, { active: false });
     const updated = await service.get(sid);
 
-    expect((updated as Session).active).toBe(false);
+    expect((updated as SessionInterface).active).toBe(false);
   });
 
   it("should check permission", () => {
     const session1 = ({
-      user: { roles: [USERS_ROLES.VOYAGER] },
-    } as unknown) as Session;
+      user: { roles: [UserRoles.VOYAGER] },
+    } as unknown) as SessionInterface;
     const session2 = ({
-      user: { roles: [USERS_ROLES.VOYAGER, USERS_ROLES.DRIVER] },
-    } as unknown) as Session;
-    const group1 = [USERS_ROLES.VOYAGER];
-    const group2 = [USERS_ROLES.DRIVER];
-    const group3 = [USERS_ROLES.DRIVER, "admin"] as USERS_ROLES[];
-    const group4 = (["su"] as unknown) as USERS_ROLES[];
+      user: { roles: [UserRoles.VOYAGER, UserRoles.DRIVER] },
+    } as unknown) as SessionInterface;
+    const group1 = [UserRoles.VOYAGER];
+    const group2 = [UserRoles.DRIVER];
+    const group3 = [UserRoles.DRIVER, "admin"] as UserRoles[];
+    const group4 = (["su"] as unknown) as UserRoles[];
 
     expect(service.hasPermission(session1, group1)).toBeTruthy();
     expect(service.hasPermission(session1, group2)).toBeFalsy();

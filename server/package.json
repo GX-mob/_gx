@@ -151,7 +151,11 @@
       "@app/socket/(.*)": "<rootDir>/libs/socket/src/$1",
       "@app/socket": "<rootDir>/libs/socket/src",
       "@testing/testing/(.*)": "<rootDir>/libs/testing/src/$1",
-      "@testing/testing": "<rootDir>/libs/testing/src"
+      "@testing/testing": "<rootDir>/libs/testing/src",
+      "@shared/events/(.*)": "<rootDir>/../shared/events/$1",
+      "@shared/events": "<rootDir>/../shared/events",
+      "@shared/interfaces/(.*)": "<rootDir>/../shared/interfaces/$1",
+      "@shared/interfaces": "<rootDir>/../shared/interfaces"
     }
   }
 }
