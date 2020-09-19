@@ -21,11 +21,14 @@ import {
 import { CANCELATION } from "../../constants";
 import { Position } from "../../events";
 import { expectObservableFor, mockSocket, mockRide } from "./util";
+import ms from "ms";
 
 describe("VoyagersGateway", () => {
   let gateway: VoyagersGateway;
   let httpServer: HttpServer;
   let ioServer: Server;
+
+  let configServiceMock;
 
   const socketServiceMock = {
     emit: jest.fn(),
@@ -72,13 +75,23 @@ describe("VoyagersGateway", () => {
   }
 
   beforeEach(() => {
+    configServiceMock = {
+      get: jest.fn().mockImplementation((key: string) => {
+        const configMock: any = {
+          "OFFER.SAFE_CANCELATION_WINDOW": ms("3 minutes"),
+        };
+        return configMock[key];
+      }),
+    };
     gateway = new VoyagersGateway(
+      configServiceMock as any,
       socketServiceMock as any,
       rideRepositoryMock as any,
       pendencieRepositoryMock as any,
       sessionServiceMock as any,
       stateServiceMock as any,
       cacheServiceMock as any,
+      { setContext: () => {}, error: () => {}, info: () => {} } as any,
     );
   });
 
@@ -94,7 +107,7 @@ describe("VoyagersGateway", () => {
       latLng: [1, 1],
       heading: 0,
       kmh: 30,
-      ignored: [],
+      ignore: [],
       pid: "",
     };
   }
@@ -128,7 +141,7 @@ describe("VoyagersGateway", () => {
       const [createOfferCall] = stateServiceMock.createOffer.mock.calls;
 
       expect(createOfferCall[0]).toStrictEqual(eventBody);
-      expect(createOfferCall[1]).toStrictEqual(socketMock.data);
+      expect(createOfferCall[1]).toStrictEqual(socketMock);
     });
   });
 
@@ -155,8 +168,8 @@ describe("VoyagersGateway", () => {
         data: { rides: [ride.pid] },
       });
 
-      ride.voyager = socketMock.data._id;
-      ride.driver = faker.random.alphaNumeric(12);
+      ride.voyager = { _id: socketMock.data._id };
+      ride.driver = { _id: faker.random.alphaNumeric(12) };
 
       const driverSocketId = faker.random.alphaNumeric(12);
 

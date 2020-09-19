@@ -11,6 +11,7 @@ export function mockSocket(override: any = {}) {
       data: {
         _id: faker.random.alphaNumeric(12),
         pid: faker.random.alphaNumeric(12),
+        p2p: true,
         observers: [
           {
             socketId: faker.random.alphaNumeric(12),
@@ -31,8 +32,8 @@ export function mockRide(override: any = {}) {
   return {
     _id: faker.random.alphaNumeric(12),
     pid: faker.random.alphaNumeric(12),
-    voyager: faker.random.alphaNumeric(12),
-    driver: faker.random.alphaNumeric(12),
+    voyager: { _id: faker.random.alphaNumeric(12) },
+    driver: { _id: faker.random.alphaNumeric(12) },
     payMethod: RidePayMethods.Money,
     ...override,
   };

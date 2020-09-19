@@ -22,6 +22,9 @@ describe("CommonsGateway", () => {
   let httpServer: HttpServer;
   let ioServer: Server;
 
+  const configServiceMock = {
+    get: jest.fn(),
+  };
   const socketServiceMock = {
     emit: jest.fn(),
   };
@@ -63,12 +66,14 @@ describe("CommonsGateway", () => {
 
   beforeEach(() => {
     gateway = new Common(
+      configServiceMock as any,
       socketServiceMock as any,
       rideRepositoryMock as any,
       pendencieRepositoryMock as any,
       sessionServiceMock as any,
       stateServiceMock as any,
       cacheServiceMock as any,
+      { setContext: () => {}, error: () => {}, info: () => {} } as any,
     );
   });
 
@@ -148,51 +153,6 @@ describe("CommonsGateway", () => {
         affected,
         amount: CANCELATION.FARE,
       });
-    });
-  });
-
-  describe("cancelationSecutiryChecks", () => {
-    it("should throw RideNotFoundException", () => {
-      expect(() =>
-        gateway.cancelationSecutiryChecks(null, "", "voyager"),
-      ).toThrow(new RideNotFoundException());
-    });
-
-    it("should throw UncancelableRideException: running", () => {
-      const ride = {
-        pid: faker.random.alphaNumeric(12),
-        status: RideStatus.RUNNING,
-      };
-
-      expect(() =>
-        gateway.cancelationSecutiryChecks(ride as any, "", "voyager"),
-      ).toThrow(new UncancelableRideException(ride.pid, "running"));
-    });
-
-    it("should throw UncancelableRideException: not-in-ride for voyager", () => {
-      const random = faker.random.alphaNumeric(12);
-      const ride = {
-        pid: faker.random.alphaNumeric(12),
-        status: RideStatus.RUNNING,
-        voyager: faker.random.alphaNumeric(12),
-      };
-
-      expect(() =>
-        gateway.cancelationSecutiryChecks(ride as any, random, "voyager"),
-      ).toThrow(new UncancelableRideException(ride.pid, "running"));
-    });
-
-    it("should throw UncancelableRideException: not-in-ride for driver", () => {
-      const random = faker.random.alphaNumeric(12);
-      const ride = {
-        pid: faker.random.alphaNumeric(12),
-        status: RideStatus.CREATED,
-        driver: faker.random.alphaNumeric(12),
-      };
-
-      expect(() =>
-        gateway.cancelationSecutiryChecks(ride as any, random, "driver"),
-      ).toThrow(new UncancelableRideException(ride.pid, "not-in-ride"));
     });
   });
 });

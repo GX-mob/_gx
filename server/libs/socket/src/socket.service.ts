@@ -10,7 +10,10 @@ import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
 import { SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
 
 @Injectable()
-export class SocketService<Events = { [k: string]: any }> {
+export class SocketService<
+  Events = { [k: string]: any },
+  NodesEvents = { [k: string]: any }
+> {
   /**
    * Self node id to used prevent handling self emitted events
    */
@@ -21,12 +24,14 @@ export class SocketService<Events = { [k: string]: any }> {
     /**
      * Registres a event listener from another server nodes
      */
-    on: <T = any>(event: string, listener: (data: T) => void) =>
-      this.nodeListener.on(event, listener),
+    on: <K extends keyof NodesEvents>(
+      event: K,
+      listener: (data: NodesEvents[K]) => void,
+    ) => this.nodeListener.on(event as string, listener),
     /**
      * Emits events to another server nodes
      */
-    emit: <T = any>(event: string, data: T) => {
+    emit: <K extends keyof NodesEvents>(event: K, data: NodesEvents[K]) => {
       const serverEvent = this.createServerEvent(
         SERVER_EVENTS.SOCKET_NODE_EVENT,
         {
@@ -176,7 +181,7 @@ export class SocketService<Events = { [k: string]: any }> {
   getSocket(id: string): Socket | null {
     const split = id.split("#");
 
-    if (split.length === 0) {
+    if (split.length === 1) {
       return this.server.of("/").sockets[id] || null;
     }
 

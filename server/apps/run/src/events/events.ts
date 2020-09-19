@@ -42,7 +42,13 @@ import {
   offerGotTooLong,
   //
   PickingUpPath,
-  setPickingUpPathSchema,
+  pickingUpPathSchema,
+  //
+  StartRide,
+  startRideSchema,
+  //
+  FinishRide,
+  finishRideSchema,
 } from "./schemas";
 
 export * from "./schemas";
@@ -64,6 +70,8 @@ export enum EVENTS {
   DELAYED_OFFER_RESPONSE = "DELAYED_OFFER_RESPONSE",
   OFFER_GOT_TOO_LONG = "OFFER_GOT_TOO_LONG",
   PICKING_UP_PATH = "PICKING_UP_PATH",
+  START_RIDE = "START_RIDE",
+  FINISH_RIDE = "FINISH_RIDE",
 }
 
 export const serverEventsSchemas = {
@@ -125,7 +133,15 @@ export const serverEventsSchemas = {
   },
   [EVENTS.PICKING_UP_PATH]: {
     id: 15,
-    schema: setPickingUpPathSchema,
+    schema: pickingUpPathSchema,
+  },
+  [EVENTS.START_RIDE]: {
+    id: 16,
+    schema: startRideSchema,
+  },
+  [EVENTS.FINISH_RIDE]: {
+    id: 17,
+    schema: finishRideSchema,
   },
 };
 
@@ -145,4 +161,6 @@ export interface EventsInterface {
   [EVENTS.DELAYED_OFFER_RESPONSE]: DelayedOfferReponse;
   [EVENTS.OFFER_GOT_TOO_LONG]: OfferGotTooLong;
   [EVENTS.PICKING_UP_PATH]: PickingUpPath;
+  [EVENTS.START_RIDE]: StartRide;
+  [EVENTS.FINISH_RIDE]: FinishRide;
 }

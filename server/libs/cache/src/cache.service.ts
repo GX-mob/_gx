@@ -12,7 +12,7 @@ export type setOptions = {
 @Injectable()
 export class CacheService {
   private defaultLifetime = String(DEFAULT_TTL);
-  public redis: Redis;
+  readonly redis: Redis;
   public schemas: { [k: string]: Parser } = {};
 
   constructor(private redisService: RedisService) {

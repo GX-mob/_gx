@@ -160,12 +160,8 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     return ride;
   }
 
-  checkIfInRide(
-    ride: Ride,
-    _id: User["_id"],
-    target: keyof Pick<Ride, "voyager" | "driver">,
-  ) {
-    if (ride[target]._id !== _id) {
+  checkIfInRide(ride: Ride, _id: User["_id"]) {
+    if (ride.voyager._id !== _id && ride.driver?._id !== _id) {
       throw new NotInRideException(ride.pid, _id);
     }
   }

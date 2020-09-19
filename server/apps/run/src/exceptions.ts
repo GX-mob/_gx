@@ -24,3 +24,9 @@ export class NotInRideException extends WsException {
     super({ error: EXCEPTIONS.NOT_IN_RIDE, ridePID, userPID });
   }
 }
+
+export class TooDistantOfExpectedException extends WsException {
+  constructor(point: string) {
+    super({ message: EXCEPTIONS.TOO_DISTANT_OF_EXPECTED, point });
+  }
+}

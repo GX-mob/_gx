@@ -11,6 +11,7 @@ import IOClient, { Socket } from "socket.io-client";
 import IORedis from "ioredis";
 import { parsers } from "extensor";
 import { SocketService } from "./socket.service";
+import { SocketModule } from "./socket.module";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
 
@@ -30,7 +31,7 @@ describe("SocketService", () => {
 
   let redisInstanceIp: string;
 
-  const broadcastedEvents = ["position", "state"];
+  const broadcastedEvents = { "/": ["position", "state"] };
 
   async function mockServer() {
     httpServer1 = new HttpServer();
@@ -125,17 +126,17 @@ describe("SocketService", () => {
 
   beforeEach(async () => {
     const module1: TestingModule = await Test.createTestingModule({
-      imports: [LoggerModule.forRoot()],
+      imports: [LoggerModule.forRoot(), SocketModule],
       providers: [SocketService],
     }).compile();
 
     const module2: TestingModule = await Test.createTestingModule({
-      imports: [LoggerModule.forRoot()],
+      imports: [LoggerModule.forRoot(), SocketModule],
       providers: [SocketService],
     }).compile();
 
     const module3: TestingModule = await Test.createTestingModule({
-      imports: [LoggerModule.forRoot()],
+      imports: [LoggerModule.forRoot(), SocketModule],
       providers: [SocketService],
     }).compile();
 
@@ -182,14 +183,14 @@ describe("SocketService", () => {
 
       // Server 1
       // should receive broadcasted from Server 2
-      serviceServer1.on(broadcastedEvents[0], (content) => {
+      serviceServer1.on(broadcastedEvents["/"][0], (content) => {
         expect(content.socketId).toBe(clientSocket2.id);
         expect(content.data).toStrictEqual(data2);
       });
 
       // Server 2
       // should receive broadcasted from Server 1
-      serviceServer2.on(broadcastedEvents[0], (content) => {
+      serviceServer2.on(broadcastedEvents["/"][0], (content) => {
         expect(content.socketId).toBe(clientSocket1.id);
         expect(content.data).toStrictEqual(data1);
       });
@@ -198,12 +199,12 @@ describe("SocketService", () => {
 
       // Client connected to Server 1
       clientSocket1.on("connect", () => {
-        clientSocket1.emit(broadcastedEvents[0], data1);
+        clientSocket1.emit(broadcastedEvents["/"][0], data1);
       });
 
       // Client connected to Server 2
       clientSocket2.on("connect", () => {
-        clientSocket2.emit(broadcastedEvents[0], data2);
+        clientSocket2.emit(broadcastedEvents["/"][0], data2);
       });
 
       await wait(1000);
@@ -212,14 +213,14 @@ describe("SocketService", () => {
   });
 
   describe("Emit event to socket", () => {
-    it("should send an event to local connection", async (done) => {
+    it("should send an event to a local connection", async (done) => {
       const { listen, cleanUp } = await mockServer();
       const data = Date.now();
 
       ioServer1.on("connection", (socket) => {
         setTimeout(
           () => serviceServer1.emit(clientSocket1.id, "nice", data),
-          100,
+          500,
         );
       });
 

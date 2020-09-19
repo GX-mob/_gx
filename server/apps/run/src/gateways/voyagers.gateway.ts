@@ -92,7 +92,7 @@ export class VoyagersGateway extends Common {
 
     const { _id, rides } = socket.data;
 
-    super.checkIfInRide(ride, _id, "driver");
+    super.checkIfInRide(ride, _id);
 
     // block cancel running ride
     if (ride.status === RideStatus.RUNNING) {
@@ -109,7 +109,7 @@ export class VoyagersGateway extends Common {
       rides.splice(rideIdx, 1);
     }
 
-    const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
+    const isSafeCancel = super.isSafeCancel(acceptTimestamp as number, now);
     const isCreditPayment = ride.payMethod === RidePayMethods.CreditCard;
 
     const status = isSafeCancel

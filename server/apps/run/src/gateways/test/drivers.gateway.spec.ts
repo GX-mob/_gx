@@ -20,11 +20,14 @@ import {
 import { CANCELATION } from "../../constants";
 import { Position } from "../../events";
 import { expectObservableFor, mockSocket, mockRide } from "./util";
+import ms from "ms";
 
 describe("DriversGateway", () => {
   let gateway: DriversGateway;
   let httpServer: HttpServer;
   let ioServer: Server;
+
+  let configServiceMock;
 
   const socketServiceMock = {
     emit: jest.fn(),
@@ -73,13 +76,24 @@ describe("DriversGateway", () => {
   }
 
   beforeEach(() => {
+    configServiceMock = {
+      get: jest.fn().mockImplementation((key: string) => {
+        const configMock: any = {
+          "OFFER.SAFE_CANCELATION_WINDOW": ms("3 minutes"),
+        };
+        return configMock[key];
+      }),
+    };
+
     gateway = new DriversGateway(
+      configServiceMock as any,
       socketServiceMock as any,
       rideRepositoryMock as any,
       pendencieRepositoryMock as any,
       sessionServiceMock as any,
       stateServiceMock as any,
       cacheServiceMock as any,
+      { setContext: () => {}, error: () => {}, info: () => {} } as any,
     );
   });
 
@@ -95,7 +109,7 @@ describe("DriversGateway", () => {
       latLng: [1, 1],
       heading: 0,
       kmh: 30,
-      ignored: [],
+      ignore: [],
       pid: "",
     };
   }
@@ -190,7 +204,7 @@ describe("DriversGateway", () => {
     it("should handle a safe cancel", async () => {
       const socketMock = mockSocket();
       const ride = mockRide({
-        driver: socketMock.data._id,
+        driver: { _id: socketMock.data._id },
       });
       const requesterSocketId = faker.random.alphaNumeric(12);
       const acceptTimestamp = Date.now();
@@ -235,7 +249,7 @@ describe("DriversGateway", () => {
     it("should handle a no-safe cancel", async () => {
       const socketMock = mockSocket();
       const ride = mockRide({
-        driver: socketMock.data._id,
+        driver: { _id: socketMock.data._id },
       });
       const requesterSocketId = faker.random.alphaNumeric(12);
       const acceptTimestamp = Date.now() - CANCELATION.SAFE_TIME_MS;

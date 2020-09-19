@@ -22,15 +22,22 @@ import {
   OfferServer,
   OfferRequest,
   Configuration,
+  UserState,
 } from "./events";
-import { CACHE_NAMESPACES, CACHE_TTL } from "./constants";
-import { NODES_EVENTS, UpdateDriverState } from "./events/nodes";
+import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
+import {
+  NODES_EVENTS,
+  NodesEventsInterface,
+  UpdateDriverState,
+  UpdateLocalSocketData,
+} from "./events/nodes";
 import { PinoLogger } from "nestjs-pino";
 import {
   ConnectionDataNotFoundException,
   RideNotFoundException,
 } from "./exceptions";
 import { Socket } from "socket.io";
+import { retryUnderHood } from "@app/helpers/util";
 
 @Injectable()
 export class StateService {
@@ -46,7 +53,10 @@ export class StateService {
   constructor(
     readonly cacheService: CacheService,
     readonly rideRepository: RideRepository,
-    readonly socketService: SocketService<EventsInterface>,
+    readonly socketService: SocketService<
+      EventsInterface,
+      NodesEventsInterface
+    >,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
   ) {
@@ -79,6 +89,18 @@ export class StateService {
       NODES_EVENTS.UPDATE_DRIVER_STATE,
       ({ socketId, state }) => {
         this.updateDriver(socketId, state, true);
+      },
+    );
+
+    this.socketService.nodes.on(
+      NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA,
+      ({ socketId, namespace, data }) => {
+        const client = this.socketService.server.of(namespace).sockets[
+          socketId
+        ];
+        if (!client) return;
+
+        client.data = { ...client.data, ...data };
       },
     );
   }
@@ -196,6 +218,8 @@ export class StateService {
       return;
     }
 
+    this.updateDriver(socketId, { state: UserState.PICKING_UP });
+
     // Defines safe time cancel
     const acceptTimestamp = Date.now();
 
@@ -252,19 +276,41 @@ export class StateService {
 
     const voyagerData = await this.getConnectionData(offer.requesterSocketId);
 
-    // Update driver observers
-    await this.setConnectionData(driverConnectionData.pid, {
+    const driverUpdateConnectionData = {
       observers: [{ socketId: offer.requesterSocketId, p2p: voyagerData.p2p }],
-    });
-
-    // Update voyager observers
-    await this.setConnectionData(voyagerData.pid, {
+    };
+    const voyagerUpdateConnectionData = {
       observers: [
         {
           socketId: driverConnectionData.socketId,
           p2p: driverConnectionData.p2p,
         },
       ],
+    };
+
+    // Update driver observers
+    retryUnderHood(() =>
+      this.setConnectionData(
+        (driverConnectionData as ConnectionData).pid,
+        driverUpdateConnectionData,
+      ),
+    );
+
+    // Update voyager observers
+    retryUnderHood(() =>
+      this.setConnectionData(voyagerData.pid, voyagerUpdateConnectionData),
+    );
+
+    this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
+      socketId: voyagerData.socketId,
+      namespace: NAMESPACES.VOYAGERS,
+      data: voyagerUpdateConnectionData,
+    });
+
+    this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
+      socketId: driverConnectionData.socketId,
+      namespace: NAMESPACES.DRIVERS,
+      data: driverUpdateConnectionData,
     });
   }
 
@@ -600,13 +646,10 @@ export class StateService {
     this.drivers[driverIndex] = deepmerge(driver, state);
 
     if (!isNodeEvent) {
-      this.socketService.nodes.emit<UpdateDriverState>(
-        NODES_EVENTS.UPDATE_DRIVER_STATE,
-        {
-          socketId,
-          state,
-        },
-      );
+      this.socketService.nodes.emit(NODES_EVENTS.UPDATE_DRIVER_STATE, {
+        socketId,
+        state,
+      });
     }
   }
 }

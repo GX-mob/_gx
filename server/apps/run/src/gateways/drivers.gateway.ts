@@ -3,13 +3,13 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   ConnectedSocket,
+  WsException,
 } from "@nestjs/websockets";
-import { NAMESPACES } from "../constants";
+import { DISTANCE_TOLERANCE_TO_START_RIDE, NAMESPACES } from "../constants";
 import { Common } from "./common";
 import {
   Pendencie,
   PendencieRepository,
-  Ride,
   RideRepository,
   RideStatus,
   USERS_ROLES,
@@ -27,6 +27,8 @@ import {
   CanceledRide,
   CANCELATION_RESPONSE,
   PickingUpPath,
+  StartRide,
+  UserState,
 } from "../events";
 import { CacheService } from "@app/cache";
 import { SessionService } from "@app/session";
@@ -35,9 +37,11 @@ import { StateService } from "../state.service";
 import { PinoLogger } from "nestjs-pino";
 import { ConfigService } from "@nestjs/config";
 import {
-  RideNotFoundException,
   UncancelableRideException,
+  TooDistantOfExpectedException,
 } from "../exceptions";
+import { geometry } from "@app/helpers";
+import { DISTANCE_TOLERANCE_TO_FINISH_RIDE } from "../constants";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common {
@@ -74,7 +78,6 @@ export class DriversGateway extends Common {
   ) {
     super.positionEventHandler(position, client);
     this.stateService.positionEvent(client.id, position);
-    //this.trackingService.track(client.data, position);
   }
 
   @SubscribeMessage(EVENTS.DRIVER_SETUP)
@@ -108,8 +111,7 @@ export class DriversGateway extends Common {
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await super.getRide({ pid: pickingUp.ridePID });
-
-    super.checkIfInRide(ride, client.data._id, "driver");
+    super.checkIfInRide(ride, client.data._id);
 
     const { requesterSocketId } = await this.stateService.setOfferData(
       pickingUp.ridePID,
@@ -125,6 +127,54 @@ export class DriversGateway extends Common {
     );
   }
 
+  @SubscribeMessage(EVENTS.START_RIDE)
+  async startRideEventHandler(
+    @MessageBody() { ridePID, latLng }: StartRide,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const ride = await super.getRide({ pid: ridePID });
+    super.checkIfInRide(ride, client.data._id);
+
+    if (
+      geometry.distance.calculate(latLng, ride.route.start.coord) >
+      DISTANCE_TOLERANCE_TO_START_RIDE
+    ) {
+      throw new TooDistantOfExpectedException("start");
+    }
+
+    await this.rideRepository.update(
+      { pid: ridePID },
+      { status: RideStatus.RUNNING },
+    );
+    this.stateService.updateDriver(client.id, { state: UserState.RUNNING });
+
+    return true;
+  }
+
+  @SubscribeMessage(EVENTS.FINISH_RIDE)
+  async finishRideEventHandler(
+    @MessageBody() { ridePID, latLng }: StartRide,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const ride = await super.getRide({ pid: ridePID });
+    super.checkIfInRide(ride, client.data._id);
+
+    if (
+      geometry.distance.calculate(latLng, ride.route.end.coord) >
+      DISTANCE_TOLERANCE_TO_FINISH_RIDE
+    ) {
+      throw new TooDistantOfExpectedException("end");
+    }
+
+    await this.rideRepository.update(
+      { pid: ridePID },
+      { status: RideStatus.COMPLETED },
+    );
+    this.stateService.updateDriver(client.id, { state: UserState.IDLE });
+
+    return true;
+  }
+
   @SubscribeMessage(EVENTS.CANCEL_RIDE)
   async cancelRideEventHandler(
     @MessageBody() ridePID: CancelRide,
@@ -138,7 +188,7 @@ export class DriversGateway extends Common {
     const ride = await super.getRide({ pid: ridePID });
     const { _id } = client.data;
 
-    super.checkIfInRide(ride, _id, "driver");
+    super.checkIfInRide(ride, _id);
 
     // block cancel running ride
     if (ride.status === RideStatus.RUNNING) {

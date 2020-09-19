@@ -5,7 +5,7 @@ export type PickingUpPath = {
   path: string;
   duration: number;
 };
-export const setPickingUpPathSchema: SchemaObject<PickingUpPath> = {
+export const pickingUpPathSchema: SchemaObject<PickingUpPath> = {
   ridePID: "string",
   path: "string",
   duration: "uint8",

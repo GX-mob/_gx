@@ -27,9 +27,10 @@ import {
   OfferResponse,
   OfferServer,
   DriverState,
+  UserState,
 } from "./events";
 import faker from "faker";
-import { CACHE_NAMESPACES, CACHE_TTL } from "./constants";
+import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
 import deepmerge from "deepmerge";
 import { Types } from "mongoose";
 import {
@@ -37,6 +38,7 @@ import {
   RideNotFoundException,
 } from "./exceptions";
 import { NODES_EVENTS } from "./events/nodes";
+import { mockRide } from "@testing/testing";
 import ms from "ms";
 
 const wait = (ts: number) => new Promise((resolve) => setTimeout(resolve, ts));
@@ -300,7 +302,11 @@ describe("StateService", () => {
         service.drivers.find(
           (driver) => driver.socketId === connection2.socketId,
         ),
-      ).toStrictEqual({ ...connection2, ...setupOverride });
+      ).toStrictEqual({
+        ...connection2,
+        ...setupOverride,
+        state: UserState.SEARCHING,
+      });
 
       cacheMock.get.mockResolvedValueOnce(connection3);
 
@@ -317,7 +323,11 @@ describe("StateService", () => {
         service.drivers.find(
           (driver) => driver.socketId === connection3.socketId,
         ),
-      ).toStrictEqual({ ...connection3, ...fromAnotherNodeData });
+      ).toStrictEqual({
+        ...connection3,
+        ...fromAnotherNodeData,
+        state: UserState.SEARCHING,
+      });
     });
   });
 
@@ -536,6 +546,7 @@ describe("StateService", () => {
       cacheMock.get.mockResolvedValueOnce(voyagerConnectionData);
       cacheMock.get.mockResolvedValueOnce(driverConnectionData);
       cacheMock.get.mockResolvedValueOnce(voyagerConnectionData);
+      cacheMock.set.mockResolvedValue(true);
 
       const offer: OfferServer = {
         ride: { pid: ridePID } as any,
@@ -557,13 +568,19 @@ describe("StateService", () => {
         offerResponse,
         driverConnectionData as any,
       );
+      await wait(200);
 
       const cacheCalls = cacheMock.set.mock.calls;
+
+      const { offerResponseTimeout, ...offerCacheSaveCall } = offer;
 
       expect((offer.offerResponseTimeout as any)._destroyed).toBeTruthy();
       expect(cacheCalls[0][0]).toBe(CACHE_NAMESPACES.OFFERS);
       expect(cacheCalls[0][1]).toBe(offer.ride.pid);
-      expect(cacheCalls[0][2]).toMatchObject({ ...offer, driverSocketId });
+      expect(cacheCalls[0][2]).toMatchObject({
+        ...offerCacheSaveCall,
+        driverSocketId,
+      });
       expect(typeof cacheCalls[0][2].acceptTimestamp).toBe("number");
       expect(cacheCalls[0][3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
 
@@ -613,6 +630,35 @@ describe("StateService", () => {
           { socketId: driverSocketId, p2p: driverConnectionData.p2p },
         ],
       });
+
+      const [
+        voyagerNodeEmitCall,
+        driverNodeEmitCall,
+      ] = socketService.nodes.emit.mock.calls;
+
+      expect(voyagerNodeEmitCall[0]).toBe(
+        NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA,
+      );
+      expect(voyagerNodeEmitCall[1]).toStrictEqual({
+        socketId: voyagerSocketId,
+        namespace: NAMESPACES.VOYAGERS,
+        data: {
+          observers: [
+            { socketId: driverSocketId, p2p: driverConnectionData.p2p },
+          ],
+        },
+      });
+
+      expect(driverNodeEmitCall[0]).toBe(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA);
+      expect(driverNodeEmitCall[1]).toStrictEqual({
+        socketId: driverSocketId,
+        namespace: NAMESPACES.DRIVERS,
+        data: {
+          observers: [
+            { socketId: voyagerSocketId, p2p: voyagerConnectionData.p2p },
+          ],
+        },
+      });
     });
   });
 
@@ -636,16 +682,18 @@ describe("StateService", () => {
 
     it("should create an offer", async () => {
       const ridePID = shortid.generate();
-      const socketId = shortid.generate();
+      const socket = { id: shortid.generate(), data: { rides: [""] } };
       const offerRequest: OfferRequest = { ridePID };
 
       rideRepository.get.mockResolvedValueOnce({ pid: ridePID });
 
-      await service.createOffer(offerRequest, { id: socketId } as any, false);
+      await service.createOffer(offerRequest, socket as any, false);
 
       const offer = service.offers.find((offer) => offer.ride.pid === ridePID);
 
       expect(offer).toBeDefined();
+      expect(socket.data.rides.includes(ridePID)).toBeTruthy();
+
       const [cacheSetCall] = cacheMock.set.mock.calls;
 
       expect(cacheSetCall[0]).toBe(CACHE_NAMESPACES.OFFERS);
@@ -714,8 +762,7 @@ describe("StateService", () => {
       } as any,
     });
 
-    const ride: Partial<Ride> = {
-      pid: shortid.generate(),
+    const ride = mockRide({
       route: {
         start: {
           coord: routeStartLatLng,
@@ -736,7 +783,7 @@ describe("StateService", () => {
         distance: 23.4,
         duration: 25,
       },
-    };
+    });
 
     it(`should get a ${EVENTS.OFFER_GOT_TOO_LONG}`, async () => {
       const ride: Partial<Ride> = {};
@@ -946,7 +993,7 @@ describe("StateService", () => {
       expect(loggerMock.warn).toBeCalled();
     });
 
-    it("should update from node event", async () => {
+    it("should update from another node event", async () => {
       const driverState = mockDriverPosition();
 
       service.drivers = [driverState];

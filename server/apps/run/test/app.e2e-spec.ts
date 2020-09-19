@@ -16,6 +16,7 @@ import {
   OfferResponse,
   CANCELATION_RESPONSE,
   PickingUpPath,
+  Position,
 } from "../src/events";
 import { NAMESPACES } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
@@ -37,6 +38,7 @@ import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
 import ms from "ms";
+import { EXCEPTIONS } from "../src/constants";
 //@ts-ignore
 const polyline = require("google-polyline");
 
@@ -322,9 +324,23 @@ describe("RidesWSService (e2e)", () => {
         path: "fvly@xgkyEg@Ko@Gc@AB]Fk@B{@Dm@Hm@Bi@Bm@H{@F_AFi@Hq@Dy@Da@?MWEUE",
       };
 
-      const pathDecoded = polyline.decode(pickingUpPath.path);
+      const pickUpPathDecoded: [number, number][] = polyline.decode(
+        pickingUpPath.path,
+      );
 
       driverSocket.emit(EVENTS.PICKING_UP_PATH, pickingUpPath);
+
+      driverSocket.emit(EVENTS.START_RIDE, {
+        ridePID: ride.pid,
+        latLng: pickUpPathDecoded[0],
+      });
+
+      await expect(
+        fromEventAsync(driverSocket, "exception"),
+      ).resolves.toStrictEqual({
+        point: "start",
+        message: EXCEPTIONS.TOO_DISTANT_OF_EXPECTED,
+      });
 
       const pickingUpVoyagerEvent = await fromEventAsync(
         voyagerSocket,
@@ -332,8 +348,78 @@ describe("RidesWSService (e2e)", () => {
       );
 
       expect(pickingUpVoyagerEvent).toStrictEqual(pickingUpPath);
-      // TODO: driver position events, driver arrive event
-    });
+
+      pickUpPathDecoded.forEach((latLng) => {
+        const position: Position = {
+          latLng,
+          heading: 0,
+          kmh: 30,
+          ignore: [],
+          pid: "",
+        };
+        driverSocket.emit(EVENTS.POSITION, position);
+      });
+
+      let positionEventsCount = 0;
+
+      voyagerSocket.on(EVENTS.POSITION, (position: any) => {
+        ++positionEventsCount;
+      });
+
+      await wait(1000);
+      expect(positionEventsCount).toBe(pickUpPathDecoded.length);
+
+      await new Promise((resolve) =>
+        driverSocket.emit(
+          EVENTS.START_RIDE,
+          {
+            ridePID: ride.pid,
+            latLng: pickUpPathDecoded[pickUpPathDecoded.length - 1],
+          },
+          resolve,
+        ),
+      );
+
+      driverSocket.emit(EVENTS.FINISH_RIDE, {
+        ridePID: ride.pid,
+        latLng: pickUpPathDecoded[0],
+      });
+
+      await expect(
+        fromEventAsync(driverSocket, "exception"),
+      ).resolves.toStrictEqual({
+        point: "end",
+        message: EXCEPTIONS.TOO_DISTANT_OF_EXPECTED,
+      });
+
+      const pathRouteDecoded: [number, number][] = polyline.decode(
+        ride.route.path,
+      );
+
+      pathRouteDecoded.forEach((latLng) => {
+        const position: Position = {
+          latLng,
+          heading: 0,
+          kmh: 30,
+          ignore: [],
+          pid: "",
+        };
+        driverSocket.emit(EVENTS.POSITION, position);
+      });
+
+      await expect(
+        new Promise((resolve) =>
+          driverSocket.emit(
+            EVENTS.FINISH_RIDE,
+            {
+              ridePID: ride.pid,
+              latLng: pathRouteDecoded[pathRouteDecoded.length - 1],
+            },
+            resolve,
+          ),
+        ),
+      ).resolves.toBe(true);
+    }, 10000);
 
     describe("Cancelations", () => {
       it("Handle voyager safe cancelation", async () => {

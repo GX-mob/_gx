@@ -148,9 +148,7 @@ describe("Helper: util", () => {
       promise.mockRejectedValueOnce(new Error(errorMsg));
 
       await expect(util.retry(promise, maxRetrys)).rejects.toStrictEqual(
-        new Error(
-          `Max retries reached for function mockConstructor, last error: ${errorMsg}`,
-        ),
+        new Error(errorMsg),
       );
     });
   });

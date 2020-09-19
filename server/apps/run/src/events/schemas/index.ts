@@ -13,3 +13,5 @@ export * from "./canceled-ride";
 export * from "./delayed-offer-response";
 export * from "./offer-got-too-long";
 export * from "./picking-up-path";
+export * from "./start-ride";
+export * from "./finish-ride";
