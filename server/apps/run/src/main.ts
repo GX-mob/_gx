@@ -7,6 +7,8 @@ import { logger } from "@app/helpers";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { BROADCASTED_EVENTS } from "./constants";
 
+console.log("@#@!#1");
+
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
 });

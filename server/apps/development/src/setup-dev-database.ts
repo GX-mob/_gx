@@ -1,13 +1,15 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import {
   RepositoryService,
-  PriceDetail,
-  Price,
-  PriceModel,
   UserModel,
   RideModel,
-  //@ts-ignore
-} from "../dist/apps/common/libs/repositories/src";
+  RideAreaConfigurationModel,
+} from "@app/repositories";
+import {
+  UserRoles,
+  RideAreaConfigurationInterface,
+  RideTypeConfigurationInterface,
+} from "@shared/interfaces";
 import chalk from "chalk";
 import faker from "faker";
 import { log } from "./util";
@@ -49,8 +51,8 @@ export async function startDatabase(logging: boolean = true) {
 
 export async function seedDatabase(logging: boolean = true) {
   const db = new RepositoryService(
-    { get: () => process.env.DATABASE_URI },
-    { setContext: () => {}, error: console.log, info: () => {} },
+    { get: () => process.env.DATABASE_URI } as any,
+    { setContext: () => {}, error: console.log, info: () => {} } as any,
   );
 
   await Promise.all(db.connections);
@@ -58,7 +60,7 @@ export async function seedDatabase(logging: boolean = true) {
   logging &&
     log("MongoDB", chalk`{yellow Seeding rides service configuration...}`);
 
-  const rideType1: PriceDetail = {
+  const rideType1: RideTypeConfigurationInterface = {
     type: 1,
     available: true,
     perKilometer: 1.1,
@@ -69,7 +71,7 @@ export async function seedDatabase(logging: boolean = true) {
     overBusinessTimeMinuteAdd: 0.3,
   };
 
-  const rideType2: PriceDetail = {
+  const rideType2: RideTypeConfigurationInterface = {
     type: 2,
     available: true,
     perKilometer: 1.6,
@@ -80,7 +82,7 @@ export async function seedDatabase(logging: boolean = true) {
     overBusinessTimeMinuteAdd: 0.5,
   };
 
-  const prices: Price[] = [
+  const prices: RideAreaConfigurationInterface[] = [
     {
       area: "AL",
       currency: "BRL",
@@ -101,7 +103,7 @@ export async function seedDatabase(logging: boolean = true) {
     },
   ];
 
-  await Promise.all([PriceModel.create(prices)]);
+  await Promise.all([RideAreaConfigurationModel.create(prices)]);
 
   logging && log("MongoDB", chalk`{yellow Seeding users...}`);
   // Create voyager user
@@ -111,8 +113,10 @@ export async function seedDatabase(logging: boolean = true) {
     lastName: faker.name.lastName(),
     cpf: "123.456.789-09",
     phones: ["+5582988444444"],
+    emails: [],
     birth: new Date(),
     averageEvaluation: 0,
+    roles: [UserRoles.VOYAGER],
   });
 
   // Create driver user
@@ -122,9 +126,10 @@ export async function seedDatabase(logging: boolean = true) {
     lastName: faker.name.lastName(),
     cpf: "118.586.320-64",
     phones: ["+5582988444448"],
+    emails: [],
     birth: new Date(),
     averageEvaluation: 0,
-    roles: ["voyager", "driver"],
+    roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
   });
 
   logging && log("MongoDB", chalk`{yellow Seeding some rides...}`);
@@ -158,7 +163,8 @@ export async function seedDatabase(logging: boolean = true) {
           coord: [-9.57399, -35.772365],
         },
         path: "",
-        distance: 0,
+        distance: 10,
+        duration: 10,
       },
       costs: {
         base,

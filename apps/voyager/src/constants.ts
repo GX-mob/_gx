@@ -6,10 +6,9 @@ export const GOOGLE_OAUTH_WEB_ID =
 export const GOOGLE_OAUTH_ID =
   "190699413732-i81jlb46op5q7t189bbee0iq5n73akkt.apps.googleusercontent.com";
 export const ENDPOINTS = {
-  AUTH: "http://192.168.0.105:8081",
-  ACCOUNT: "http://192.168.0.105:8082",
-  SIGNIN: "http://192.168.0.105:8082",
-  REGISTRY: "http://192.168.0.105:8080",
-  RIDES: "http://192.168.0.105:8083",
-  RUN: "http://192.168.0.105:8084",
+  ACCOUNT: "http://192.168.0.105:3000/account",
+  SIGNIN: "http://192.168.0.105:3000/sign-in",
+  REGISTRY: "http://192.168.0.105:3000/sign-up",
+  RIDES: "http://192.168.0.105:3000/rides",
+  RUN: "http://192.168.0.105:3001",
 };

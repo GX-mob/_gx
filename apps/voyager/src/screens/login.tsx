@@ -62,9 +62,10 @@ const LoginScreen: FC = () => {
             setPhone(value);
           }}
           onSubmitEditing={async (event) => {
+            console.log("why 2");
             console.log(
               "login",
-              await Login.identify(phone.replace(/\D/g, ""))
+              await Login.identify(`+55${phone.replace(/\D/g, "")}`),
             );
           }}
         />

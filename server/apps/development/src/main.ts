@@ -1,4 +1,3 @@
-// import Prompt from "prompt-checkbox";
 import { spawn } from "child_process";
 import { log } from "./util";
 import chalk from "chalk";
@@ -10,9 +9,7 @@ async function start() {
   }
 
   const [, , application] = process.argv;
-
   const cmd = `NODE_ENV=development nest start ${application} --watch`;
-
   const child = spawn(cmd, [], {
     shell: true,
   });

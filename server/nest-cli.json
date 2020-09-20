@@ -4,7 +4,7 @@
   "monorepo": true,
   "root": "apps/common",
   "compilerOptions": {
-    "webpack": false,
+    "webpack": true,
     "tsConfigPath": "apps/common/tsconfig.app.json"
   },
   "projects": {
@@ -114,6 +114,15 @@
       "sourceRoot": "libs/testing/src",
       "compilerOptions": {
         "tsConfigPath": "libs/testing/tsconfig.lib.json"
+      }
+    },
+    "development": {
+      "type": "application",
+      "root": "apps/development",
+      "entryFile": "main",
+      "sourceRoot": "apps/development/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/development/tsconfig.app.json"
       }
     }
   }

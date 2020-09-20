@@ -1,12 +1,15 @@
 import Storage from "../modules/storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
-import { signin } from "src/api/api";
+import { signin } from "../api/api";
 import { IS_WEB, GOOGLE_OAUTH_WEB_ID, GOOGLE_OAUTH_ID } from "../constants";
 
 export class LoginStore {
   @observable
-  public loading = true;
+  public initializing = true;
+
+  @observable
+  public loading = false;
 
   @observable
   public token = "";
