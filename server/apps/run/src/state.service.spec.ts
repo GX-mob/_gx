@@ -6,7 +6,7 @@ import { ConfigModule, registerAs } from "@nestjs/config";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
 import { SocketModule, SocketService } from "@app/socket";
-import { DriverObject, StateService } from "./state.service";
+import { StateService } from "./state.service";
 import EventEmitter from "eventemitter3";
 import shortid from "shortid";
 import {
@@ -14,9 +14,11 @@ import {
   RidePayMethods,
   RideTypes,
   UserRoles,
+  VehicleTypes,
 } from "@shared/interfaces";
 import {
   RideRepository,
+  VehicleRepository,
   RepositoryModule,
   RepositoryService,
 } from "@app/repositories";
@@ -38,6 +40,7 @@ import { Types } from "mongoose";
 import {
   ConnectionDataNotFoundException,
   RideNotFoundException,
+  VehicleNotFoundException,
 } from "./exceptions";
 import { NODES_EVENTS } from "./events/nodes";
 import { mockRide } from "@testing/testing";
@@ -56,6 +59,10 @@ describe("StateService", () => {
   const rideRepository = {
     get: jest.fn(),
     update: jest.fn(),
+  };
+
+  const vehicleRepository = {
+    get: jest.fn(),
   };
 
   const socketServiceMockFactory = () => {
@@ -94,6 +101,7 @@ describe("StateService", () => {
   function mockSetup(override: Partial<Setup> = {}): Setup {
     return deepmerge(
       {
+        vehicleId: faker.random.alphaNumeric(12),
         position: {
           latLng: [
             parseFloat(faker.address.latitude()),
@@ -164,8 +172,9 @@ describe("StateService", () => {
     );
   }
 
-  function mockDriverPosition(override: Partial<Driver> = {}): DriverObject {
+  function mockDriverPosition(override: Partial<Driver> = {}): Driver {
     return {
+      vehicleType: VehicleTypes.HATCH,
       updatedAt: Date.now(),
       _id: shortid.generate(),
       state: DriverState.SEARCHING,
@@ -220,6 +229,8 @@ describe("StateService", () => {
       .useValue(cacheMock)
       .overrideProvider(RideRepository)
       .useValue(rideRepository)
+      .overrideProvider(VehicleRepository)
+      .useValue(vehicleRepository)
       .overrideProvider(SocketService)
       .useValue(socketService)
       .overrideProvider(PinoLogger)
@@ -245,9 +256,7 @@ describe("StateService", () => {
       cacheMock.get.mockResolvedValue(null);
 
       const setup = mockSetup();
-
       const socketId = shortid.generate();
-
       const rejectExpected = new ConnectionDataNotFoundException(socketId);
 
       await expect(
@@ -264,7 +273,22 @@ describe("StateService", () => {
       expect(loggerMock.error.mock.calls[0][0]).toStrictEqual(rejectExpected);
     });
 
+    it("should throw VehicleNotFoundException", async () => {
+      vehicleRepository.get.mockResolvedValue(null);
+
+      const setup = mockSetup();
+      const connection = mockConnection({ mode: UserRoles.DRIVER });
+
+      const rejectExpected = new VehicleNotFoundException(setup.vehicleId);
+      await expect(
+        service.setupDriverEvent(connection.socketId, setup, connection),
+      ).rejects.toStrictEqual(rejectExpected);
+    });
+
     it("should insert driver in the list", async () => {
+      vehicleRepository.get.mockResolvedValue({
+        vmodel: { type: VehicleTypes.HATCH },
+      });
       cacheMock.get.mockResolvedValue(null);
 
       const setup = mockSetup();
@@ -280,6 +304,11 @@ describe("StateService", () => {
     });
 
     it("should update driver in the list", async () => {
+      vehicleRepository.get.mockResolvedValue({
+        vmodel: { type: VehicleTypes.HATCH },
+      });
+      cacheMock.get.mockResolvedValue(null);
+
       const setup1 = mockSetup();
       const setup2 = mockSetup();
       const setup3 = mockSetup();
@@ -290,9 +319,24 @@ describe("StateService", () => {
       const connection3 = mockConnection({ mode: UserRoles.DRIVER });
 
       service.drivers = [
-        { ...setup1, ...connection1, updatedAt: Date.now() },
-        { ...setup2, ...connection2, updatedAt: Date.now() },
-        { ...setup3, ...connection3, updatedAt: Date.now() },
+        {
+          ...setup1,
+          ...connection1,
+          updatedAt: Date.now(),
+          vehicleType: VehicleTypes.HATCH,
+        },
+        {
+          ...setup2,
+          ...connection2,
+          updatedAt: Date.now(),
+          vehicleType: VehicleTypes.HATCH,
+        },
+        {
+          ...setup3,
+          ...connection3,
+          updatedAt: Date.now(),
+          vehicleType: VehicleTypes.HATCH,
+        },
       ];
 
       await service.setupDriverEvent(
@@ -305,11 +349,14 @@ describe("StateService", () => {
         (driver) => driver.socketId === connection2.socketId,
       );
 
-      expect(driverObject).toMatchObject({
+      const { vehicleId, ...driverObjectExpected } = {
         ...connection2,
         ...setupOverride,
+        vehicleType: VehicleTypes.HATCH,
         state: UserState.SEARCHING,
-      });
+      };
+
+      expect(driverObject).toMatchObject(driverObjectExpected);
       expect(typeof (driverObject as any).updatedAt).toBe("number");
 
       cacheMock.get.mockResolvedValueOnce(connection3);
@@ -323,15 +370,18 @@ describe("StateService", () => {
 
       await wait(100);
 
+      const { vehicleId: _, ...driverObjectExpected2 } = {
+        ...connection3,
+        ...fromAnotherNodeData,
+        vehicleType: VehicleTypes.HATCH,
+        state: UserState.SEARCHING,
+      };
+
       expect(
         service.drivers.find(
           (driver) => driver.socketId === connection3.socketId,
         ),
-      ).toMatchObject({
-        ...connection3,
-        ...fromAnotherNodeData,
-        state: UserState.SEARCHING,
-      });
+      ).toMatchObject(driverObjectExpected2);
     });
   });
 
@@ -340,7 +390,14 @@ describe("StateService", () => {
       const setup = mockSetup();
       const connection = mockConnection({ mode: UserRoles.DRIVER });
 
-      service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
+      service.drivers = [
+        {
+          ...setup,
+          ...connection,
+          updatedAt: Date.now(),
+          vehicleType: VehicleTypes.HATCH,
+        },
+      ];
 
       expect(service.findDriver(connection.socketId)).toBeDefined();
     });
@@ -349,7 +406,14 @@ describe("StateService", () => {
       const setup = mockSetup();
       const connection = mockConnection({ mode: UserRoles.DRIVER });
 
-      service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
+      service.drivers = [
+        {
+          ...setup,
+          ...connection,
+          updatedAt: Date.now(),
+          vehicleType: VehicleTypes.HATCH,
+        },
+      ];
 
       expect(service.findDriver(shortid.generate())).toBeUndefined();
       expect(loggerMock.info).toBeCalledTimes(1);
@@ -378,7 +442,14 @@ describe("StateService", () => {
         const connection = mockConnection({ mode: UserRoles.DRIVER });
         const data = (setup as any)[field];
 
-        service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
+        service.drivers = [
+          {
+            ...setup,
+            ...connection,
+            updatedAt: Date.now(),
+            vehicleType: VehicleTypes.HATCH,
+          },
+        ];
         service[functionName](shortid.generate(), data);
         expect(loggerMock.info).toBeCalledTimes(1);
 
@@ -397,7 +468,14 @@ describe("StateService", () => {
         const connection = mockConnection({ mode: UserRoles.DRIVER });
         const expected = mockSetup()[field];
 
-        service.drivers = [{ ...setup, ...connection, updatedAt: Date.now() }];
+        service.drivers = [
+          {
+            ...setup,
+            ...connection,
+            updatedAt: Date.now(),
+            vehicleType: VehicleTypes.HATCH,
+          },
+        ];
         service[functionName](connection.socketId, expected as any);
 
         const driver = service.findDriver(connection.socketId) as any;

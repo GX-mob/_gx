@@ -26,8 +26,14 @@ import {
   RideTypes,
   UserInterface,
   UserRoles,
+  VehicleInterface,
+  VehicleTypes,
 } from "@shared/interfaces";
-import { RideRepository } from "@app/repositories";
+import {
+  RepositoryService,
+  RideRepository,
+  VehicleRepository,
+} from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 import { SessionService } from "@app/session";
@@ -51,9 +57,13 @@ describe("RidesWSService (e2e)", () => {
     userRepository: UserRepository;
     rideRepository: RideRepository;
     sessionService: SessionService;
+    repositoryService: RepositoryService;
+    vehicleRepository: VehicleRepository;
   }[] = [];
   // Voyager, Voyager, Driver, Driver
   let users: UserInterface[] = [];
+  // Driver1, Driver2
+  let vehicles: VehicleInterface[];
 
   const parser = parsers.schemapack(serverEventsSchemas as any);
 
@@ -107,17 +117,21 @@ describe("RidesWSService (e2e)", () => {
     await app.init();
 
     const httpServer = app.getHttpServer();
+    const repositoryService = app.get(RepositoryService);
     // Repositories
     const userRepository = app.get(UserRepository);
     const rideRepository = app.get(RideRepository);
+    const vehicleRepository = app.get(VehicleRepository);
     // Services
     const sessionService = app.get(SessionService);
     const appIdx = appsNodes.push({
       app,
       httpServer,
+      repositoryService,
       userRepository,
       rideRepository,
       sessionService,
+      vehicleRepository,
     });
 
     app.get(SocketService).nodeId = `APP_NODE_${appIdx}`;
@@ -126,7 +140,9 @@ describe("RidesWSService (e2e)", () => {
   }
 
   async function createMockUsers() {
-    const [{ userRepository }] = appsNodes;
+    const [
+      { userRepository, repositoryService, vehicleRepository },
+    ] = appsNodes;
 
     const voyager1 = mockUser();
     const voyager2 = mockUser();
@@ -142,6 +158,29 @@ describe("RidesWSService (e2e)", () => {
       userRepository.create(voyager2),
       userRepository.create(driver1),
       userRepository.create(driver2),
+    ]);
+
+    // Vehicles
+    const { vehicleModelModel, vehicleModel } = repositoryService;
+    const { _id } = await vehicleModelModel.create({
+      name: "Vehicle name",
+      manufacturer: "Vehicle Manufacturer",
+      type: VehicleTypes.HATCH,
+    });
+
+    vehicles = await Promise.all([
+      vehicleRepository.create({
+        plate: "ABCD-1234",
+        year: 2012,
+        vmodel: _id,
+        owner: driver1._id,
+      }),
+      vehicleRepository.create({
+        plate: "ABCD-1235",
+        year: 2012,
+        vmodel: _id,
+        owner: driver2._id,
+      }),
     ]);
   }
 
@@ -230,6 +269,7 @@ describe("RidesWSService (e2e)", () => {
       const voyagerSocket = createUserSocket(0, voyager);
 
       voyager1Token = await authorizeClient(0, voyagerSocket, voyager);
+      voyagerSocket.disconnect();
     });
 
     it("should throw ForbiddenException due to voyager trys access drivers namespace", async () => {
@@ -239,6 +279,7 @@ describe("RidesWSService (e2e)", () => {
       await expect(
         authorizeClient(0, voyagerSocket, voyager1Token),
       ).rejects.toStrictEqual(new Error("Forbidden"));
+      voyagerSocket.disconnect();
     });
   });
 
@@ -263,8 +304,9 @@ describe("RidesWSService (e2e)", () => {
       ]);
 
       driver1Token = driverToken1;
+      const [vehicle] = vehicles;
 
-      const driver1Setup: Setup = mockDriverSetup();
+      const driver1Setup: Setup = mockDriverSetup(String(vehicle._id));
 
       // Drivers setup
       await new Promise((resolve) =>
@@ -419,7 +461,9 @@ describe("RidesWSService (e2e)", () => {
           ),
         ),
       ).resolves.toBe(true);
-    }, 10000);
+      voyagerSocket.disconnect();
+      driverSocket.disconnect();
+    }, 15000);
 
     describe("Cancelations", () => {
       it("Handle voyager safe cancelation", async () => {
@@ -443,7 +487,10 @@ describe("RidesWSService (e2e)", () => {
           ridePID: ride.pid,
           status: CANCELATION_RESPONSE.SAFE,
         });
-      });
+
+        voyagerSocket.disconnect();
+        driverSocket.disconnect();
+      }, 15000);
 
       it("Handle voyager no-safe cancelation money pay method", async () => {
         const {
@@ -468,7 +515,10 @@ describe("RidesWSService (e2e)", () => {
           ridePID: ride.pid,
           status: CANCELATION_RESPONSE.PENDENCIE_ISSUED,
         });
-      }, 8000);
+
+        voyagerSocket.disconnect();
+        driverSocket.disconnect();
+      }, 15000);
 
       it("Handle voyager no-safe cancelation credit card pay method", async () => {
         const {
@@ -495,13 +545,17 @@ describe("RidesWSService (e2e)", () => {
           ridePID: ride.pid,
           status: CANCELATION_RESPONSE.CHARGE_REQUESTED,
         });
-      }, 8000);
+
+        voyagerSocket.disconnect();
+        driverSocket.disconnect();
+      }, 15000);
     });
   });
 });
 
-function mockDriverSetup(override: Partial<Setup> = {}) {
+function mockDriverSetup(vehicleId: string, override: Partial<Setup> = {}) {
   const setup: Setup = {
+    vehicleId,
     position: {
       latLng: [-9.573, -35.77997],
       heading: 0,

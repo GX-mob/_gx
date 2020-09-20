@@ -1,3 +1,4 @@
+import { VehicleModelInterface } from "@shared/interfaces";
 import { UserBasic, UserState } from "./user-basic";
 import { Position } from "../position";
 import { Configuration } from "../configuration";
@@ -10,4 +11,6 @@ export type Driver = UserBasic & {
    * Driver ride match configuration
    */
   config: Configuration;
+  updatedAt: number;
+  vehicleType: VehicleModelInterface["type"];
 };

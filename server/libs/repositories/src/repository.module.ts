@@ -6,6 +6,7 @@ import {
   RideRepository,
   SessionRepository,
   PendencieRepository,
+  VehicleRepository,
 } from "./repositories";
 
 @Global()
@@ -14,6 +15,7 @@ import {
   providers: [
     RepositoryService,
     UserRepository,
+    VehicleRepository,
     RideRepository,
     SessionRepository,
     PendencieRepository,
@@ -21,6 +23,7 @@ import {
   exports: [
     RepositoryService,
     UserRepository,
+    VehicleRepository,
     RideRepository,
     SessionRepository,
     PendencieRepository,

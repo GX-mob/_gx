@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
 import { RideInterface } from "@shared/interfaces";
-import { RideRepository } from "@app/repositories";
+import { RideRepository, VehicleRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
 import {
@@ -36,18 +36,18 @@ import { PinoLogger } from "nestjs-pino";
 import {
   ConnectionDataNotFoundException,
   RideNotFoundException,
+  VehicleNotFoundException,
 } from "./exceptions";
 import { Socket } from "socket.io";
 import { retryUnderHood } from "@app/helpers/util";
-
-export type DriverObject = Driver & { updatedAt: number };
+import { WsException } from "@nestjs/websockets";
 
 @Injectable()
 export class StateService {
   /**
    * Drivers list
    */
-  public drivers: DriverObject[] = [];
+  public drivers: Driver[] = [];
   /**
    * Offers list
    */
@@ -62,6 +62,7 @@ export class StateService {
     >,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
+    private vehicleRepository: VehicleRepository,
   ) {
     logger.setContext(StateService.name);
 
@@ -143,12 +144,19 @@ export class StateService {
       connectionData = await this.getConnectionData(socketId);
     }
 
+    const vehicle = await this.vehicleRepository.get({ _id: setup.vehicleId });
+
+    if (!vehicle) {
+      throw new VehicleNotFoundException(setup.vehicleId);
+    }
+
     const driver = this.findDriver(socketId);
-    const driverObject: DriverObject = {
+    const driverObject: Driver = {
       ...connectionData,
       socketId,
       position: setup.position,
       config: setup.config,
+      vehicleType: vehicle.vmodel.type,
       state: DriverState.SEARCHING,
       updatedAt: Date.now(),
     };
@@ -166,7 +174,7 @@ export class StateService {
   findDriver(
     socketId: string,
     logLevel: "error" | "info" | "warn" = "info",
-  ): DriverObject | undefined {
+  ): Driver | undefined {
     const driver = this.drivers.find((driver) => socketId === driver.socketId);
 
     if (driver) {

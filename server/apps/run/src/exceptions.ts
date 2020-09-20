@@ -13,6 +13,11 @@ export class RideNotFoundException extends WsException {
   }
 }
 
+export class VehicleNotFoundException extends WsException {
+  constructor(vehicleID: string) {
+    super({ error: EXCEPTIONS.VEHICLE_NOT_FOUND, vehicleID });
+  }
+}
 export class UncancelableRideException extends WsException {
   constructor(ridePID: string, cause: string) {
     super({ error: EXCEPTIONS.UNCANCELABLE_RIDE, ridePID, cause });
