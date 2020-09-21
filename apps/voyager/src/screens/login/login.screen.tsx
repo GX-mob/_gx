@@ -1,39 +1,14 @@
 // TODO
-import React, { useState, FC } from "react";
-import { StyleSheet, View, Text as RCText, TextProps } from "react-native";
-import UI from "@stores/ui";
-import Login from "@stores/login";
-import Logo from "@components/logo";
-import { InputMask, Button } from "@components/atoms";
+import React, { useState } from "react";
+import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-
+import Login from "@stores/login.store";
+import Logo from "@components/logo";
+import { Text, InputMask, Button } from "@components/atoms";
 import { SignInButton } from "@components/google";
+import { styles } from "./styles";
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "column",
-    height: "100%",
-    alignItems: "center",
-  },
-  row: {
-    width: "80%",
-    height: "40%",
-    alignItems: "center",
-    flexDirection: "column",
-  },
-});
-
-const Text = observer<TextProps>(({ style, ...props }) => (
-  <RCText
-    style={{
-      color: UI.theme.colors.onBackground,
-      ...((style as object) || {}),
-    }}
-    {...props}
-  />
-));
-
-const LoginScreen: FC = () => {
+export const LoginScreen = observer(() => {
   const [phone, setPhone] = useState("");
 
   return (
@@ -62,11 +37,10 @@ const LoginScreen: FC = () => {
             setPhone(value);
           }}
           onSubmitEditing={async (event) => {
-            console.log("why 2");
-            console.log(
-              "login",
-              await Login.identify(`+55${phone.replace(/\D/g, "")}`),
-            );
+            if (Login.loading) {
+              return;
+            }
+            Login.identify(`+55${phone.replace(/\D/g, "")}`);
           }}
         />
         <Button
@@ -111,6 +85,4 @@ const LoginScreen: FC = () => {
       </View>
     </View>
   );
-};
-
-export default observer(LoginScreen);
+});

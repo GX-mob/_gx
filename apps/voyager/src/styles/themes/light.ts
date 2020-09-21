@@ -1,6 +1,6 @@
-import { Theme } from "../../stores/ui";
+import { ThemeInterface } from "@interfaces";
 
-const theme: Theme = {
+const theme: ThemeInterface = {
   id: "light",
   borderRadius: 3,
   statusBarStyle: "dark",

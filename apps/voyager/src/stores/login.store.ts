@@ -8,12 +8,8 @@ import {
   IS_WEB,
   GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
-  ENDPOINTS,
+  NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
 } from "../constants";
-
-export const signin = ky.extend({
-  prefixUrl: ENDPOINTS.SIGNIN,
-});
 
 class LoginStore {
   @observable
@@ -27,6 +23,9 @@ class LoginStore {
 
   @observable
   public notFoundResponse = 0;
+
+  @observable
+  public indicateAccountCreation = false;
 
   public profile?: IdentifyResponseInterface;
 
@@ -59,6 +58,13 @@ class LoginStore {
           break;
       }
     } catch (error) {
+      if (
+        this.notFoundResponse >=
+        NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
+      ) {
+        this.indicateAccountCreation = true;
+      }
+
       switch (error.statusCode) {
         case 404:
           this.notFoundResponse++;

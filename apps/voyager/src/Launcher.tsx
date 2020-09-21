@@ -10,7 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { AppContainer } from "./styles";
 import App from "./App";
-import UI from "@stores/ui";
+import { UIStore } from "@stores";
 
 const height = Dimensions.get("window").height;
 
@@ -20,11 +20,11 @@ function Launcher() {
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: UI.theme.colors.background,
+        backgroundColor: UIStore.theme.colors.background,
       }}
     >
       <LinearGradient
-        colors={[UI.theme.colors.background, "transparent"]}
+        colors={[UIStore.theme.colors.background, "transparent"]}
         style={{
           position: "relative",
           zIndex: 99999,
@@ -54,7 +54,7 @@ function Launcher() {
             </AppContainer>
           </View>
         </ScrollView>
-        <StatusBar style={UI.theme.statusBarStyle} />
+        <StatusBar style={UIStore.theme.statusBarStyle} />
       </View>
     </View>
   );

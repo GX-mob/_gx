@@ -1,2 +1,2 @@
-export { default as LoginStore } from "./login";
-export { default as UIStore } from "./ui";
+export { default as LoginStore } from "./login.store";
+export { default as UIStore } from "./ui.store";

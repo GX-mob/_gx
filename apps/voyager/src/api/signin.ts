@@ -5,13 +5,22 @@ import {
   SignInCodeDtoInterface,
   SignInPasswordDtoInterface,
 } from "@shared/interfaces";
-import { signin } from "./http";
+import ky from "ky";
+import { ENDPOINTS } from "../constants";
 
 export enum NextStep {
   Code,
   Password,
   Main,
 }
+
+type ApiReponse<Content> = {
+  [K in keyof Content]: Content[K];
+} & {
+  /**
+   * Next step of workflow
+   */ next: NextStep;
+};
 
 const IdentifyNextRef: any = {
   200: NextStep.Password,
@@ -23,13 +32,9 @@ const PasswordNextRef: any = {
   [SignInHttpReponseCodes.SecondaFactorRequired]: NextStep.Code,
 };
 
-type ApiReponse<Content> = {
-  [K in keyof Content]: Content[K];
-} & {
-  /**
-   * Next step of workflow
-   */ next: NextStep;
-};
+export const signin = ky.extend({
+  prefixUrl: ENDPOINTS.SIGNIN,
+});
 
 export async function identify(
   id: string,

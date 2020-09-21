@@ -12,3 +12,5 @@ export const ENDPOINTS = {
   RIDES: "http://192.168.0.105:3000/rides",
   RUN: "http://192.168.0.105:3001",
 };
+
+export const NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION = 4;

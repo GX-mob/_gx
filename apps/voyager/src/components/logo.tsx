@@ -2,10 +2,10 @@ import React, { FC } from "react";
 import { View, ViewProps } from "react-native";
 import { observer } from "mobx-react-lite";
 import Svg, { Path } from "react-native-svg";
-import UI from "@stores/ui";
+import { UIStore } from "@stores";
 
 const Logo: FC<Partial<ViewProps>> = observer((props) => {
-  const { onBackground } = UI.theme.colors;
+  const { onBackground } = UIStore.theme.colors;
   return (
     <View {...props}>
       <Svg width="38" height="39" viewBox="0 0 59 60" fill="none">

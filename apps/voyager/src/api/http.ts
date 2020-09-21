@@ -1,6 +1,6 @@
 import ky from "ky";
 import { ENDPOINTS } from "../constants";
-import LoginStore from "../stores/login";
+import LoginStore from "../stores/login.store";
 
 const authorizedRequestHooks = {
   beforeRequest: [
@@ -9,10 +9,6 @@ const authorizedRequestHooks = {
     },
   ],
 };
-
-export const signin = ky.extend({
-  prefixUrl: ENDPOINTS.SIGNIN,
-});
 
 export const account = ky.extend({
   hooks: authorizedRequestHooks,

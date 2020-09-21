@@ -1,6 +1,6 @@
 import React, { FunctionComponent } from "react";
 import { observer } from "mobx-react-lite";
-import UI from "@stores/ui";
+import { UIStore } from "@stores";
 import { View } from "react-native";
 
 export const AppContainer: FunctionComponent<Partial<View>> = observer(
@@ -10,7 +10,7 @@ export const AppContainer: FunctionComponent<Partial<View>> = observer(
         style={{
           width: "100%",
           height: "100%",
-          backgroundColor: UI.theme.colors.background,
+          backgroundColor: UIStore.theme.colors.background,
         }}
         {...props}
       />
