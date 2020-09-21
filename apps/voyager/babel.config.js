@@ -6,13 +6,14 @@ module.exports = function (api) {
       [
         "module-resolver",
         {
-          root: ["./src"],
+          root: ["."],
           alias: {
+            "@screens": "./src/screens",
             "@components": "./src/components",
             "@stores": "./src/stores",
             "@modules": "./src/modules",
-            "@apis": "./src/apis",
-            "@shared": "../../shared",
+            "@apis": "./src/api",
+            "@shared": "./shared",
           },
         },
       ],

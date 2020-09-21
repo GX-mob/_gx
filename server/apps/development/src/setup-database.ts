@@ -3,12 +3,15 @@ import {
   RepositoryService,
   UserModel,
   RideModel,
+  VehicleMetadataModel,
+  VehicleModel,
   RideAreaConfigurationModel,
 } from "@app/repositories";
 import {
   UserRoles,
   RideAreaConfigurationInterface,
   RideTypeConfigurationInterface,
+  VehicleTypes,
 } from "@shared/interfaces";
 import chalk from "chalk";
 import faker from "faker";
@@ -133,6 +136,7 @@ export async function seedDatabase(logging: boolean = true) {
   });
 
   logging && log("MongoDB", chalk`{yellow Seeding some rides...}`);
+
   // generate some user rides
   for (let i = 0; i < 5; ++i) {
     const durationTotal = faker.random.number({ min: 1, max: 7 });
@@ -182,4 +186,23 @@ export async function seedDatabase(logging: boolean = true) {
       },
     });
   }
+
+  // Create vehicle model and vehicle for driver
+
+  logging && log("MongoDB", chalk`{yellow Seeding vehicle's...}`);
+
+  const { _id: vehicleMetadataID } = await VehicleMetadataModel.create({
+    name: "Vehicle",
+    manufacturer: "Vehicle manufacturer",
+    type: VehicleTypes.HATCH,
+  });
+
+  await VehicleModel.create({
+    plate: "ABCD-1234",
+    year: 2015,
+    metadata: vehicleMetadataID,
+    owner: driver._id,
+    inUse: false,
+    permissions: [],
+  });
 }

@@ -1,6 +1,7 @@
 {
   "main": "Luancher.tsx",
   "scripts": {
+    "up-shared": "rimraf ./shared/* && cp -r ../../shared/* ./shared",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
@@ -28,14 +29,23 @@
     "react-native-svg": "^12.1.0",
     "react-native-web": "~0.11.7",
     "rifm": "^0.12.0",
-    "styled-components": "^5.1.1"
+    "styled-components": "^5.1.1",
+    "react-native-gesture-handler": "~1.6.0",
+    "react-native-reanimated": "~1.9.0",
+    "react-native-screens": "~2.9.0",
+    "@react-native-community/masked-view": "0.1.10"
   },
   "devDependencies": {
     "@babel/core": "^7.8.6",
+    "@babel/plugin-transform-typescript": "^7.11.0",
+    "@babel/preset-typescript": "^7.10.4",
+    "@expo/webpack-config": "^0.12.31",
     "@types/react": "~16.9.41",
     "@types/react-native": "~0.62.13",
     "@types/styled-components": "^5.1.2",
     "babel-plugin-module-resolver": "^4.0.0",
+    "rimraf": "^3.0.2",
+    "ts-loader": "^8.0.4",
     "typescript": "~3.9.5"
   },
   "private": true

@@ -15,7 +15,7 @@ export const AppContainer: FunctionComponent<Partial<View>> = observer(
         {...props}
       />
     );
-  }
+  },
 );
 
 export const Justified: FunctionComponent<Partial<View>> = observer((props) => {

@@ -11,7 +11,7 @@ import {
   RideAreaConfigurationModel,
 } from "./models";
 import { VehicleModel } from "./models/vehicle";
-import { VehicleModelModel } from "./models/vehicle-model";
+import { VehicleMetadataModel } from "./models/vehicle-metadata";
 
 const options: ConnectionOptions = {
   useNewUrlParser: true,
@@ -29,7 +29,7 @@ export class RepositoryService {
   readonly pendencieModel = PendencieModel;
   readonly rideAreaConfigurationModel = RideAreaConfigurationModel;
   readonly vehicleModel = VehicleModel;
-  readonly vehicleModelModel = VehicleModelModel;
+  readonly vehicleMetadataModel = VehicleMetadataModel;
 
   readonly connections = [
     Connections.Configuration,

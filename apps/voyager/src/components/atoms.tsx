@@ -84,6 +84,6 @@ export const ButtonBase = observer(
       padding: "10px",
       borderRadius: theme.borderRadius,
       backgroundColor: theme.colors.surface,
-    })
-  )
+    }),
+  ),
 );

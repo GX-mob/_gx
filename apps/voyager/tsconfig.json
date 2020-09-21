@@ -2,11 +2,17 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@screens/*": ["./src/screens/*"],
+      "@screens": ["./src/screens"],
       "@components/*": ["./src/components/*"],
+      "@components": ["./src/components"],
       "@stores/*": ["./src/stores/*"],
+      "@stores": ["./src/stores"],
       "@modules/*": ["./src/modules/*"],
-      "@apis/*": ["src/API/*"],
-      "@shared/*": ["../../shared/*"]
+      "@modules": ["./src/modules"],
+      "@apis/*": ["./src/api/*"],
+      "@apis": ["./src/api"],
+      "@shared/*": ["./shared/*"]
     },
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,

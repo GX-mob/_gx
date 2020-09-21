@@ -161,8 +161,8 @@ describe("RidesWSService (e2e)", () => {
     ]);
 
     // Vehicles
-    const { vehicleModelModel, vehicleModel } = repositoryService;
-    const { _id } = await vehicleModelModel.create({
+    const { vehicleMetadataModel, vehicleModel } = repositoryService;
+    const { _id } = await vehicleMetadataModel.create({
       name: "Vehicle name",
       manufacturer: "Vehicle Manufacturer",
       type: VehicleTypes.HATCH,
@@ -172,13 +172,13 @@ describe("RidesWSService (e2e)", () => {
       vehicleRepository.create({
         plate: "ABCD-1234",
         year: 2012,
-        vmodel: _id,
+        metadata: _id,
         owner: driver1._id,
       }),
       vehicleRepository.create({
         plate: "ABCD-1235",
         year: 2012,
-        vmodel: _id,
+        metadata: _id,
         owner: driver2._id,
       }),
     ]);

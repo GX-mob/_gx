@@ -1,10 +1,21 @@
 import Storage from "../modules/storage";
+import ky from "ky";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
-import { signin } from "../api/api";
-import { IS_WEB, GOOGLE_OAUTH_WEB_ID, GOOGLE_OAUTH_ID } from "../constants";
+import { identify, NextStep } from "../api/signin";
+import { IdentifyResponseInterface } from "@shared/interfaces";
+import {
+  IS_WEB,
+  GOOGLE_OAUTH_WEB_ID,
+  GOOGLE_OAUTH_ID,
+  ENDPOINTS,
+} from "../constants";
 
-export class LoginStore {
+export const signin = ky.extend({
+  prefixUrl: ENDPOINTS.SIGNIN,
+});
+
+class LoginStore {
   @observable
   public initializing = true;
 
@@ -13,6 +24,11 @@ export class LoginStore {
 
   @observable
   public token = "";
+
+  @observable
+  public notFoundResponse = 0;
+
+  public profile?: IdentifyResponseInterface;
 
   constructor() {
     this.init();
@@ -26,13 +42,29 @@ export class LoginStore {
       this.token = token;
     }
 
-    this.loading = false;
+    this.initializing = false;
   }
 
   @action
   async identify(phone: string) {
-    const result = await signin.get(phone);
-    console.log(result);
+    try {
+      const response = await identify(phone);
+
+      switch (response.next) {
+        case NextStep.Password:
+          console.log("goto password");
+          break;
+        case NextStep.Code:
+          console.log("goto code");
+          break;
+      }
+    } catch (error) {
+      switch (error.statusCode) {
+        case 404:
+          this.notFoundResponse++;
+          break;
+      }
+    }
   }
 
   @action

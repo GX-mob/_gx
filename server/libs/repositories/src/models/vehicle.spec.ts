@@ -16,8 +16,9 @@ describe("Model: Vehicle", () => {
     const vehicle = new VehicleModel({
       plate: "ABCD-1234",
       year: 2012,
-      vmodel: new Types.ObjectId(),
+      metadata: new Types.ObjectId(),
       owner: new Types.ObjectId(),
+      permissions: [new Types.ObjectId()],
     });
 
     const error = vehicle.validateSync() as any;

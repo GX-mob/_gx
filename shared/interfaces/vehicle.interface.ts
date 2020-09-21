@@ -5,7 +5,7 @@ export enum VehicleTypes {
   SEDAN = "SEDAN",
 }
 
-export interface VehicleModelInterface {
+export interface VehicleMetadataInterface {
   name: string;
   manufacturer: string;
   type: VehicleTypes;
@@ -17,6 +17,6 @@ export interface VehicleInterface {
   year: number;
   owner: UserInterface;
   inUse: boolean;
-  vmodel: VehicleModelInterface;
+  metadata: VehicleMetadataInterface;
   permissions: { user: string; expiration: number }[];
 }

@@ -23,8 +23,7 @@ export class VehicleRepository extends RepositoryFactory<
   constructor(private cacheService: CacheService) {
     super(cacheService, VehicleModel, {
       namespace: "vehicles",
-      autoPopulate: ["vmodel"],
-      linkingKeys: ["plate"],
+      autoPopulate: ["metadata"],
     });
   }
 }

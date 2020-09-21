@@ -1,6 +1,6 @@
-import { ENDPOINTS } from "../constants";
 import ky from "ky";
-import LoginStore from "@stores/login";
+import { ENDPOINTS } from "../constants";
+import LoginStore from "../stores/login";
 
 const authorizedRequestHooks = {
   beforeRequest: [
@@ -23,9 +23,3 @@ export const ride = ky.extend({
   hooks: authorizedRequestHooks,
   prefixUrl: ENDPOINTS.RIDES,
 });
-
-type IdentifyResponse = {
-  firstName: "string";
-  avatar?: "string";
-  last4?: "string";
-};

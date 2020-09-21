@@ -35,7 +35,7 @@ export interface Theme {
   };
 }
 
-class UI {
+class UIStore {
   @observable
   theme: Theme = darkTheme;
 
@@ -52,4 +52,4 @@ class UI {
   }
 }
 
-export default new UI();
+export default new UIStore();

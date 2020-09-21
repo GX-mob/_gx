@@ -16,8 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { IsNotEmpty, IsString, IsNumberString } from "class-validator";
+import {
+  SignInPasswordDtoInterface,
+  SignInCodeDtoInterface,
+} from "@shared/interfaces";
 
-export class SignInPasswordDto {
+export class SignInPasswordDto implements SignInPasswordDtoInterface {
   @IsNotEmpty()
   @IsString()
   phone!: string;
@@ -27,7 +31,7 @@ export class SignInPasswordDto {
   password!: string;
 }
 
-export class SignInCodeDto {
+export class SignInCodeDto implements SignInCodeDtoInterface {
   @IsNotEmpty()
   @IsString()
   phone!: string;

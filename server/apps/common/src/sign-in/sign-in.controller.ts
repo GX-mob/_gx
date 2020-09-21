@@ -29,7 +29,13 @@ import {
 import { FastifyRequest, FastifyReply } from "fastify";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import { util } from "@app/helpers";
-import { UserInterface } from "@shared/interfaces";
+import {
+  UserInterface,
+  SignInHttpReponseCodes,
+  IdentifyResponseInterface,
+  SignInSuccessResponse,
+  Password2FARequiredResponse,
+} from "@shared/interfaces";
 import { UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
@@ -50,16 +56,10 @@ export class SignInController {
 
     if (!password) {
       await this.contactVerification.request(phones[0]);
-      res.code(202);
-      res.send({
-        firstName,
-        avatar,
-        last4: phones[0].slice(phones[0].length - 4),
-      });
-      return;
+      res.code(SignInHttpReponseCodes.SecondaFactorRequired);
     }
 
-    res.send({
+    res.send<IdentifyResponseInterface>({
       firstName,
       avatar,
     });
@@ -96,28 +96,23 @@ export class SignInController {
     if (!user["2fa"]) {
       const { token } = await this.createSession(user, request);
 
-      reply.code(201);
-      reply.send({ token });
+      reply.code(SignInHttpReponseCodes.Success);
+      reply.send<SignInSuccessResponse>({ token });
       return;
     }
 
     await this.contactVerification.request(user["2fa"]);
 
-    reply.code(202);
+    reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
 
     const isEmail = validator.isEmail(user["2fa"]);
+    const target = isEmail
+      ? util.hideEmail(user["2fa"])
+      : // Phone last 4 numbers
+        user["2fa"].slice(user["2fa"].length - 4);
 
-    if (isEmail) {
-      reply.send({
-        target: util.hideEmail(user["2fa"]),
-      });
-      return;
-    }
-
-    const last4PhoneNumbers = user["2fa"].slice(user["2fa"].length - 4);
-
-    reply.send({
-      target: last4PhoneNumbers,
+    reply.send<Password2FARequiredResponse>({
+      target,
     });
     return;
   }
@@ -139,8 +134,8 @@ export class SignInController {
 
     const { token } = await this.createSession(user, request);
 
-    reply.code(201);
-    reply.send({ token });
+    reply.code(SignInHttpReponseCodes.Success);
+    reply.send<SignInSuccessResponse>({ token });
     return;
   }
 
