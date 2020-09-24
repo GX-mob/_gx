@@ -6,12 +6,13 @@ import {
   SignInPasswordDtoInterface,
 } from "@shared/interfaces";
 import ky from "ky";
+import { HttpException } from "./exceptions";
 import { ENDPOINTS } from "../constants";
 
 export enum NextStep {
-  Code,
-  Password,
-  Main,
+  Code = "Code",
+  Password = "Password",
+  Main = "Main",
 }
 
 type ApiReponse<Content> = {
@@ -40,10 +41,10 @@ export async function identify(
   id: string,
 ): Promise<ApiReponse<IdentifyResponseInterface>> {
   const response = await signin.get(id);
-  const content: IdentifyResponseInterface = await response.json();
+  const content = await response.json();
 
   if (!response.ok) {
-    throw content;
+    throw new HttpException(content);
   }
 
   const next = IdentifyNextRef[response.status];
@@ -58,7 +59,7 @@ export async function password(
   const content = await response.json();
 
   if (!response.ok) {
-    throw content;
+    throw new HttpException(content);
   }
 
   const next = PasswordNextRef[response.status];
@@ -73,7 +74,7 @@ export async function code(
   const content = await response.json();
 
   if (!response.ok) {
-    throw content;
+    throw new HttpException(content);
   }
 
   return { ...content, next: NextStep.Main };

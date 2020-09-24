@@ -1,11 +1,10 @@
 import Storage from "../modules/storage";
-import ky from "ky";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
-import { identify, NextStep } from "../api/signin";
 import { IdentifyResponseInterface } from "@shared/interfaces";
+import { identify, NextStep } from "@apis/signin";
+import { HttpException } from "@apis/exceptions";
 import {
-  IS_WEB,
   GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
@@ -21,13 +20,14 @@ class LoginStore {
   @observable
   public token = "";
 
-  @observable
   public notFoundResponse = 0;
 
   @observable
   public indicateAccountCreation = false;
 
   public profile?: IdentifyResponseInterface;
+
+  public phone: string = "";
 
   constructor() {
     this.init();
@@ -49,6 +49,8 @@ class LoginStore {
     try {
       const response = await identify(phone);
 
+      this.phone = phone;
+
       switch (response.next) {
         case NextStep.Password:
           console.log("goto password");
@@ -58,27 +60,27 @@ class LoginStore {
           break;
       }
     } catch (error) {
-      if (
-        this.notFoundResponse >=
-        NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
-      ) {
-        this.indicateAccountCreation = true;
-      }
-
-      switch (error.statusCode) {
-        case 404:
-          this.notFoundResponse++;
-          break;
+      if (error instanceof HttpException) {
+        switch (error.statusCode) {
+          case 404:
+            this.notFoundResponse++;
+            if (
+              this.notFoundResponse >=
+              NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
+            ) {
+              this.indicateAccountCreation = true;
+            }
+            break;
+        }
       }
     }
   }
 
   @action
-  async loginWithGoogle() {
-    if (IS_WEB) {
-      return console.log("TODO WEB LOGIN");
-    }
+  async password(password: string) {}
 
+  @action
+  async loginWithGoogle() {
     try {
       const result = await logInAsync({
         clientId: GOOGLE_OAUTH_WEB_ID,

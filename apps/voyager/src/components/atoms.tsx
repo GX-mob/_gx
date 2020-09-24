@@ -10,7 +10,6 @@ import {
 import { observer } from "mobx-react-lite";
 import { ColorsThemeProperties } from "@interfaces";
 import { UIStore } from "@stores";
-import ThemeableComponentFactory from "@modules/themeable-component-factory";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
 
 export const Input = observer<TextInputProps>(({ style, ...props }) => (
@@ -78,18 +77,6 @@ export const Button = observer<
     </TouchableHighlight>
   );
 });
-
-export const ButtonBase = observer(
-  ThemeableComponentFactory<TouchableHighlightProps>(
-    TouchableHighlight,
-    (theme) => ({
-      height: "40px",
-      padding: "10px",
-      borderRadius: theme.borderRadius,
-      backgroundColor: theme.colors.surface,
-    }),
-  ),
-);
 
 export const Text = observer<TextProps & { color?: ColorsThemeProperties }>(
   ({ style, color, ...props }) => (

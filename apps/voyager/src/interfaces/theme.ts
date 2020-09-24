@@ -1,8 +1,9 @@
 export type ColorsThemeProperties = keyof ThemeInterface["colors"];
 
 export interface ThemeInterface {
-  id: string;
+  name: string;
   borderRadius: number;
+  isDark: boolean;
   statusBarStyle: "light" | "dark";
   colors: {
     primary: string;

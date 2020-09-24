@@ -1,17 +1,18 @@
 import { ThemeInterface } from "@interfaces";
 
 const theme: ThemeInterface = {
-  id: "dark",
+  name: "dark",
   borderRadius: 3,
+  isDark: true,
   statusBarStyle: "light",
   colors: {
-    background: "#0f0f0f",
+    background: "#000",
     onBackground: "#fff",
-    primary: "#0048B4",
-    primaryVariant: "#002687",
+    primary: "#1900B5",
+    primaryVariant: "#0C0057",
     onPrimary: "#fff",
-    secondary: "#1900B5",
-    secondaryVariant: "#0C0057",
+    secondary: "#0048B4",
+    secondaryVariant: "#002687",
     onSecondary: "#fff",
     surface: "#1c1c1c",
     onSurface: "#cccccc",

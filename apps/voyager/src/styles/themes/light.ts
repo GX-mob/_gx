@@ -1,8 +1,9 @@
 import { ThemeInterface } from "@interfaces";
 
 const theme: ThemeInterface = {
-  id: "light",
+  name: "light",
   borderRadius: 3,
+  isDark: false,
   statusBarStyle: "dark",
   colors: {
     background: "#fff",

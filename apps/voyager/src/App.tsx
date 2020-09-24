@@ -1,3 +1,7 @@
+import "react-native-gesture-handler";
+import { enableScreens } from "react-native-screens";
+enableScreens();
+
 import React from "react";
 import { ActivityIndicator } from "react-native";
 import { observer } from "mobx-react-lite";
