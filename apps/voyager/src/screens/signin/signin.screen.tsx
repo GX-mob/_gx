@@ -6,7 +6,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { UIStore } from "@stores";
 import Logo from "@components/logo";
 import { Lines } from "@components/general";
-import { NextStep } from "@apis/signin";
+import { SignInSteps } from "@apis/signin";
 import { IdentifyStep } from "./identify.step";
 import { PasswordStep } from "./password.step";
 import { CodeStep } from "./code.step";
@@ -41,8 +41,8 @@ export const LoginScreen = observer(() => {
           }}
         >
           <Screen name="Identify" component={IdentifyStep} />
-          <Screen name={NextStep.Password} component={PasswordStep} />
-          <Screen name={NextStep.Code} component={CodeStep} />
+          <Screen name={SignInSteps.Password} component={PasswordStep} />
+          <Screen name={SignInSteps.Code} component={CodeStep} />
         </Navigator>
       </NavigationContainer>
     </>

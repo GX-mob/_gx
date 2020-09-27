@@ -1,16 +1,20 @@
+import SecureStore from "expo-secure-store";
 import Storage from "../modules/storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
 import { IdentifyResponseInterface } from "@shared/interfaces";
-import { identify, NextStep } from "@apis/signin";
+import { identify, password, SignInSteps } from "@apis/signin";
 import { HttpException } from "@apis/exceptions";
 import {
   GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
+  NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
 } from "../constants";
 
 class LoginStore {
+  private secureStoreAvailable!: boolean;
+
   @observable
   public initializing = true;
 
@@ -20,16 +24,25 @@ class LoginStore {
   @observable
   public token = "";
 
-  public notFoundResponse = 0;
+  @observable
+  public error?: string;
+
+  @observable
+  public suggestNumberWrong = false;
 
   @observable
   public indicateAccountCreation = false;
 
   public profile?: IdentifyResponseInterface;
-
   public phone: string = "";
+  public notFoundResponse = 0;
+
+  @observable
+  public renewExpiration?: number;
 
   constructor() {
+    //this.secureStoreAvailable = SecureStore.
+
     this.init();
   }
 
@@ -47,23 +60,25 @@ class LoginStore {
   @action
   async identify(phone: string) {
     try {
+      this.loading = true;
       const response = await identify(phone);
 
       this.phone = phone;
 
-      switch (response.next) {
-        case NextStep.Password:
-          console.log("goto password");
-          break;
-        case NextStep.Code:
-          console.log("goto code");
-          break;
-      }
+      return response.next;
     } catch (error) {
       if (error instanceof HttpException) {
         switch (error.statusCode) {
           case 404:
             this.notFoundResponse++;
+
+            if (
+              this.notFoundResponse >=
+              NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER
+            ) {
+              this.suggestNumberWrong = true;
+            }
+
             if (
               this.notFoundResponse >=
               NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
@@ -73,11 +88,34 @@ class LoginStore {
             break;
         }
       }
+    } finally {
+      this.loading = false;
     }
   }
 
   @action
-  async password(password: string) {}
+  async password(pw: string) {
+    try {
+      this.loading = true;
+      const result = await password({ phone: this.phone, password: pw });
+
+      if (result.next === SignInSteps.Main) {
+      }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        switch (error.statusCode) {
+          case 422:
+            this.error = "Senha errada.";
+            break;
+        }
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  @action
+  async code(code: string) {}
 
   @action
   async loginWithGoogle() {
@@ -102,6 +140,9 @@ class LoginStore {
       return { error: true };
     }
   }
+
+  private getData(key: string) {}
+  private setData(key: string, data: any) {}
 }
 
 export default new LoginStore();

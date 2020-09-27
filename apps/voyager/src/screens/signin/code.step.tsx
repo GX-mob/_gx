@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { LoginStore } from "@stores";
+import { LoginStore, UIStore } from "@stores";
 import { Text, Button, InputMask, Divider } from "@components/atoms";
 import { styles, NextButton } from "./common";
 
@@ -46,14 +46,19 @@ export const CodeStep = observer(() => {
       </View>
       <Divider />
       <Button
-        type="secondary"
         disabled={true}
-        style={{ width: "100%", paddingVertical: 8 }}
+        type="secondary"
+        style={{ width: "100%" }}
         onPress={(event) => {
-          console.log("open account creation webview");
+          UIStore.toggle();
+        }}
+        textStyle={{
+          fontSize: 12,
+          fontWeight: "bold",
+          textTransform: "uppercase",
         }}
       >
-        Reenviar
+        Reenviar (60)
       </Button>
     </View>
   );

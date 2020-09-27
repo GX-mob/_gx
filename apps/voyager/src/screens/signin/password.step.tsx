@@ -3,12 +3,12 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
 import { Text, Button, Input, Divider, Avatar } from "@components/atoms";
-import { NextStep } from "@apis/signin";
+import { SignInSteps } from "@apis/signin";
 import { StackScreenProps } from "@react-navigation/stack";
 import { styles, NextButton } from "./common";
 
 type Props = StackScreenProps<{
-  [NextStep.Code]: undefined;
+  [SignInSteps.Code]: undefined;
   RecoveryPassword: undefined;
 }>;
 
@@ -16,7 +16,7 @@ export const PasswordStep = observer(({ navigation }: Props) => {
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
-    navigation.navigate(NextStep.Code);
+    navigation.navigate(SignInSteps.Code);
   };
 
   return (
@@ -27,7 +27,6 @@ export const PasswordStep = observer(({ navigation }: Props) => {
       </Text>
       <View style={{ width: "100%" }}>
         <Input
-          autoFocus
           editable={!LoginStore.loading}
           secureTextEntry={true}
           style={{ width: "100%" }}
@@ -57,8 +56,13 @@ export const PasswordStep = observer(({ navigation }: Props) => {
         onPress={(event) => {
           UIStore.toggle();
         }}
+        textStyle={{
+          fontSize: 12,
+          fontWeight: "bold",
+          textTransform: "uppercase",
+        }}
       >
-        ESQUECI MINHA SENHA
+        Esqueci minha senha
       </Button>
     </View>
   );

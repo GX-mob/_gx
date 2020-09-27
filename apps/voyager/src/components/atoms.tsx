@@ -1,7 +1,9 @@
 import React, { FC } from "react";
 import {
+  StyleProp,
   View,
   Text as RNText,
+  TextStyle,
   TextProps,
   TextInput,
   TextInputProps,
@@ -49,8 +51,9 @@ export const InputMask = observer<TextInputMaskProps>(({ style, ...props }) => (
 export const Button = observer<
   {
     type: ColorsThemeProperties;
+    textStyle?: StyleProp<TextStyle>;
   } & Partial<TouchableHighlightProps>
->(({ children, type, style, disabled, ...props }) => {
+>(({ children, textStyle, type, style, disabled, ...props }) => {
   const UpperFirstLetter = type.charAt(0).toUpperCase() + type.slice(1);
 
   const fontColorProp = `on${UpperFirstLetter}` as ColorsThemeProperties;
@@ -66,7 +69,7 @@ export const Button = observer<
         paddingHorizontal: 12,
         borderRadius: UIStore.theme.borderRadius,
         backgroundColor: UIStore.theme.colors[type],
-        opacity: disabled ? 0.5 : 1,
+        opacity: disabled ? 0.6 : 1,
         marginVertical: 6,
         ...((style as object) || {}),
       }}
@@ -74,12 +77,15 @@ export const Button = observer<
       {...props}
     >
       <RNText
-        style={{
-          width: "100%",
-          color: UIStore.theme.colors[fontColorProp],
-          textAlign: "center",
-          textAlignVertical: "center",
-        }}
+        style={[
+          {
+            width: "100%",
+            color: UIStore.theme.colors[fontColorProp],
+            textAlign: "center",
+            textAlignVertical: "center",
+          },
+          textStyle,
+        ]}
       >
         {children}
       </RNText>

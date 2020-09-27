@@ -9,28 +9,28 @@ import ky from "ky";
 import { HttpException } from "./exceptions";
 import { ENDPOINTS } from "../constants";
 
-export enum NextStep {
+export enum SignInSteps {
   Code = "Code",
   Password = "Password",
   Main = "Main",
 }
 
-type ApiReponse<Content> = {
-  [K in keyof Content]: Content[K];
-} & {
+type ApiReponse<Content, Next> = {
+  content: { [K in keyof Content]: Content[K] };
   /**
    * Next step of workflow
-   */ next: NextStep;
+   */
+  next: Next;
 };
 
-const IdentifyNextRef: any = {
-  200: NextStep.Password,
-  [SignInHttpReponseCodes.SecondaFactorRequired]: NextStep.Code,
+const IdentifyNextRef = {
+  200: SignInSteps.Password,
+  [SignInHttpReponseCodes.SecondaFactorRequired]: SignInSteps.Code,
 };
 
 const PasswordNextRef: any = {
-  [SignInHttpReponseCodes.Success]: NextStep.Main,
-  [SignInHttpReponseCodes.SecondaFactorRequired]: NextStep.Code,
+  [SignInHttpReponseCodes.Success]: SignInSteps.Main,
+  [SignInHttpReponseCodes.SecondaFactorRequired]: SignInSteps.Code,
 };
 
 export const signin = ky.extend({
@@ -39,7 +39,9 @@ export const signin = ky.extend({
 
 export async function identify(
   id: string,
-): Promise<ApiReponse<IdentifyResponseInterface>> {
+): Promise<
+  ApiReponse<IdentifyResponseInterface, SignInSteps.Password | SignInSteps.Code>
+> {
   const response = await signin.get(id);
   const content = await response.json();
 
@@ -47,14 +49,17 @@ export async function identify(
     throw new HttpException(content);
   }
 
-  const next = IdentifyNextRef[response.status];
+  const next =
+    response.status === 200 ? SignInSteps.Password : SignInSteps.Code;
 
-  return { ...content, next };
+  return { content, next };
 }
 
 export async function password(
   body: SignInPasswordDtoInterface,
-): Promise<ApiReponse<SignInSuccessResponse>> {
+): Promise<
+  ApiReponse<SignInSuccessResponse, SignInSteps.Code | SignInSteps.Main>
+> {
   const response = await signin.post("/", { json: body });
   const content = await response.json();
 
@@ -64,12 +69,12 @@ export async function password(
 
   const next = PasswordNextRef[response.status];
 
-  return { ...content, next };
+  return { content, next };
 }
 
 export async function code(
   body: SignInCodeDtoInterface,
-): Promise<ApiReponse<SignInSuccessResponse>> {
+): Promise<ApiReponse<SignInSuccessResponse, SignInSteps.Main>> {
   const response = await signin.post("/code", { json: body });
   const content = await response.json();
 
@@ -77,5 +82,5 @@ export async function code(
     throw new HttpException(content);
   }
 
-  return { ...content, next: NextStep.Main };
+  return { content, next: SignInSteps.Main };
 }

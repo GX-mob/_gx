@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
-import { NextStep } from "@apis/signin";
+import { SignInSteps } from "@apis/signin";
 import { Text, InputMask, Button, Divider } from "@components/atoms";
 import { SignInButton } from "@components/google";
 import { StackScreenProps } from "@react-navigation/stack";
@@ -10,15 +10,18 @@ import validator from "validator";
 import { styles, NextButton } from "./common";
 
 type Props = StackScreenProps<{
-  [NextStep.Code]: undefined;
-  [NextStep.Password]: undefined;
+  [SignInSteps.Code]: undefined;
+  [SignInSteps.Password]: undefined;
 }>;
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
   const [phone, setPhone] = useState("");
 
   const handleSubmit = async () => {
-    navigation.navigate(NextStep.Password);
+    const next = await LoginStore.identify(phone);
+    if (!next) return;
+
+    navigation.navigate(next);
   };
 
   return (
@@ -49,7 +52,6 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           onPress={handleSubmit}
         />
       </View>
-      <Divider />
       <SignInButton
         style={{ marginVertical: 6 }}
         onPress={async (event) => {
@@ -57,6 +59,7 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           console.log(result);
         }}
       />
+      <Divider />
       <Button
         type="primary"
         style={{ width: "100%", paddingVertical: 10 }}

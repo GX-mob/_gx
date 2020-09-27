@@ -24,7 +24,8 @@ export const Lines: FC<SvgProps> = (props) => {
           y2={59.493}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop offset={0.063} stopColor="#0047FF" />
+          <Stop offset={0.0} stopColor="#0047FF" stopOpacity={0} />
+          <Stop offset={0.203} stopColor="#0047FF" />
           <Stop offset={0.359} stopColor="#0047FF" stopOpacity={0.43} />
           <Stop offset={0.881} stopColor="#0047FF" />
           <Stop offset={1} stopColor="#0047FF" stopOpacity={0} />
