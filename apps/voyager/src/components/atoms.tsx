@@ -7,6 +7,7 @@ import {
   TextInputProps,
   TouchableHighlight,
   TouchableHighlightProps,
+  Image,
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { ColorsThemeProperties } from "@interfaces";
@@ -87,16 +88,23 @@ export const Button = observer<
 });
 
 export const Text = observer<TextProps & { color?: ColorsThemeProperties }>(
-  ({ style, color, ...props }) => (
-    <RNText
-      style={{
-        color: UIStore.theme.colors[color || "onBackground"],
-        fontFamily: "Roboto",
-        ...((style as object) || {}),
-      }}
-      {...props}
-    />
-  ),
+  ({ style, color, ...props }) => {
+    const finalStyle = Array.isArray(style)
+      ? [
+          ...style,
+          {
+            color: UIStore.theme.colors[color || "onBackground"],
+            fontFamily: "Roboto",
+          },
+        ]
+      : {
+          color: UIStore.theme.colors[color || "onBackground"],
+          fontFamily: "Roboto",
+          ...((style as object) || {}),
+        };
+
+    return <RNText style={finalStyle} {...props} />;
+  },
 );
 
 export const Divider = observer(() => {
@@ -112,3 +120,17 @@ export const Divider = observer(() => {
     />
   );
 });
+
+export const Avatar: FC<{ size: number; uri: string }> = ({ size, uri }) => {
+  return (
+    <Image
+      style={{
+        borderRadius: size,
+        width: size,
+        height: size,
+        resizeMode: "cover",
+      }}
+      source={{ uri }}
+    />
+  );
+};

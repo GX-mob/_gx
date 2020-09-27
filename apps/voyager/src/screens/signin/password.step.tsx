@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
-import { Button, Input } from "@components/atoms";
+import { Text, Button, Input, Divider, Avatar } from "@components/atoms";
 import { NextStep } from "@apis/signin";
 import { StackScreenProps } from "@react-navigation/stack";
-import { Step, NextButton } from "./components";
+import { styles, NextButton } from "./common";
 
 type Props = StackScreenProps<{
   [NextStep.Code]: undefined;
@@ -19,29 +19,20 @@ export const PasswordStep = observer(({ navigation }: Props) => {
     navigation.navigate(NextStep.Code);
   };
 
-  const Bottom = () => (
-    <>
-      <Button
-        type="secondary"
-        style={{ width: "100%" }}
-        onPress={(event) => {
-          UIStore.toggle();
-        }}
-      >
-        ESQUECI MINHA SENHA
-      </Button>
-    </>
-  );
-
   return (
-    <Step subTitle="Digite sua senha" Bottom={Bottom}>
+    <View style={styles.container}>
+      <Avatar size={150} uri="https://api.adorable.io/avatars/150/foo.png" />
+      <Text style={[styles.subTitle, { marginTop: 12, alignSelf: "center" }]}>
+        Fulano
+      </Text>
       <View style={{ width: "100%" }}>
         <Input
+          autoFocus
           editable={!LoginStore.loading}
           secureTextEntry={true}
           style={{ width: "100%" }}
           value={password}
-          placeholder="Digite aqui"
+          placeholder="Sua senha"
           textContentType="password"
           onChangeText={(value) => {
             setPassword(value);
@@ -59,6 +50,16 @@ export const PasswordStep = observer(({ navigation }: Props) => {
           onPress={handleSubmit}
         />
       </View>
-    </Step>
+      <Divider />
+      <Button
+        type="secondary"
+        style={{ width: "100%" }}
+        onPress={(event) => {
+          UIStore.toggle();
+        }}
+      >
+        ESQUECI MINHA SENHA
+      </Button>
+    </View>
   );
 });

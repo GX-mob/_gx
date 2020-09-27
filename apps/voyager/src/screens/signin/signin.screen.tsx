@@ -1,16 +1,19 @@
 import React from "react";
 import { observer } from "mobx-react-lite";
-
+import { Dimensions } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { UIStore } from "@stores";
 import Logo from "@components/logo";
+import { Lines } from "@components/general";
 import { NextStep } from "@apis/signin";
 import { IdentifyStep } from "./identify.step";
 import { PasswordStep } from "./password.step";
 import { CodeStep } from "./code.step";
 
-const Stack = createStackNavigator();
+const { Navigator, Screen } = createStackNavigator();
+
+const windowWidth = Dimensions.get("window").width;
 
 export const LoginScreen = observer(() => {
   const { theme } = UIStore;
@@ -26,22 +29,21 @@ export const LoginScreen = observer(() => {
     },
   };
 
-  //const theme = UIStore.theme.name;
-
   return (
     <>
       <Logo style={{ alignSelf: "center", top: 33, zIndex: 99 }} />
+      <Lines width={windowWidth} />
       <NavigationContainer theme={navigatorTheme}>
-        <Stack.Navigator
+        <Navigator
           screenOptions={{
             headerTitle: (props) => <></>,
             headerTransparent: true,
           }}
         >
-          <Stack.Screen name="Identify" component={IdentifyStep} />
-          <Stack.Screen name={NextStep.Password} component={PasswordStep} />
-          <Stack.Screen name={NextStep.Code} component={CodeStep} />
-        </Stack.Navigator>
+          <Screen name="Identify" component={IdentifyStep} />
+          <Screen name={NextStep.Password} component={PasswordStep} />
+          <Screen name={NextStep.Code} component={CodeStep} />
+        </Navigator>
       </NavigationContainer>
     </>
   );

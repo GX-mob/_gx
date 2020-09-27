@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { LoginStore } from "@stores";
-import { Button, InputMask } from "@components/atoms";
-import { Step, NextButton } from "./components";
+import { Text, Button, InputMask, Divider } from "@components/atoms";
+import { styles, NextButton } from "./common";
 
 export const CodeStep = observer(() => {
   const [code, setCode] = useState("");
@@ -12,25 +12,12 @@ export const CodeStep = observer(() => {
     await LoginStore.password(code);
   };
 
-  const Bottom = () => (
-    <Button
-      type="secondary"
-      disabled={true}
-      style={{ width: "100%", paddingVertical: 8 }}
-      onPress={(event) => {
-        console.log("open account creation webview");
-      }}
-    >
-      Reenviar
-    </Button>
-  );
-
   return (
-    <Step
-      title="Código"
-      subTitle="Enviamos um SMS com o código de confirmação para seu telefone."
-      Bottom={Bottom}
-    >
+    <View style={styles.container}>
+      <Text style={styles.title}>Código</Text>
+      <Text style={styles.subTitle}>
+        Enviamos um SMS com o código de confirmação para o seu telefone.
+      </Text>
       <View style={{ width: "100%" }}>
         <InputMask
           type="custom"
@@ -57,6 +44,17 @@ export const CodeStep = observer(() => {
           onPress={handleSubmit}
         />
       </View>
-    </Step>
+      <Divider />
+      <Button
+        type="secondary"
+        disabled={true}
+        style={{ width: "100%", paddingVertical: 8 }}
+        onPress={(event) => {
+          console.log("open account creation webview");
+        }}
+      >
+        Reenviar
+      </Button>
+    </View>
   );
 });

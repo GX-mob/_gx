@@ -3,11 +3,11 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
 import { NextStep } from "@apis/signin";
-import { InputMask, Button } from "@components/atoms";
+import { Text, InputMask, Button, Divider } from "@components/atoms";
 import { SignInButton } from "@components/google";
 import { StackScreenProps } from "@react-navigation/stack";
-import { Step, NextButton } from "./components";
 import validator from "validator";
+import { styles, NextButton } from "./common";
 
 type Props = StackScreenProps<{
   [NextStep.Code]: undefined;
@@ -21,33 +21,12 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
     navigation.navigate(NextStep.Password);
   };
 
-  const Bottom = () => (
-    <>
-      <SignInButton
-        style={{ marginVertical: 6 }}
-        onPress={async (event) => {
-          const result = await LoginStore.loginWithGoogle();
-          console.log(result);
-        }}
-      />
-      <Button
-        type="primary"
-        style={{ width: "100%", paddingVertical: 10 }}
-        onPress={(event) => {
-          UIStore.toggle();
-        }}
-      >
-        Criar conta
-      </Button>
-    </>
-  );
-
   return (
-    <Step
-      title="Entrar"
-      subTitle="Digite o DDD + o número do seu celular."
-      Bottom={Bottom}
-    >
+    <View style={styles.container}>
+      <Text style={styles.title}>Entrar</Text>
+      <Text style={styles.subTitle}>
+        Digite o DDD + o número do seu celular.
+      </Text>
       <View style={{ width: "100%" }}>
         <InputMask
           type="cel-phone"
@@ -70,6 +49,23 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           onPress={handleSubmit}
         />
       </View>
-    </Step>
+      <Divider />
+      <SignInButton
+        style={{ marginVertical: 6 }}
+        onPress={async (event) => {
+          const result = await LoginStore.loginWithGoogle();
+          console.log(result);
+        }}
+      />
+      <Button
+        type="primary"
+        style={{ width: "100%", paddingVertical: 10 }}
+        onPress={(event) => {
+          UIStore.toggle();
+        }}
+      >
+        Criar conta
+      </Button>
+    </View>
   );
 });
