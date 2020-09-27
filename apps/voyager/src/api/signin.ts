@@ -4,6 +4,7 @@ import {
   SignInSuccessResponse,
   SignInCodeDtoInterface,
   SignInPasswordDtoInterface,
+  Password2FARequiredResponse,
 } from "@shared/interfaces";
 import ky from "ky";
 import { HttpException } from "./exceptions";
@@ -58,7 +59,10 @@ export async function identify(
 export async function password(
   body: SignInPasswordDtoInterface,
 ): Promise<
-  ApiReponse<SignInSuccessResponse, SignInSteps.Code | SignInSteps.Main>
+  ApiReponse<
+    SignInSuccessResponse & Password2FARequiredResponse,
+    SignInSteps.Code | SignInSteps.Main
+  >
 > {
   const response = await signin.post("/", { json: body });
   const content = await response.json();

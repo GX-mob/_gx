@@ -9,6 +9,8 @@ import {
   TextInputProps,
   TouchableHighlight,
   TouchableHighlightProps,
+  Pressable,
+  PressableProps,
   Image,
 } from "react-native";
 import { observer } from "mobx-react-lite";
@@ -52,7 +54,7 @@ export const Button = observer<
   {
     type: ColorsThemeProperties;
     textStyle?: StyleProp<TextStyle>;
-  } & Partial<TouchableHighlightProps>
+  } & Partial<PressableProps>
 >(({ children, textStyle, type, style, disabled, ...props }) => {
   const UpperFirstLetter = type.charAt(0).toUpperCase() + type.slice(1);
 
@@ -62,7 +64,7 @@ export const Button = observer<
     UIStore.theme.colors[type];
 
   return (
-    <TouchableHighlight
+    <Pressable
       disabled={disabled}
       style={{
         paddingVertical: 8,
@@ -73,7 +75,6 @@ export const Button = observer<
         marginVertical: 6,
         ...((style as object) || {}),
       }}
-      underlayColor={variantColor}
       {...props}
     >
       <RNText
@@ -89,7 +90,7 @@ export const Button = observer<
       >
         {children}
       </RNText>
-    </TouchableHighlight>
+    </Pressable>
   );
 });
 

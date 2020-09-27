@@ -19,7 +19,12 @@ export const EXCEPTIONS_MESSAGES = {
 
 export const CACHE_NAMESPACES = {
   REGISTRY_VERIFICATIONS: "registryVerifications",
+  SIGNIN_VERIFICATIONS: "signInVerifications",
   RIDE_READ_PERMISSIONS: "rideReadPermission",
+};
+
+export const CACHE_TTL = {
+  CONTACT_VERIFICATION: 1000 * 60,
 };
 
 export const STORAGE_BUCKETS = {

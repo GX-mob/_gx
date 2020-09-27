@@ -53,15 +53,18 @@ export class SignInController {
   @Get(":phone")
   async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
     const { password, phones, firstName, avatar } = await this.getUser(phone);
+    let iat: number | undefined;
 
     if (!password) {
-      await this.contactVerification.request(phones[0]);
+      iat = await this.contactVerification.request(phone);
+
       res.code(SignInHttpReponseCodes.SecondaFactorRequired);
     }
 
     res.send<IdentifyResponseInterface>({
       firstName,
       avatar,
+      iat,
     });
     return;
   }
@@ -101,7 +104,7 @@ export class SignInController {
       return;
     }
 
-    await this.contactVerification.request(user["2fa"]);
+    const iat = await this.contactVerification.request(user["2fa"]);
 
     reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
 
@@ -113,6 +116,7 @@ export class SignInController {
 
     reply.send<Password2FARequiredResponse>({
       target,
+      iat,
     });
     return;
   }
@@ -125,7 +129,6 @@ export class SignInController {
   ) {
     const { phone, code } = body;
     const user = await this.getUser(phone);
-
     const valid = await this.contactVerification.verify(phone, code);
 
     if (!valid) {

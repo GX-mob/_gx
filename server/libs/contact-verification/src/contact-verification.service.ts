@@ -1,29 +1,40 @@
-import { Injectable } from "@nestjs/common";
-import { TwilioService } from "./twilio.service";
-import { util } from "@app/helpers";
 import validator from "validator";
+import { Injectable } from "@nestjs/common";
+import { CacheService } from "@app/cache";
+import { TwilioService } from "./twilio.service";
+import { CACHE_NAMESPACE, CACHE_TTL, VERIFIED_TTL } from "./constants";
 
 @Injectable()
 export class ContactVerificationService {
-  constructor(private twilio: TwilioService) {}
+  constructor(private twilio: TwilioService, private cache: CacheService) {}
   /**
    * Request a contact verification
    * @param to Target to verify, can be an email or mobile phone number
-   * @returns {Promise<string>} The id of request
+   * @returns {Promise<number>} The issuance timestamp
    */
-  public async request(to: string): Promise<string> {
+  public async request(to: string): Promise<number> {
     if (process.env.NODE_ENV === "development") {
-      return "";
+      return Date.now();
+    }
+
+    const previousRequest = await this.getCache(to);
+
+    if (previousRequest) {
+      return previousRequest;
     }
 
     const channel = this.checkChannel(to);
 
-    const { sid } = await this.twilio.verify.verifications.create({
+    await this.twilio.verify.verifications.create({
       to,
       channel,
     });
 
-    return sid;
+    const iat = Date.now();
+
+    await this.setCache(to, iat);
+
+    return iat;
   }
 
   checkChannel(target: string): string {
@@ -55,11 +66,31 @@ export class ContactVerificationService {
 
     this.checkChannel(target);
 
+    const cached = await this.getCache(`${target}:${code}`);
+
+    if (cached === true) {
+      return true;
+    }
+
     const { status } = await this.twilio.verify.verificationChecks.create({
       to: target,
       code,
     });
 
-    return status === "approved";
+    const approved = status === "approved";
+
+    if (approved) {
+      await this.setCache(`${target}:${code}`, true, VERIFIED_TTL);
+    }
+
+    return approved;
+  }
+
+  private getCache(key: string) {
+    return this.cache.get(CACHE_NAMESPACE, key);
+  }
+
+  private setCache(key: string, data: any, ttl = CACHE_TTL) {
+    return this.cache.set(CACHE_NAMESPACE, key, data, { ex: ttl });
   }
 }

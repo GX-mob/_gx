@@ -13,5 +13,7 @@ export const ENDPOINTS = {
   RUN: "http://192.168.0.105:3001",
 };
 
+export const TOKEN_STORAGE_KEY = "token";
+
 export const NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER = 3;
 export const NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION = 6;

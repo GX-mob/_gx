@@ -1,11 +1,12 @@
 import SecureStore from "expo-secure-store";
-import Storage from "../modules/storage";
+import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
 import { IdentifyResponseInterface } from "@shared/interfaces";
-import { identify, password, SignInSteps } from "@apis/signin";
+import * as signIn from "@apis/signin";
 import { HttpException } from "@apis/exceptions";
 import {
+  TOKEN_STORAGE_KEY,
   GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER,
@@ -13,7 +14,7 @@ import {
 } from "../constants";
 
 class LoginStore {
-  private secureStoreAvailable!: boolean;
+  private secureStorageAvailable!: boolean;
 
   @observable
   public initializing = true;
@@ -38,17 +39,19 @@ class LoginStore {
   public notFoundResponse = 0;
 
   @observable
-  public renewExpiration?: number;
+  public verificationIat?: number;
 
   constructor() {
-    //this.secureStoreAvailable = SecureStore.
-
     this.init();
   }
 
   @action
   async init() {
-    const token = await Storage.get("token");
+    try {
+      this.secureStorageAvailable = await SecureStore.isAvailableAsync();
+    } catch (e) {}
+
+    const token = await this.getToken();
 
     if (token) {
       this.token = token;
@@ -61,9 +64,13 @@ class LoginStore {
   async identify(phone: string) {
     try {
       this.loading = true;
-      const response = await identify(phone);
+      const response = await signIn.identify(`+55${phone}`);
 
       this.phone = phone;
+
+      if (response.next === signIn.SignInSteps.Code) {
+        this.verificationIat = response.content.iat;
+      }
 
       return response.next;
     } catch (error) {
@@ -87,6 +94,8 @@ class LoginStore {
             }
             break;
         }
+      } else {
+        console.warn(error);
       }
     } finally {
       this.loading = false;
@@ -94,13 +103,21 @@ class LoginStore {
   }
 
   @action
-  async password(pw: string) {
+  async password(password: string) {
     try {
       this.loading = true;
-      const result = await password({ phone: this.phone, password: pw });
+      const result = await signIn.password({ phone: this.phone, password });
 
-      if (result.next === SignInSteps.Main) {
+      switch (result.next) {
+        case signIn.SignInSteps.Code:
+          this.verificationIat = result.content.iat;
+          break;
+        case signIn.SignInSteps.Main:
+          this.setToken(result.content.token);
+          break;
       }
+
+      return result.next;
     } catch (error) {
       if (error instanceof HttpException) {
         switch (error.statusCode) {
@@ -115,7 +132,26 @@ class LoginStore {
   }
 
   @action
-  async code(code: string) {}
+  async code(code: string) {
+    try {
+      this.loading = true;
+      const result = await signIn.code({ phone: this.phone, code });
+
+      if (result.next === signIn.SignInSteps.Main) {
+        this.setToken(result.content.token);
+      }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        switch (error.statusCode) {
+          case 422:
+            this.error = "Código errado.";
+            break;
+        }
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
 
   @action
   async loginWithGoogle() {
@@ -141,8 +177,22 @@ class LoginStore {
     }
   }
 
-  private getData(key: string) {}
-  private setData(key: string, data: any) {}
+  private async getToken() {
+    let item: any;
+
+    item = await (this.secureStorageAvailable
+      ? SecureStore.getItemAsync(TOKEN_STORAGE_KEY)
+      : AsyncStorage.getItem(TOKEN_STORAGE_KEY));
+
+    return item !== null ? JSON.parse(item) : null;
+  }
+  private setToken(token: any) {
+    if (this.secureStorageAvailable) {
+      return SecureStore.setItemAsync(TOKEN_STORAGE_KEY, token);
+    }
+
+    return AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+  }
 }
 
 export default new LoginStore();

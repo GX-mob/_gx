@@ -52,19 +52,9 @@ export class SignUpController {
   ) {
     await this.checkUser(phone);
 
-    // Prevent resent before expiration
-    const previousRequest = await this.getCache(phone);
+    const iat = await this.contactVerification.request(phone);
 
-    /**
-     * If haven't a previous request or previous
-     * request is expired, requests a new one
-     */
-    if (!previousRequest || previousRequest.iat + 1000 * 60 < Date.now()) {
-      await this.contactVerification.request(phone);
-      reply.code(202);
-    }
-
-    reply.send();
+    reply.send({ iat });
   }
 
   @Post("check")
@@ -117,20 +107,10 @@ export class SignUpController {
     /**
      * Check number verification
      */
-    const verification = await this.getCache(phone);
+    const verification = await this.contactVerification.verify(phone, code);
 
     if (!verification) {
-      throw new UnauthorizedException(
-        EXCEPTIONS_MESSAGES.VERIFICATION_NOT_FOUND,
-      );
-    }
-
-    if (!verification.validated) {
       throw new UnauthorizedException(EXCEPTIONS_MESSAGES.PHONE_NOT_VERIFIED);
-    }
-
-    if (verification.code !== code) {
-      throw new UnauthorizedException(EXCEPTIONS_MESSAGES.WRONG_CODE);
     }
 
     /**

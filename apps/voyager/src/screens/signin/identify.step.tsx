@@ -30,6 +30,7 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
       <Text style={styles.subTitle}>
         Digite o DDD + o número do seu celular.
       </Text>
+      <Text>{LoginStore.error}</Text>
       <View style={{ width: "100%" }}>
         <InputMask
           type="cel-phone"
