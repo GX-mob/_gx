@@ -32,28 +32,15 @@ export const LoginScreen = observer(() => {
     <>
       <Logo style={{ alignSelf: "center", top: 33, zIndex: 99 }} />
       <NavigationContainer theme={navigatorTheme}>
-        <Stack.Navigator>
-          <Stack.Screen
-            name="Identify"
-            component={IdentifyStep}
-            options={{
-              headerTitle: (props) => <></>,
-            }}
-          />
-          <Stack.Screen
-            name={NextStep.Password}
-            options={{
-              headerTitle: (props) => <></>,
-            }}
-            component={PasswordStep}
-          />
-          <Stack.Screen
-            name={NextStep.Code}
-            options={{
-              headerTitle: (props) => <></>,
-            }}
-            component={CodeStep}
-          />
+        <Stack.Navigator
+          screenOptions={{
+            headerTitle: (props) => <></>,
+            headerTransparent: true,
+          }}
+        >
+          <Stack.Screen name="Identify" component={IdentifyStep} />
+          <Stack.Screen name={NextStep.Password} component={PasswordStep} />
+          <Stack.Screen name={NextStep.Code} component={CodeStep} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

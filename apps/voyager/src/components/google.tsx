@@ -47,7 +47,6 @@ export const SignInButton: FC<Partial<TouchableHighlightProps>> = ({
         },
         shadowOpacity: 0.2,
         shadowRadius: 1.41,
-
         elevation: 2,
         ...((style as object) || {}),
       }}

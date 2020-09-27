@@ -5,7 +5,7 @@ import { ThemeInterface } from "@interfaces";
 
 class UIStore {
   @observable
-  theme: ThemeInterface = darkTheme;
+  theme: ThemeInterface = lightTheme;
 
   constructor() {
     /*setInterval(() => {
@@ -16,7 +16,7 @@ class UIStore {
 
   @action
   toggle() {
-    this.theme = this.theme.id === "dark" ? lightTheme : darkTheme;
+    this.theme = this.theme.name === "dark" ? lightTheme : darkTheme;
   }
 }
 
