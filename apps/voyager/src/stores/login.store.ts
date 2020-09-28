@@ -2,6 +2,7 @@ import SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
+import { utcToZonedTime } from "date-fns-tz";
 import { IdentifyResponseInterface } from "@shared/interfaces";
 import * as signIn from "@apis/signin";
 import { HttpException } from "@apis/exceptions";
@@ -37,9 +38,10 @@ class LoginStore {
   public profile?: IdentifyResponseInterface;
   public phone: string = "";
   public notFoundResponse = 0;
+  public verificationIat?: number;
 
   @observable
-  public verificationIat?: number;
+  public resendSecondsLeft = 60;
 
   constructor() {
     this.init();
@@ -60,16 +62,41 @@ class LoginStore {
     this.initializing = false;
   }
 
+  private calculateVerificationResend() {
+    this.resendSecondsLeft = this.calculateSecondsLeft(
+      this.verificationIat as number,
+    );
+
+    this.resendSecondsLeft > 0 &&
+      setTimeout(() => this.calculateVerificationResend(), 1000);
+  }
+
+  private calculateSecondsLeft(iat: number) {
+    return Math.round(iat / 1000) + 60 - Math.round(Date.now() / 1000);
+  }
+
   @action
   async identify(phone: string) {
     try {
+      if (
+        this.phone === phone &&
+        this.verificationIat &&
+        this.resendSecondsLeft > 0
+      )
+        return signIn.SignInSteps.Code;
+
       this.loading = true;
       const response = await signIn.identify(`+55${phone}`);
 
       this.phone = phone;
 
       if (response.next === signIn.SignInSteps.Code) {
-        this.verificationIat = response.content.iat;
+        this.verificationIat = Date.now();
+        this.resendSecondsLeft = this.calculateSecondsLeft(
+          this.verificationIat,
+        );
+        console.log("@", this.resendSecondsLeft);
+        setTimeout(() => this.calculateVerificationResend(), 1000);
       }
 
       return response.next;
@@ -110,7 +137,10 @@ class LoginStore {
 
       switch (result.next) {
         case signIn.SignInSteps.Code:
-          this.verificationIat = result.content.iat;
+          this.verificationIat = utcToZonedTime(
+            result.content.iat,
+            Localization.timezone,
+          ).getTime();
           break;
         case signIn.SignInSteps.Main:
           this.setToken(result.content.token);

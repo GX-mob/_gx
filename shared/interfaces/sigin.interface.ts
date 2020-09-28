@@ -16,9 +16,9 @@ export interface IdentifyResponseInterface {
   firstName: UserInterface["firstName"];
   avatar: UserInterface["avatar"];
   /**
-   * Contact verification issue timestamp
+   * Contact verification issuance UTC Date
    */
-  iat?: number;
+  iat?: string;
 }
 
 export interface Password2FARequiredResponse {
@@ -27,9 +27,9 @@ export interface Password2FARequiredResponse {
    */
   target: string;
   /**
-   * Contact verification issue timestamp
+   * Contact verification issuance UTC Date
    */
-  iat: number;
+  iat: string;
 }
 
 export interface SignInPasswordDtoInterface {

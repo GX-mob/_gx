@@ -46,7 +46,7 @@ export const CodeStep = observer(() => {
       </View>
       <Divider />
       <Button
-        disabled={true}
+        disabled={LoginStore.resendSecondsLeft > 0}
         type="secondary"
         style={{ width: "100%" }}
         onPress={(event) => {
@@ -58,7 +58,10 @@ export const CodeStep = observer(() => {
           textTransform: "uppercase",
         }}
       >
-        Reenviar (60)
+        Reenviar
+        {LoginStore.resendSecondsLeft > 0
+          ? ` - ${LoginStore.resendSecondsLeft}`
+          : ""}
       </Button>
     </View>
   );

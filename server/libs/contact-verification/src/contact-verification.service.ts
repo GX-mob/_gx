@@ -10,11 +10,11 @@ export class ContactVerificationService {
   /**
    * Request a contact verification
    * @param to Target to verify, can be an email or mobile phone number
-   * @returns {Promise<number>} The issuance timestamp
+   * @returns {Promise<string>} The issuance date
    */
-  public async request(to: string): Promise<number> {
+  public async request(to: string): Promise<string> {
     if (process.env.NODE_ENV === "development") {
-      return Date.now();
+      return new Date().toUTCString();
     }
 
     const previousRequest = await this.getCache(to);
@@ -30,11 +30,11 @@ export class ContactVerificationService {
       channel,
     });
 
-    const iat = Date.now();
+    const iat = new Date();
 
     await this.setCache(to, iat);
 
-    return iat;
+    return iat.toUTCString();
   }
 
   checkChannel(target: string): string {

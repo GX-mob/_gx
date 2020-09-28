@@ -53,11 +53,10 @@ export class SignInController {
   @Get(":phone")
   async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
     const { password, phones, firstName, avatar } = await this.getUser(phone);
-    let iat: number | undefined;
+    let iat: string | undefined;
 
     if (!password) {
       iat = await this.contactVerification.request(phone);
-
       res.code(SignInHttpReponseCodes.SecondaFactorRequired);
     }
 

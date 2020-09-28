@@ -15,7 +15,7 @@ type Props = StackScreenProps<{
 }>;
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("82988444444");
 
   const handleSubmit = async () => {
     const next = await LoginStore.identify(phone);
