@@ -3,27 +3,30 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
 import { Text, Button, Input, Divider, Avatar } from "@components/atoms";
+import { styles, NextButton, Props } from "./common";
 import { SignInSteps } from "@apis/signin";
-import { StackScreenProps } from "@react-navigation/stack";
-import { styles, NextButton } from "./common";
 
-type Props = StackScreenProps<{
-  [SignInSteps.Code]: undefined;
-  RecoveryPassword: undefined;
-}>;
-
-export const PasswordStep = observer(({ navigation }: Props) => {
+export const PasswordStep = observer<Props>(({ navigation }) => {
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
-    navigation.navigate(SignInSteps.Code);
+    const next = await LoginStore.password(password);
+    if (!next) return;
+
+    navigation.navigate(next);
   };
 
   return (
     <View style={styles.container}>
-      <Avatar size={150} uri="https://api.adorable.io/avatars/150/foo.png" />
+      <Avatar
+        size={150}
+        uri={
+          LoginStore.profile?.avatar ||
+          `https://api.adorable.io/avatars/150/${LoginStore.phone}.png`
+        }
+      />
       <Text style={[styles.subTitle, { marginTop: 12, alignSelf: "center" }]}>
-        Fulano
+        {LoginStore.profile?.firstName}
       </Text>
       <View style={{ width: "100%" }}>
         <Input
@@ -36,12 +39,7 @@ export const PasswordStep = observer(({ navigation }: Props) => {
           onChangeText={(value) => {
             setPassword(value);
           }}
-          onSubmitEditing={async () => {
-            if (LoginStore.loading) {
-              return;
-            }
-            handleSubmit();
-          }}
+          onSubmitEditing={handleSubmit}
         />
         <NextButton
           disabled={password.length < 6}
@@ -53,8 +51,9 @@ export const PasswordStep = observer(({ navigation }: Props) => {
       <Button
         type="secondary"
         style={{ width: "100%" }}
-        onPress={(event) => {
+        onPress={() => {
           UIStore.toggle();
+          navigation.navigate("RecoveryPassword");
         }}
         textStyle={{
           fontSize: 12,

@@ -13,6 +13,7 @@ import {
   RideTypeConfigurationInterface,
   VehicleTypes,
 } from "@shared/interfaces";
+import { util } from "@app/helpers";
 import chalk from "chalk";
 import faker from "faker";
 import { log } from "./util";
@@ -118,7 +119,7 @@ export async function seedDatabase(logging: boolean = true) {
     phones: ["+5582988444444"],
     emails: [],
     birth: new Date(),
-    averageEvaluation: 0,
+    averageEvaluation: 5,
     roles: [UserRoles.VOYAGER],
   });
 
@@ -131,7 +132,8 @@ export async function seedDatabase(logging: boolean = true) {
     phones: ["+5582988444448"],
     emails: [],
     birth: new Date(),
-    averageEvaluation: 0,
+    averageEvaluation: 5,
+    password: await util.securePassword.hash(Buffer.from("123456")),
     roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
   });
 

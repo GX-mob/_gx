@@ -49,9 +49,7 @@ function Launcher() {
               height,
             }}
           >
-            <AppContainer>
-              <App />
-            </AppContainer>
+            <App />
           </View>
         </ScrollView>
         <StatusBar style={UIStore.theme.statusBarStyle} />

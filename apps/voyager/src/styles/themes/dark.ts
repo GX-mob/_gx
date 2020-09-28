@@ -8,7 +8,7 @@ const theme: ThemeInterface = {
   colors: {
     background: "#000",
     onBackground: "#fff",
-    secondary: "#002687",
+    secondary: "#111",
     secondaryVariant: "#0C0057",
     onSecondary: "#fff",
     primary: "#0048B4",
@@ -16,7 +16,7 @@ const theme: ThemeInterface = {
     onPrimary: "#fff",
     surface: "#fff",
     onSurface: "#000",
-    error: "#A61400",
+    error: "#db232c",
     onError: "#fff",
     warn: "#BFAF1D",
     onWarn: "#000",

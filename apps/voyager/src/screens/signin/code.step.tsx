@@ -9,7 +9,7 @@ export const CodeStep = observer(() => {
   const [code, setCode] = useState("");
 
   const handleSubmit = async () => {
-    await LoginStore.password(code);
+    await LoginStore.code(code);
   };
 
   return (
@@ -32,11 +32,7 @@ export const CodeStep = observer(() => {
           onChangeText={(value) => {
             setCode(value.replace("-", ""));
           }}
-          onSubmitEditing={async (event) => {
-            if (LoginStore.loading) {
-              return;
-            }
-          }}
+          onSubmitEditing={handleSubmit}
         />
         <NextButton
           disabled={code.length !== 6}
@@ -49,7 +45,7 @@ export const CodeStep = observer(() => {
         disabled={LoginStore.resendSecondsLeft > 0}
         type="secondary"
         style={{ width: "100%" }}
-        onPress={(event) => {
+        onPress={() => {
           UIStore.toggle();
         }}
         textStyle={{

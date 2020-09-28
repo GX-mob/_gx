@@ -2,7 +2,6 @@ import SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
-import { utcToZonedTime } from "date-fns-tz";
 import { IdentifyResponseInterface } from "@shared/interfaces";
 import * as signIn from "@apis/signin";
 import { HttpException } from "@apis/exceptions";
@@ -12,6 +11,7 @@ import {
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
+  VERIFICATION_RESEND_TIMEOUT,
 } from "../constants";
 
 class LoginStore {
@@ -35,6 +35,7 @@ class LoginStore {
   @observable
   public indicateAccountCreation = false;
 
+  @observable
   public profile?: IdentifyResponseInterface;
   public phone: string = "";
   public notFoundResponse = 0;
@@ -62,6 +63,12 @@ class LoginStore {
     this.initializing = false;
   }
 
+  private initiateVerificationResendCounter() {
+    this.verificationIat = Date.now();
+    this.resendSecondsLeft = this.calculateSecondsLeft(this.verificationIat);
+    setTimeout(() => this.calculateVerificationResend(), 1000);
+  }
+
   private calculateVerificationResend() {
     this.resendSecondsLeft = this.calculateSecondsLeft(
       this.verificationIat as number,
@@ -72,7 +79,11 @@ class LoginStore {
   }
 
   private calculateSecondsLeft(iat: number) {
-    return Math.round(iat / 1000) + 60 - Math.round(Date.now() / 1000);
+    return (
+      Math.round(iat / 1000) +
+      VERIFICATION_RESEND_TIMEOUT -
+      Math.round(Date.now() / 1000)
+    );
   }
 
   @action
@@ -89,22 +100,21 @@ class LoginStore {
       const response = await signIn.identify(`+55${phone}`);
 
       this.phone = phone;
+      this.profile = response.content;
 
       if (response.next === signIn.SignInSteps.Code) {
-        this.verificationIat = Date.now();
-        this.resendSecondsLeft = this.calculateSecondsLeft(
-          this.verificationIat,
-        );
-        console.log("@", this.resendSecondsLeft);
-        setTimeout(() => this.calculateVerificationResend(), 1000);
+        this.initiateVerificationResendCounter();
       }
 
       return response.next;
     } catch (error) {
+      console.log(error.message);
       if (error instanceof HttpException) {
         switch (error.statusCode) {
           case 404:
             this.notFoundResponse++;
+
+            this.error = "Conta não encontrada, verifque o número.";
 
             if (
               this.notFoundResponse >=
@@ -121,8 +131,6 @@ class LoginStore {
             }
             break;
         }
-      } else {
-        console.warn(error);
       }
     } finally {
       this.loading = false;
@@ -133,18 +141,18 @@ class LoginStore {
   async password(password: string) {
     try {
       this.loading = true;
-      const result = await signIn.password({ phone: this.phone, password });
+      const result = await signIn.password({
+        phone: `+55${this.phone}`,
+        password,
+      });
 
       switch (result.next) {
         case signIn.SignInSteps.Code:
-          this.verificationIat = utcToZonedTime(
-            result.content.iat,
-            Localization.timezone,
-          ).getTime();
+          this.initiateVerificationResendCounter();
           break;
         case signIn.SignInSteps.Main:
           this.setToken(result.content.token);
-          break;
+          return;
       }
 
       return result.next;
@@ -165,10 +173,11 @@ class LoginStore {
   async code(code: string) {
     try {
       this.loading = true;
-      const result = await signIn.code({ phone: this.phone, code });
+      const result = await signIn.code({ phone: `+55${this.phone}`, code });
 
       if (result.next === signIn.SignInSteps.Main) {
-        this.setToken(result.content.token);
+        await this.setToken(result.content.token);
+        this.token = result.content.token;
       }
     } catch (error) {
       if (error instanceof HttpException) {
@@ -208,13 +217,9 @@ class LoginStore {
   }
 
   private async getToken() {
-    let item: any;
-
-    item = await (this.secureStorageAvailable
+    return this.secureStorageAvailable
       ? SecureStore.getItemAsync(TOKEN_STORAGE_KEY)
-      : AsyncStorage.getItem(TOKEN_STORAGE_KEY));
-
-    return item !== null ? JSON.parse(item) : null;
+      : AsyncStorage.getItem(TOKEN_STORAGE_KEY);
   }
   private setToken(token: any) {
     if (this.secureStorageAvailable) {

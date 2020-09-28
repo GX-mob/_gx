@@ -4,9 +4,14 @@ import {
   Animated,
   Easing,
   TouchableHighlightProps,
+  Text,
+  TextProps,
 } from "react-native";
+import { observer } from "mobx-react-lite";
 import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
 import { Button } from "@components/atoms";
+import { SignInSteps } from "@apis/signin";
+import { StackScreenProps } from "@react-navigation/stack";
 import { UIStore } from "@stores";
 
 export const styles = StyleSheet.create({
@@ -82,3 +87,29 @@ export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
     </Animated.View>
   );
 };
+
+export type Props = StackScreenProps<{
+  [SignInSteps.Code]: undefined;
+  [SignInSteps.Password]: undefined;
+  RecoveryPassword: undefined;
+}>;
+
+export const Error: FC<TextProps & { error?: string }> = observer(
+  ({ style, error, ...props }) => {
+    return error ? (
+      <Text
+        style={[
+          {
+            color: UIStore.theme.colors.error,
+            textAlign: "center",
+            fontWeight: "bold",
+          },
+          style,
+        ]}
+        {...props}
+      >
+        {error}
+      </Text>
+    ) : null;
+  },
+);

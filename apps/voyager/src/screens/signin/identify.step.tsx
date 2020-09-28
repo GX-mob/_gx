@@ -2,17 +2,10 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
-import { SignInSteps } from "@apis/signin";
 import { Text, InputMask, Button, Divider } from "@components/atoms";
-import { SignInButton } from "@components/google";
-import { StackScreenProps } from "@react-navigation/stack";
+import { Icon, SignInButton } from "@components/google";
 import validator from "validator";
-import { styles, NextButton } from "./common";
-
-type Props = StackScreenProps<{
-  [SignInSteps.Code]: undefined;
-  [SignInSteps.Password]: undefined;
-}>;
+import { styles, NextButton, Error, Props } from "./common";
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
   const [phone, setPhone] = useState("82988444444");
@@ -52,6 +45,7 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           visible={validator.isMobilePhone(`55${phone}`, "pt-BR")}
           onPress={handleSubmit}
         />
+        <Error error={LoginStore.error} />
       </View>
       <SignInButton
         style={{ marginVertical: 6 }}
@@ -62,8 +56,8 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
       />
       <Divider />
       <Button
-        type="primary"
-        style={{ width: "100%", paddingVertical: 10 }}
+        type="secondary"
+        style={{ width: "100%" }}
         onPress={(event) => {
           UIStore.toggle();
         }}

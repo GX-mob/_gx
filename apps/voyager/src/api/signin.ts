@@ -24,16 +24,6 @@ type ApiReponse<Content, Next> = {
   next: Next;
 };
 
-const IdentifyNextRef = {
-  200: SignInSteps.Password,
-  [SignInHttpReponseCodes.SecondaFactorRequired]: SignInSteps.Code,
-};
-
-const PasswordNextRef: any = {
-  [SignInHttpReponseCodes.Success]: SignInSteps.Main,
-  [SignInHttpReponseCodes.SecondaFactorRequired]: SignInSteps.Code,
-};
-
 export const signin = ky.extend({
   prefixUrl: ENDPOINTS.SIGNIN,
 });
@@ -43,7 +33,7 @@ export async function identify(
 ): Promise<
   ApiReponse<IdentifyResponseInterface, SignInSteps.Password | SignInSteps.Code>
 > {
-  const response = await signin.get(id);
+  const response = await signin.get(`id/${id}`);
   const content = await response.json();
 
   if (!response.ok) {
@@ -64,14 +54,17 @@ export async function password(
     SignInSteps.Code | SignInSteps.Main
   >
 > {
-  const response = await signin.post("/", { json: body });
+  const response = await signin.post("sign", { json: body });
   const content = await response.json();
 
   if (!response.ok) {
     throw new HttpException(content);
   }
 
-  const next = PasswordNextRef[response.status];
+  const next =
+    response.status === SignInHttpReponseCodes.Success
+      ? SignInSteps.Main
+      : SignInSteps.Code;
 
   return { content, next };
 }
@@ -79,7 +72,7 @@ export async function password(
 export async function code(
   body: SignInCodeDtoInterface,
 ): Promise<ApiReponse<SignInSuccessResponse, SignInSteps.Main>> {
-  const response = await signin.post("/code", { json: body });
+  const response = await signin.post("code", { json: body });
   const content = await response.json();
 
   if (!response.ok) {
