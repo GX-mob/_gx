@@ -7,32 +7,57 @@ import {
   TextProps,
   TextInput,
   TextInputProps,
-  TouchableHighlight,
-  TouchableHighlightProps,
   Pressable,
   PressableProps,
   Image,
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { ColorsThemeProperties } from "@interfaces";
-import { UIStore } from "@stores";
+import UIStore from "@stores/ui.store";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
 
-export const Input = observer<TextInputProps>(({ style, ...props }) => (
-  <TextInput
-    placeholderTextColor={UIStore.theme.colors.onSurface}
-    style={{
-      height: 40,
-      paddingHorizontal: 20,
-      borderRadius: UIStore.theme.borderRadius,
-      backgroundColor: UIStore.theme.colors.surface,
-      color: UIStore.theme.colors.onSurface,
-      marginVertical: 6,
-      ...((style as object) || {}),
-    }}
-    {...props}
-  />
-));
+export type InputStatus = "error" | "warn";
+
+export const Input = observer<TextInputProps & { status?: InputStatus }>(
+  ({ style, status, ...props }) => {
+    let aditionalStyle: TextInputProps["style"] = {};
+    switch (status) {
+      case "error":
+        aditionalStyle = {
+          borderWidth: 2,
+          borderColor: UIStore.theme.colors.error,
+          color: UIStore.theme.colors.error,
+        };
+        break;
+      case "warn":
+        aditionalStyle = {
+          borderWidth: 2,
+          borderColor: UIStore.theme.colors.warn,
+          color: UIStore.theme.colors.warn,
+        };
+        break;
+    }
+
+    return (
+      <TextInput
+        placeholderTextColor={UIStore.theme.colors.onSurface}
+        style={[
+          {
+            height: 40,
+            paddingHorizontal: 20,
+            borderRadius: UIStore.theme.borderRadius,
+            backgroundColor: UIStore.theme.colors.surface,
+            color: UIStore.theme.colors.onSurface,
+            marginVertical: 6,
+            ...aditionalStyle,
+          },
+          style,
+        ]}
+        {...props}
+      />
+    );
+  },
+);
 
 export const InputMask = observer<TextInputMaskProps>(({ style, ...props }) => (
   <TextInputMask

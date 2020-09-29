@@ -84,10 +84,11 @@ export function hashPassword(password: string | Buffer): Promise<Buffer> {
  */
 export async function assertPassword(
   value: string,
-  to: Buffer,
+  to: string,
 ): Promise<Buffer | boolean> {
   const passwordValue = Buffer.from(value);
-  const result = await securePassword.verify(passwordValue, to);
+  const comparedValue = Buffer.from(to, "base64");
+  const result = await securePassword.verify(passwordValue, comparedValue);
 
   switch (result) {
     case SecurePassword.VALID:

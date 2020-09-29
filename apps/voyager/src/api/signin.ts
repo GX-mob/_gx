@@ -6,15 +6,9 @@ import {
   SignInPasswordDtoInterface,
   Password2FARequiredResponse,
 } from "@shared/interfaces";
-import ky from "ky";
-import { HttpException } from "./exceptions";
 import { ENDPOINTS } from "../constants";
-
-export enum SignInSteps {
-  Code = "Code",
-  Password = "Password",
-  Main = "Main",
-}
+import { createAgent } from "./http";
+import { SignInScreens } from "@screens/signin/common";
 
 type ApiReponse<Content, Next> = {
   content: { [K in keyof Content]: Content[K] };
@@ -24,24 +18,19 @@ type ApiReponse<Content, Next> = {
   next: Next;
 };
 
-export const signin = ky.extend({
-  prefixUrl: ENDPOINTS.SIGNIN,
-});
+const agent = createAgent(ENDPOINTS.SIGNIN);
 
 export async function identify(
   id: string,
 ): Promise<
-  ApiReponse<IdentifyResponseInterface, SignInSteps.Password | SignInSteps.Code>
+  ApiReponse<
+    IdentifyResponseInterface,
+    SignInScreens.Password | SignInScreens.Code
+  >
 > {
-  const response = await signin.get(`id/${id}`);
-  const content = await response.json();
-
-  if (!response.ok) {
-    throw new HttpException(content);
-  }
-
+  const { response, content } = await agent.get(`id/${id}`);
   const next =
-    response.status === 200 ? SignInSteps.Password : SignInSteps.Code;
+    response.status === 200 ? SignInScreens.Password : SignInScreens.Code;
 
   return { content, next };
 }
@@ -51,33 +40,28 @@ export async function password(
 ): Promise<
   ApiReponse<
     SignInSuccessResponse & Password2FARequiredResponse,
-    SignInSteps.Code | SignInSteps.Main
+    SignInScreens.Code | "Main"
   >
 > {
-  const response = await signin.post("sign", { json: body });
-  const content = await response.json();
-
-  if (!response.ok) {
-    throw new HttpException(content);
-  }
-
+  const { response, content } = await agent.post("credential", body);
   const next =
     response.status === SignInHttpReponseCodes.Success
-      ? SignInSteps.Main
-      : SignInSteps.Code;
+      ? "Main"
+      : SignInScreens.Code;
 
   return { content, next };
 }
 
 export async function code(
   body: SignInCodeDtoInterface,
-): Promise<ApiReponse<SignInSuccessResponse, SignInSteps.Main>> {
-  const response = await signin.post("code", { json: body });
-  const content = await response.json();
+): Promise<ApiReponse<SignInSuccessResponse, "Main">> {
+  const { content } = await agent.post("code", body);
 
-  if (!response.ok) {
-    throw new HttpException(content);
-  }
-
-  return { content, next: SignInSteps.Main };
+  return { content, next: "Main" };
 }
+
+export default {
+  identify,
+  password,
+  code,
+};

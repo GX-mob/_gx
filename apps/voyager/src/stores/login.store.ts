@@ -3,16 +3,31 @@ import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
 import { IdentifyResponseInterface } from "@shared/interfaces";
-import * as signIn from "@apis/signin";
+import signIn from "@apis/signin";
 import { HttpException } from "@apis/exceptions";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import {
   TOKEN_STORAGE_KEY,
   GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
-  NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
   VERIFICATION_RESEND_TIMEOUT,
 } from "../constants";
+import { SignInScreens } from "@screens/signin/common";
+
+type HttpExceptions =
+  | HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND
+  | HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD
+  | HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE;
+
+const ErrorMessages = {
+  [HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND]:
+    "Conta não encontrada, verifique o número.",
+  [HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD]: "Senha errada",
+  [HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE]: "Código errado",
+};
+
+type Errors = { id?: string; credential?: string; code?: string };
 
 class LoginStore {
   private secureStorageAvailable!: boolean;
@@ -27,18 +42,18 @@ class LoginStore {
   public token = "";
 
   @observable
-  public error?: string;
-
-  @observable
-  public suggestNumberWrong = false;
+  public errors: Errors = {};
 
   @observable
   public indicateAccountCreation = false;
 
   @observable
-  public profile?: IdentifyResponseInterface;
+  public countryCode = "+55";
   public phone: string = "";
-  public notFoundResponse = 0;
+
+  @observable
+  public profile?: IdentifyResponseInterface;
+  public notFoundResponses = 0;
   public verificationIat?: number;
 
   @observable
@@ -63,10 +78,77 @@ class LoginStore {
     this.initializing = false;
   }
 
+  private getFullPhoneNumber() {
+    return `${this.countryCode}${this.phone}`;
+  }
+
+  private handleApiReponseHttpException(
+    error: HttpException,
+    key: keyof Errors,
+  ) {
+    if (error instanceof HttpException) {
+      const message = error.message as HttpExceptions;
+
+      if (message) {
+        this.errors[key] = ErrorMessages[message];
+      } else {
+        console.log("TODO: bottom unknown error");
+      }
+    }
+  }
+
+  @action
+  async identify(phone: string) {
+    try {
+      if (
+        this.phone === phone &&
+        this.verificationIat &&
+        this.resendSecondsLeft > 0
+      )
+        return SignInScreens.Code;
+
+      this.errors.id = "";
+      this.loading = true;
+      this.phone = phone;
+
+      const response = await signIn.identify(this.getFullPhoneNumber());
+
+      this.profile = response.content;
+
+      if (response.next === SignInScreens.Code) {
+        this.initiateVerificationResendCounter();
+      }
+
+      return response.next;
+    } catch (error) {
+      this.handleApiReponseHttpException(error, "id");
+      if (error.message === HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND) {
+        this.notFoundResponses++;
+
+        if (
+          this.notFoundResponses >=
+          NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
+        ) {
+          this.indicateAccountCreation = true;
+        }
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
   private initiateVerificationResendCounter() {
     this.verificationIat = Date.now();
     this.resendSecondsLeft = this.calculateSecondsLeft(this.verificationIat);
     setTimeout(() => this.calculateVerificationResend(), 1000);
+  }
+
+  private calculateSecondsLeft(iat: number) {
+    return (
+      Math.round(iat / 1000) +
+      VERIFICATION_RESEND_TIMEOUT -
+      Math.round(Date.now() / 1000)
+    );
   }
 
   private calculateVerificationResend() {
@@ -78,92 +160,28 @@ class LoginStore {
       setTimeout(() => this.calculateVerificationResend(), 1000);
   }
 
-  private calculateSecondsLeft(iat: number) {
-    return (
-      Math.round(iat / 1000) +
-      VERIFICATION_RESEND_TIMEOUT -
-      Math.round(Date.now() / 1000)
-    );
-  }
-
-  @action
-  async identify(phone: string) {
-    try {
-      if (
-        this.phone === phone &&
-        this.verificationIat &&
-        this.resendSecondsLeft > 0
-      )
-        return signIn.SignInSteps.Code;
-
-      this.loading = true;
-      const response = await signIn.identify(`+55${phone}`);
-
-      this.phone = phone;
-      this.profile = response.content;
-
-      if (response.next === signIn.SignInSteps.Code) {
-        this.initiateVerificationResendCounter();
-      }
-
-      return response.next;
-    } catch (error) {
-      console.log(error.message);
-      if (error instanceof HttpException) {
-        switch (error.statusCode) {
-          case 404:
-            this.notFoundResponse++;
-
-            this.error = "Conta não encontrada, verifque o número.";
-
-            if (
-              this.notFoundResponse >=
-              NOT_FOUND_RESPONSES_TO_SUGGEST_WRONG_NUMBER
-            ) {
-              this.suggestNumberWrong = true;
-            }
-
-            if (
-              this.notFoundResponse >=
-              NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION
-            ) {
-              this.indicateAccountCreation = true;
-            }
-            break;
-        }
-      }
-    } finally {
-      this.loading = false;
-    }
-  }
-
   @action
   async password(password: string) {
     try {
+      this.errors.credential = "";
       this.loading = true;
       const result = await signIn.password({
-        phone: `+55${this.phone}`,
+        phone: this.getFullPhoneNumber(),
         password,
       });
 
       switch (result.next) {
-        case signIn.SignInSteps.Code:
+        case SignInScreens.Code:
           this.initiateVerificationResendCounter();
           break;
-        case signIn.SignInSteps.Main:
+        case "Main":
           this.setToken(result.content.token);
           return;
       }
 
       return result.next;
     } catch (error) {
-      if (error instanceof HttpException) {
-        switch (error.statusCode) {
-          case 422:
-            this.error = "Senha errada.";
-            break;
-        }
-      }
+      this.handleApiReponseHttpException(error, "credential");
     } finally {
       this.loading = false;
     }
@@ -172,21 +190,19 @@ class LoginStore {
   @action
   async code(code: string) {
     try {
+      this.errors.code = "";
       this.loading = true;
-      const result = await signIn.code({ phone: `+55${this.phone}`, code });
+      const result = await signIn.code({
+        phone: this.getFullPhoneNumber(),
+        code,
+      });
 
-      if (result.next === signIn.SignInSteps.Main) {
+      if (result.next === "Main") {
         await this.setToken(result.content.token);
         this.token = result.content.token;
       }
     } catch (error) {
-      if (error instanceof HttpException) {
-        switch (error.statusCode) {
-          case 422:
-            this.error = "Código errado.";
-            break;
-        }
-      }
+      this.handleApiReponseHttpException(error, "code");
     } finally {
       this.loading = false;
     }
@@ -221,6 +237,7 @@ class LoginStore {
       ? SecureStore.getItemAsync(TOKEN_STORAGE_KEY)
       : AsyncStorage.getItem(TOKEN_STORAGE_KEY);
   }
+
   private setToken(token: any) {
     if (this.secureStorageAvailable) {
       return SecureStore.setItemAsync(TOKEN_STORAGE_KEY, token);

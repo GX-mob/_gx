@@ -95,7 +95,7 @@ export class AccountSecurityController {
 
     const matchPassword = await util.assertPassword(
       body.password,
-      user.password as Buffer,
+      user.password as string,
     );
 
     if (!matchPassword) {

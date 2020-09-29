@@ -10,9 +10,15 @@ import {
 import { observer } from "mobx-react-lite";
 import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
 import { Button } from "@components/atoms";
-import { SignInSteps } from "@apis/signin";
 import { StackScreenProps } from "@react-navigation/stack";
-import { UIStore } from "@stores";
+import UIStore from "@stores/ui.store";
+
+export enum SignInScreens {
+  Identify = "Identify",
+  Password = "Password",
+  Code = "Code",
+  RecoveryPassword = "RecoveryPassword",
+}
 
 export const styles = StyleSheet.create({
   container: {
@@ -89,9 +95,9 @@ export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
 };
 
 export type Props = StackScreenProps<{
-  [SignInSteps.Code]: undefined;
-  [SignInSteps.Password]: undefined;
-  RecoveryPassword: undefined;
+  [SignInScreens.Code]: undefined;
+  [SignInScreens.Password]: undefined;
+  [SignInScreens.RecoveryPassword]: undefined;
 }>;
 
 export const Error: FC<TextProps & { error?: string }> = observer(

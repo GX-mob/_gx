@@ -3,11 +3,12 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
 import { Text, Button, Input, Divider, Avatar } from "@components/atoms";
-import { styles, NextButton, Props } from "./common";
-import { SignInSteps } from "@apis/signin";
+import { styles, NextButton, Props, Error, SignInScreens } from "./common";
 
 export const PasswordStep = observer<Props>(({ navigation }) => {
   const [password, setPassword] = useState("");
+
+  const error = LoginStore.errors.credential;
 
   const handleSubmit = async () => {
     const next = await LoginStore.password(password);
@@ -31,6 +32,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
       <View style={{ width: "100%" }}>
         <Input
           editable={!LoginStore.loading}
+          status={error ? "error" : undefined}
           secureTextEntry={true}
           style={{ width: "100%" }}
           value={password}
@@ -46,6 +48,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
           visible={password.length >= 6}
           onPress={handleSubmit}
         />
+        <Error error={error} />
       </View>
       <Divider />
       <Button
@@ -53,7 +56,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
         style={{ width: "100%" }}
         onPress={() => {
           UIStore.toggle();
-          navigation.navigate("RecoveryPassword");
+          //navigation.navigate(SignInScreens.RecoveryPassword);
         }}
         textStyle={{
           fontSize: 12,

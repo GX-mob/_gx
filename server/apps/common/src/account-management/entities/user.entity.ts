@@ -15,7 +15,7 @@ export class UserEntity implements UserInterface {
   averageEvaluation!: number;
 
   @Exclude()
-  password!: Buffer;
+  password!: string;
 
   constructor(partial: Partial<UserInterface>) {
     Object.assign(this, partial);

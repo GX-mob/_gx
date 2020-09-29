@@ -1,21 +1,41 @@
-import ky from "ky";
-import { ENDPOINTS } from "../constants";
-import LoginStore from "../stores/login.store";
+import { HttpException } from "./exceptions";
 
-const authorizedRequestHooks = {
-  beforeRequest: [
-    (request: Request) => {
-      request.headers.set("Bearer ", LoginStore.token);
+export async function request(uri: string, options: RequestInit = {}) {
+  const response = await fetch(uri, options);
+  const content = await response.json();
+
+  if (!response.ok) {
+    throw new HttpException(content);
+  }
+
+  return { response, content };
+}
+
+export function createAgent(prefix: string, options: RequestInit = {}) {
+  const getUri = (endpoint: string) => `${prefix}${endpoint}`;
+  const { headers: defaultHeaders, ...defaultOptions } = options;
+  return {
+    async get(endpoint: string, options: RequestInit = {}) {
+      const { headers, ...restOptions } = options;
+      return request(getUri(endpoint), {
+        ...defaultOptions,
+        headers: { ...defaultHeaders, ...headers },
+        ...restOptions,
+      });
     },
-  ],
-};
-
-export const account = ky.extend({
-  hooks: authorizedRequestHooks,
-  prefixUrl: ENDPOINTS.ACCOUNT,
-});
-
-export const ride = ky.extend({
-  hooks: authorizedRequestHooks,
-  prefixUrl: ENDPOINTS.RIDES,
-});
+    async post(endpoint: string, body: any, options: RequestInit = {}) {
+      const { headers, ...restOptions } = options;
+      return request(getUri(endpoint), {
+        method: "POST",
+        ...defaultOptions,
+        headers: {
+          ...defaultHeaders,
+          "Content-type": "application/json",
+          ...headers,
+        },
+        ...restOptions,
+        body: JSON.stringify(body),
+      });
+    },
+  };
+}

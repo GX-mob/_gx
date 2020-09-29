@@ -20,6 +20,6 @@ export interface UserInterface {
   createdAt?: Date;
   updatedAt?: Date;
   roles: UserRoles[];
-  password?: Buffer;
+  password?: string;
   ["2fa"]?: string;
 }

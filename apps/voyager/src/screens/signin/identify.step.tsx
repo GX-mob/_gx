@@ -3,13 +3,13 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore, LoginStore } from "@stores";
 import { Text, InputMask, Button, Divider } from "@components/atoms";
-import { Icon, SignInButton } from "@components/google";
+import { SignInButton } from "@components/google";
 import validator from "validator";
 import { styles, NextButton, Error, Props } from "./common";
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
   const [phone, setPhone] = useState("82988444444");
-
+  const error = LoginStore.errors.id;
   const handleSubmit = async () => {
     const next = await LoginStore.identify(phone);
     if (!next) return;
@@ -23,7 +23,6 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
       <Text style={styles.subTitle}>
         Digite o DDD + o número do seu celular.
       </Text>
-      <Text>{LoginStore.error}</Text>
       <View style={{ width: "100%" }}>
         <InputMask
           type="cel-phone"
@@ -45,7 +44,7 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           visible={validator.isMobilePhone(`55${phone}`, "pt-BR")}
           onPress={handleSubmit}
         />
-        <Error error={LoginStore.error} />
+        <Error error={error} />
       </View>
       <SignInButton
         style={{ marginVertical: 6 }}

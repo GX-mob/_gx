@@ -13,7 +13,7 @@ describe("Model: User", () => {
     phones: ["82988888888"],
     emails: ["valid@email.com"],
     birth: new Date("06/13/1994"),
-    password: Buffer.from("asd"),
+    password: Buffer.from("asd").toString("base64"),
   };
 
   it("should throw errors due to empty required fields", () => {

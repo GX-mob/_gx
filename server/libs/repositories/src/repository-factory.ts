@@ -35,13 +35,11 @@ export class RepositoryFactory<
    */
   async get(query: Configuration["Query"]): Promise<Model | null> {
     const cache = await this.cache.get(this.settings.namespace, query);
-
     if (cache) {
       return cache;
     }
 
     const data = await this.makeQuery(query);
-
     if (!data) {
       return null;
     }

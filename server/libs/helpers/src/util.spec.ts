@@ -84,7 +84,9 @@ describe("Helper: util", () => {
   describe("assertPassword", () => {
     it("verify a valid password", async () => {
       const plainPassword = faker.internet.password();
-      const hashedPassword = await util.hashPassword(plainPassword);
+      const hashedPassword = (await util.hashPassword(plainPassword)).toString(
+        "base64",
+      );
 
       expect(
         await util.assertPassword(plainPassword, hashedPassword),
@@ -94,7 +96,9 @@ describe("Helper: util", () => {
     it("verify a invalid password", async () => {
       const plainPassword = faker.internet.password();
       const diferentPassword = faker.internet.password();
-      const hashedPassword = await util.hashPassword(plainPassword);
+      const hashedPassword = (await util.hashPassword(plainPassword)).toString(
+        "base64",
+      );
 
       expect(
         await util.assertPassword(diferentPassword, hashedPassword),
@@ -108,9 +112,9 @@ describe("Helper: util", () => {
       });
 
       const plainPassword = faker.internet.password();
-      const weakHash = await weakSecurePasswordInstance.hash(
-        Buffer.from(plainPassword),
-      );
+      const weakHash = (
+        await weakSecurePasswordInstance.hash(Buffer.from(plainPassword))
+      ).toString("base64");
 
       expect(
         (await util.assertPassword(plainPassword, weakHash)) instanceof Buffer,

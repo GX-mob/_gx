@@ -6,7 +6,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { UIStore } from "@stores";
 import Logo from "@components/logo";
 import { Lines } from "@components/general";
-import { SignInSteps } from "@apis/signin";
+import { SignInScreens } from "./common";
 import { IdentifyStep } from "./identify.step";
 import { PasswordStep } from "./password.step";
 import { CodeStep } from "./code.step";
@@ -40,10 +40,10 @@ export const LoginScreen = observer(() => {
             headerTransparent: true,
           }}
         >
-          <Screen name="Identify" component={IdentifyStep} />
-          <Screen name={SignInSteps.Password} component={PasswordStep} />
-          <Screen name={SignInSteps.Code} component={CodeStep} />
-          <Screen name="RecoveryPassword" component={CodeStep} />
+          <Screen name={SignInScreens.Identify} component={IdentifyStep} />
+          <Screen name={SignInScreens.Password} component={PasswordStep} />
+          <Screen name={SignInScreens.Code} component={CodeStep} />
+          <Screen name={SignInScreens.RecoveryPassword} component={CodeStep} />
         </Navigator>
       </NavigationContainer>
     </>

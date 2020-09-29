@@ -77,7 +77,7 @@ export const UserSchema: Schema = new Schema(
     updatedAt: Date,
     birth: { type: Date, required: true },
     roles: { type: Array, of: String, default: UserRoles.VOYAGER },
-    password: Buffer,
+    password: String,
     ["2fa"]: String,
   },
   { collection: "users" },

@@ -123,6 +123,8 @@ export async function seedDatabase(logging: boolean = true) {
     roles: [UserRoles.VOYAGER],
   });
 
+  console.log("driver pw", util.securePassword.hash(Buffer.from("123456")));
+
   // Create driver user
   const driver = await UserModel.create({
     pid: "2",
@@ -133,7 +135,9 @@ export async function seedDatabase(logging: boolean = true) {
     emails: [],
     birth: new Date(),
     averageEvaluation: 5,
-    password: await util.securePassword.hash(Buffer.from("123456")),
+    password: (await util.securePassword.hash(Buffer.from("123456"))).toString(
+      "base64",
+    ),
     roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
   });
 

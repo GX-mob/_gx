@@ -33,7 +33,8 @@ import { SessionService } from "@app/session";
 import { ContactVerificationService } from "@app/contact-verification";
 import { PhoneVerificationCheckDto, SignUpDto } from "./sign-up.dto";
 import { util } from "@app/helpers";
-import { EXCEPTIONS_MESSAGES, CACHE_NAMESPACES } from "../constants";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
+import { CACHE_NAMESPACES } from "../constants";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 
 @Controller("sign-up")
@@ -68,7 +69,9 @@ export class SignUpController {
     const valid = await this.contactVerification.verify(phone, code);
 
     if (!valid) {
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
+      throw new UnprocessableEntityException(
+        HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE,
+      );
     }
 
     await this.setCache(phone, { code, validated: true });
@@ -100,7 +103,7 @@ export class SignUpController {
      */
     if (!terms) {
       throw new UnprocessableEntityException(
-        EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED,
+        HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED,
       );
     }
 
@@ -110,7 +113,9 @@ export class SignUpController {
     const verification = await this.contactVerification.verify(phone, code);
 
     if (!verification) {
-      throw new UnauthorizedException(EXCEPTIONS_MESSAGES.PHONE_NOT_VERIFIED);
+      throw new UnauthorizedException(
+        HTTP_EXCEPTIONS_MESSAGES.PHONE_NOT_VERIFIED,
+      );
     }
 
     /**
@@ -118,7 +123,9 @@ export class SignUpController {
      * * Only on the first ride the CPF is consulted with the government api
      */
     if (!isValidCPF(cpf)) {
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.INVALID_CPF);
+      throw new UnprocessableEntityException(
+        HTTP_EXCEPTIONS_MESSAGES.INVALID_CPF,
+      );
     }
 
     /**
@@ -127,7 +134,9 @@ export class SignUpController {
     const registredCPF = await this.userRepository.get({ cpf });
 
     if (registredCPF) {
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.CPF_REGISTRED);
+      throw new UnprocessableEntityException(
+        HTTP_EXCEPTIONS_MESSAGES.CPF_REGISTRED,
+      );
     }
 
     const userObject: UserCreateInterface = {
@@ -161,7 +170,7 @@ export class SignUpController {
 
     if (user) {
       throw new UnprocessableEntityException(
-        EXCEPTIONS_MESSAGES.PHONE_REGISTRED,
+        HTTP_EXCEPTIONS_MESSAGES.PHONE_REGISTRED,
       );
     }
   }

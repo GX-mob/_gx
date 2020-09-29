@@ -10,7 +10,7 @@ import {
 import { SignInController } from "./sign-in.controller";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
 import SecurePassword from "secure-password";
-import { EXCEPTIONS_MESSAGES } from "../constants";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import { util } from "@app/helpers";
 
 describe("SignInController", () => {
@@ -56,14 +56,14 @@ describe("SignInController", () => {
   });
 
   describe("identify", () => {
-    it(`should throw NotFoundException('${EXCEPTIONS_MESSAGES.USER_NOT_FOUND}')`, async () => {
+    it(`should throw NotFoundException('${HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND}')`, async () => {
       const result = null;
       userRepositoryMock.get.mockResolvedValue(result);
 
       await expect(
         signInController.identify(fastifyResponseMock as any, "foo"),
       ).rejects.toStrictEqual(
-        new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
+        new NotFoundException(HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND),
       );
     });
 
@@ -101,7 +101,7 @@ describe("SignInController", () => {
   });
 
   describe("signIn", () => {
-    it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}')`, async () => {
+    it(`should throw UnprocessableEntityException('${HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD}')`, async () => {
       const phone = "+5592088444444";
       const result = {
         password: await securePassword.hash(Buffer.from("123")),
@@ -123,7 +123,9 @@ describe("SignInController", () => {
           signInPasswordDto,
         ),
       ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
+        new UnprocessableEntityException(
+          HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
+        ),
       );
     });
 
@@ -217,7 +219,7 @@ describe("SignInController", () => {
   });
 
   describe("code", () => {
-    it(`should throw UnprocessableEntityException('${EXCEPTIONS_MESSAGES.WRONG_CODE}')`, async () => {
+    it(`should throw UnprocessableEntityException('${HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE}')`, async () => {
       const phone = "+5592088444444";
       const result = {
         password: await securePassword.hash(Buffer.from("123")),
@@ -239,7 +241,7 @@ describe("SignInController", () => {
           signInCodeDto,
         ),
       ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE),
+        new UnprocessableEntityException(HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE),
       );
     });
 

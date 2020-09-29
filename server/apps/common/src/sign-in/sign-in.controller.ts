@@ -36,10 +36,10 @@ import {
   SignInSuccessResponse,
   Password2FARequiredResponse,
 } from "@shared/interfaces";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import { UserRepository } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
-import { EXCEPTIONS_MESSAGES } from "../constants";
 import validator from "validator";
 
 @Controller("sign-in")
@@ -70,13 +70,13 @@ export class SignInController {
     const user = await this.userRepository.get({ phones: phone });
 
     if (!user) {
-      throw new NotFoundException(EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
+      throw new NotFoundException(HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
     }
 
     return user;
   }
 
-  @Post("sign")
+  @Post("credential")
   async signIn(
     @Request() request: FastifyRequest,
     @Response() reply: FastifyReply,
@@ -85,11 +85,13 @@ export class SignInController {
     const { phone, password } = body;
     const user = await this.getUser(phone);
 
-    const result = await util.assertPassword(password, user.password as Buffer);
+    console.log("SENT PW", password, "USER PW", user.password);
+
+    const result = await util.assertPassword(password, user.password as string);
 
     if (!result) {
       throw new UnprocessableEntityException(
-        EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
+        HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
       );
     }
 
@@ -129,7 +131,9 @@ export class SignInController {
     const valid = await this.contactVerification.verify(phone, code);
 
     if (!valid) {
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
+      throw new UnprocessableEntityException(
+        HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE,
+      );
     }
 
     const { token } = await this.createSession(user, request);
