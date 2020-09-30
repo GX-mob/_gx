@@ -2,12 +2,13 @@ import React, { FC } from "react";
 import {
   View,
   Text,
-  TouchableHighlight,
-  TouchableHighlightProps,
+  Pressable,
+  PressableProps,
+  ActivityIndicator,
 } from "react-native";
 import Svg, { Path, SvgProps } from "react-native-svg";
 
-export const Icon: FC<Partial<SvgProps>> = (props) => (
+export const Icon: FC<SvgProps> = (props) => (
   <Svg viewBox="0 0 533.5 544.3" {...props}>
     <Path
       d="M533.5 278.4c0-18.5-1.5-37.1-4.7-55.3H272.1v104.8h147c-6.1 33.8-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.1-117.4 81.1-200.2z"
@@ -28,14 +29,15 @@ export const Icon: FC<Partial<SvgProps>> = (props) => (
   </Svg>
 );
 
-export const SignInButton: FC<Partial<TouchableHighlightProps>> = ({
+export const SignInButton: FC<PressableProps & { loading?: boolean }> = ({
   style,
+  loading,
   ...props
 }) => {
   return (
-    <TouchableHighlight
-      underlayColor="#f3f3f3"
+    <Pressable
       style={{
+        width: 176,
         backgroundColor: "#fff",
         borderRadius: 4,
         paddingHorizontal: 12,
@@ -53,9 +55,13 @@ export const SignInButton: FC<Partial<TouchableHighlightProps>> = ({
       {...props}
     >
       <View style={{ flexDirection: "row" }}>
-        <Icon style={{ width: 20, marginRight: 18 }} />
+        {loading ? (
+          <ActivityIndicator color="#333" style={{ marginRight: 18 }} />
+        ) : (
+          <Icon style={{ width: 20, marginRight: 18 }} />
+        )}
         <Text>Entrar com Google</Text>
       </View>
-    </TouchableHighlight>
+    </Pressable>
   );
 };

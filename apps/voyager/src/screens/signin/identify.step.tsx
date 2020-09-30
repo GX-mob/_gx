@@ -9,6 +9,7 @@ import { styles, NextButton, Error, Props } from "./common";
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
   const [phone, setPhone] = useState("82988444444");
+  const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
   const error = LoginStore.errors.id;
   const handleSubmit = async () => {
     const next = await LoginStore.identify(phone);
@@ -47,9 +48,16 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
         <Error error={error} />
       </View>
       <SignInButton
+        loading={googleSigInLoading}
         style={{ marginVertical: 6 }}
         onPress={async (event) => {
+          if (googleSigInLoading) {
+            return;
+          }
+
+          setGoogleSigInLoading(true);
           const result = await LoginStore.loginWithGoogle();
+          setGoogleSigInLoading(false);
           console.log(result);
         }}
       />

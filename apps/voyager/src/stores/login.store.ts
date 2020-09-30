@@ -82,10 +82,7 @@ class LoginStore {
     return `${this.countryCode}${this.phone}`;
   }
 
-  private handleApiReponseHttpException(
-    error: HttpException,
-    key: keyof Errors,
-  ) {
+  private handleApiHttpException(error: Error, key: keyof Errors) {
     if (error instanceof HttpException) {
       const message = error.message as HttpExceptions;
 
@@ -121,7 +118,7 @@ class LoginStore {
 
       return response.next;
     } catch (error) {
-      this.handleApiReponseHttpException(error, "id");
+      this.handleApiHttpException(error, "id");
       if (error.message === HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND) {
         this.notFoundResponses++;
 
@@ -175,13 +172,14 @@ class LoginStore {
           this.initiateVerificationResendCounter();
           break;
         case "Main":
-          this.setToken(result.content.token);
+          await this.setToken(result.content.token);
+          this.token = result.content.token;
           return;
       }
 
       return result.next;
     } catch (error) {
-      this.handleApiReponseHttpException(error, "credential");
+      this.handleApiHttpException(error, "credential");
     } finally {
       this.loading = false;
     }
@@ -202,7 +200,7 @@ class LoginStore {
         this.token = result.content.token;
       }
     } catch (error) {
-      this.handleApiReponseHttpException(error, "code");
+      this.handleApiHttpException(error, "code");
     } finally {
       this.loading = false;
     }

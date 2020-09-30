@@ -39,6 +39,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
           placeholder="Sua senha"
           textContentType="password"
           onChangeText={(value) => {
+            LoginStore.errors.credential = "";
             setPassword(value);
           }}
           onSubmitEditing={handleSubmit}

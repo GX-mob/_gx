@@ -45,25 +45,27 @@ export const styles = StyleSheet.create({
   },
 });
 
+const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
+
 export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
   props,
 ) => {
-  const buttonPosition = useRef(new Animated.Value(-60)).current;
+  const buttonPosition = useRef(new Animated.Value(100)).current;
   const buttonScale = useRef(new Animated.Value(0)).current;
 
   const setButtonVisibility = (state: boolean) => {
     Animated.timing(buttonScale, {
       toValue: Number(state),
-      duration: 300,
+      duration: 600,
       useNativeDriver: true,
-      easing: Easing.inOut(Easing.quad),
+      easing,
     }).start();
 
     Animated.timing(buttonPosition, {
-      toValue: state ? 0 : 60,
-      duration: 300,
+      toValue: state ? 0 : 100,
+      duration: 600,
       useNativeDriver: true,
-      easing: Easing.inOut(Easing.quad),
+      easing,
     }).start();
   };
 

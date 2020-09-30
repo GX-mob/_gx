@@ -12,7 +12,6 @@ import { PasswordStep } from "./password.step";
 import { CodeStep } from "./code.step";
 
 const { Navigator, Screen } = createStackNavigator();
-
 const windowWidth = Dimensions.get("window").width;
 
 export const LoginScreen = observer(() => {
@@ -31,7 +30,6 @@ export const LoginScreen = observer(() => {
 
   return (
     <>
-      <Logo style={{ alignSelf: "center", top: 33, zIndex: 99 }} />
       <Lines width={windowWidth} />
       <NavigationContainer theme={navigatorTheme}>
         <Navigator
