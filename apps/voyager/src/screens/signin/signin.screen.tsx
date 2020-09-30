@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { observer } from "mobx-react-lite";
-import { Dimensions } from "react-native";
+import { Dimensions, Animated, Easing } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { UIStore } from "@stores";
-import Logo from "@components/logo";
 import { Lines } from "@components/general";
 import { SignInScreens } from "./common";
 import { IdentifyStep } from "./identify.step";
@@ -27,9 +26,25 @@ export const LoginScreen = observer(() => {
       notification: theme.colors.primaryVariant,
     },
   };
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacityAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+      easing: Easing.inOut(Easing.quad),
+    }).start();
+  }, []);
 
   return (
-    <>
+    <Animated.View
+      style={{
+        width: "100%",
+        height: "100%",
+        opacity: opacityAnim,
+      }}
+    >
       <Lines width={windowWidth} />
       <NavigationContainer theme={navigatorTheme}>
         <Navigator
@@ -44,6 +59,6 @@ export const LoginScreen = observer(() => {
           <Screen name={SignInScreens.RecoveryPassword} component={CodeStep} />
         </Navigator>
       </NavigationContainer>
-    </>
+    </Animated.View>
   );
 });

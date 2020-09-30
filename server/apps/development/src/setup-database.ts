@@ -123,8 +123,6 @@ export async function seedDatabase(logging: boolean = true) {
     roles: [UserRoles.VOYAGER],
   });
 
-  console.log("driver pw", util.securePassword.hash(Buffer.from("123456")));
-
   // Create driver user
   const driver = await UserModel.create({
     pid: "2",
@@ -132,6 +130,22 @@ export async function seedDatabase(logging: boolean = true) {
     lastName: faker.name.lastName(),
     cpf: "118.586.320-64",
     phones: ["+5582988444448"],
+    emails: [],
+    birth: new Date(),
+    averageEvaluation: 5,
+    password: (await util.securePassword.hash(Buffer.from("123456"))).toString(
+      "base64",
+    ),
+    roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
+  });
+
+  // Create driver user
+  const driver2 = await UserModel.create({
+    pid: "3",
+    firstName: faker.name.firstName(),
+    lastName: faker.name.lastName(),
+    cpf: "879.372.190-09",
+    phones: ["+5582988444449"],
     emails: [],
     birth: new Date(),
     averageEvaluation: 5,
