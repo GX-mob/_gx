@@ -5,18 +5,19 @@ import { ThemeInterface } from "@interfaces";
 
 class UIStore {
   @observable
-  theme: ThemeInterface = lightTheme;
+  theme: ThemeInterface = darkTheme;
 
   constructor() {
-    /*setInterval(() => {
-      this.toggle();
-      console.log("toggle, new", this.theme.id);
-    }, 10000);*/
+    this.init();
   }
+
+  @action
+  init() {}
 
   @action
   toggle() {
     this.theme = this.theme.name === "dark" ? lightTheme : darkTheme;
+    // AsynStorage.setItem("uiTheme", this.theme)
   }
 }
 

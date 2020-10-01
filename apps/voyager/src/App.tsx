@@ -12,10 +12,11 @@ import { LoginScreen, MainScreen } from "@screens";
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 const windowHeight = Dimensions.get("window").height;
-const initialPosition = 33 + windowHeight / 2;
+const initialPosition = windowHeight / 2 + 2.5;
 
 function App() {
   const logoTranslateY = useRef(new Animated.Value(initialPosition)).current;
+  const logoScale = useRef(new Animated.Value(1)).current;
 
   const setValue = (toValue: number) => {
     Animated.timing(logoTranslateY, {
@@ -24,14 +25,21 @@ function App() {
       useNativeDriver: true,
       easing,
     }).start();
+
+    Animated.timing(logoScale, {
+      toValue: 0.6,
+      duration: 1000,
+      useNativeDriver: true,
+      easing,
+    }).start();
   };
 
   if (!LoginStore.initializing) {
-    setValue(33 + 39);
+    setValue(64);
   }
 
   if (LoginStore.token) {
-    setValue(-39);
+    setValue(-70);
   }
 
   return (
@@ -42,10 +50,10 @@ function App() {
           alignSelf: "center",
           top: -42,
           zIndex: 99,
-          transform: [{ translateY: logoTranslateY }],
+          transform: [{ translateY: logoTranslateY }, { scale: logoScale }],
         }}
       >
-        <Logo />
+        <Logo width="78" height="79" />
       </Animated.View>
       {!LoginStore.initializing ? (
         LoginStore.token ? (

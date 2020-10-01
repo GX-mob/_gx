@@ -43,7 +43,10 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
             !validator.isMobilePhone(`55${phone}`, "pt-BR")
           }
           visible={validator.isMobilePhone(`55${phone}`, "pt-BR")}
-          onPress={handleSubmit}
+          onPress={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}
         />
         <Error error={error} />
       </View>
