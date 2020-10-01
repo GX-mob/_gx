@@ -1,9 +1,10 @@
-import React, { useRef, FC } from "react";
+import React, { useRef, useEffect, FC } from "react";
 import {
   StyleSheet,
   Animated,
   Easing,
-  TouchableHighlightProps,
+  PressableProps,
+  ActivityIndicator,
   Text,
   TextProps,
 } from "react-native";
@@ -47,9 +48,9 @@ export const styles = StyleSheet.create({
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 
-export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
-  props,
-) => {
+export const NextButton: FC<
+  PressableProps & { loading?: boolean; visible: boolean }
+> = ({ visible, loading, ...props }) => {
   const buttonPosition = useRef(new Animated.Value(100)).current;
   const buttonScale = useRef(new Animated.Value(0)).current;
 
@@ -69,7 +70,10 @@ export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
     }).start();
   };
 
-  setButtonVisibility(props.visible);
+  useEffect(() => {
+    console.log("Set", visible);
+    setButtonVisibility(visible);
+  }, [visible]);
 
   return (
     <Animated.View
@@ -77,7 +81,7 @@ export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
         position: "absolute",
         top: 0,
         right: -4,
-        transform: [{ scaleY: buttonScale, translateX: buttonPosition }],
+        transform: [{ scaleY: buttonScale }, { translateX: buttonPosition }],
       }}
     >
       <Button
@@ -90,7 +94,11 @@ export const NextButton: FC<TouchableHighlightProps & { visible: boolean }> = (
         }}
         {...props}
       >
-        <MaterialIcons name="chevron-right" size={24} />
+        {loading ? (
+          <ActivityIndicator color={UIStore.theme.colors.onPrimary} />
+        ) : (
+          <MaterialIcons name="chevron-right" size={24} />
+        )}
       </Button>
     </Animated.View>
   );

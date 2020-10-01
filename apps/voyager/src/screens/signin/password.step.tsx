@@ -11,6 +11,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
   const error = LoginStore.errors.credential;
 
   const handleSubmit = async () => {
+    if (password.length < 6) return;
     const next = await LoginStore.password(password);
     if (!next) return;
 
@@ -44,11 +45,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
           }}
           onSubmitEditing={handleSubmit}
         />
-        <NextButton
-          disabled={password.length < 6}
-          visible={password.length >= 6}
-          onPress={handleSubmit}
-        />
+        <NextButton visible={password.length >= 6} onPress={handleSubmit} />
         <Error error={error} />
       </View>
       <Divider />

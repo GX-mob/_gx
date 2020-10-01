@@ -5,6 +5,7 @@ export interface ThemeInterface {
   borderRadius: number;
   isDark: boolean;
   statusBarStyle: "light" | "dark";
+  mapStyle: any;
   colors: {
     primary: string;
     primaryVariant: string;

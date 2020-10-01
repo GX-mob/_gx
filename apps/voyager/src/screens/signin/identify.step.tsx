@@ -12,6 +12,8 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
   const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
   const error = LoginStore.errors.id;
   const handleSubmit = async () => {
+    if (LoginStore.loading || !validator.isMobilePhone(`55${phone}`, "pt-BR"))
+      return;
     const next = await LoginStore.identify(phone);
     if (!next) return;
 
@@ -38,10 +40,6 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           onSubmitEditing={handleSubmit}
         />
         <NextButton
-          disabled={
-            LoginStore.loading ||
-            !validator.isMobilePhone(`55${phone}`, "pt-BR")
-          }
           visible={validator.isMobilePhone(`55${phone}`, "pt-BR")}
           onPress={(event) => {
             event.preventDefault();

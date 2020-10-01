@@ -18,6 +18,9 @@
     "ios": {
       "supportsTablet": true
     },
-    "userInterfaceStyle": "dark"
+    "userInterfaceStyle": "dark",
+    "androidStatusBar": {
+      "barStyle": "light-content"
+    }
   }
 }

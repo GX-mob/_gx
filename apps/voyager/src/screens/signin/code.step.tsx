@@ -3,12 +3,13 @@ import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { LoginStore, UIStore } from "@stores";
 import { Text, Button, InputMask, Divider } from "@components/atoms";
-import { styles, NextButton } from "./common";
+import { styles, NextButton, Error } from "./common";
 
 export const CodeStep = observer(() => {
   const [code, setCode] = useState("");
-
+  const error = LoginStore.errors.code;
   const handleSubmit = async () => {
+    if (code.length !== 6) return;
     await LoginStore.code(code);
   };
 
@@ -34,11 +35,9 @@ export const CodeStep = observer(() => {
           }}
           onSubmitEditing={handleSubmit}
         />
-        <NextButton
-          disabled={code.length !== 6}
-          visible={code.length === 6}
-          onPress={handleSubmit}
-        />
+        <NextButton visible={code.length === 6} onPress={handleSubmit} />
+
+        <Error error={error} />
       </View>
       <Divider />
       <Button

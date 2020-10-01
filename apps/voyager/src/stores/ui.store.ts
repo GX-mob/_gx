@@ -1,7 +1,7 @@
 import { observable, action } from "mobx";
-import darkTheme from "../styles/themes/dark";
-import lightTheme from "../styles/themes/light";
 import { ThemeInterface } from "@interfaces";
+import darkTheme from "../themes/dark";
+import lightTheme from "../themes/light";
 
 class UIStore {
   @observable

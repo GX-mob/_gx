@@ -1,10 +1,12 @@
 import { ThemeInterface } from "@interfaces";
+import mapStyle from "./light-theme.map.style.json";
 
 const theme: ThemeInterface = {
   name: "light",
   borderRadius: 30,
   isDark: false,
   statusBarStyle: "dark",
+  mapStyle,
   colors: {
     background: "#fff",
     onBackground: "#000",
