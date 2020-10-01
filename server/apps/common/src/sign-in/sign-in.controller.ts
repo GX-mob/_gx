@@ -84,9 +84,6 @@ export class SignInController {
   ) {
     const { phone, password } = body;
     const user = await this.getUser(phone);
-
-    console.log("SENT PW", password, "USER PW", user.password);
-
     const result = await util.assertPassword(password, user.password as string);
 
     if (!result) {
@@ -103,19 +100,16 @@ export class SignInController {
       return;
     }
 
-    const iat = await this.contactVerification.request(user["2fa"]);
-
-    reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
-
+    await this.contactVerification.request(user["2fa"]);
     const isEmail = validator.isEmail(user["2fa"]);
     const target = isEmail
       ? util.hideEmail(user["2fa"])
       : // Phone last 4 numbers
         user["2fa"].slice(user["2fa"].length - 4);
 
+    reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
     reply.send<Password2FARequiredResponse>({
       target,
-      iat,
     });
     return;
   }

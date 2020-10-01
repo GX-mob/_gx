@@ -153,6 +153,7 @@ export async function seedDatabase(logging: boolean = true) {
       "base64",
     ),
     roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
+    "2fa": "+5582988444449",
   });
 
   logging && log("MongoDB", chalk`{yellow Seeding some rides...}`);

@@ -15,10 +15,6 @@ export interface SignInSuccessResponse {
 export interface IdentifyResponseInterface {
   firstName: UserInterface["firstName"];
   avatar: UserInterface["avatar"];
-  /**
-   * Contact verification issuance UTC Date
-   */
-  iat?: string;
 }
 
 export interface Password2FARequiredResponse {
@@ -26,10 +22,6 @@ export interface Password2FARequiredResponse {
    * Hidden 2fa code receiver
    */
   target: string;
-  /**
-   * Contact verification issuance UTC Date
-   */
-  iat: string;
 }
 
 export interface SignInPasswordDtoInterface {
