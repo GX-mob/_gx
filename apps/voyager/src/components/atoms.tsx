@@ -10,6 +10,7 @@ import {
   Pressable,
   PressableProps,
   Image,
+  ImageProps,
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { ColorsThemeProperties } from "@interfaces";
@@ -153,16 +154,22 @@ export const Divider = observer(() => {
   );
 });
 
-export const Avatar: FC<{ size: number; uri: string }> = ({ size, uri }) => {
+export const Avatar: FC<
+  { size: number; uri: string } & Partial<ImageProps>
+> = ({ size, uri, style, source, ...props }) => {
   return (
     <Image
-      style={{
-        borderRadius: size,
-        width: size,
-        height: size,
-        resizeMode: "cover",
-      }}
+      style={[
+        {
+          borderRadius: size,
+          width: size,
+          height: size,
+          resizeMode: "cover",
+        },
+        style,
+      ]}
       source={{ uri }}
+      {...props}
     />
   );
 };

@@ -1,4 +1,5 @@
-import React, { FC } from "react";
+import React, { FC, useRef, useEffect } from "react";
+import { Animated, Easing, ViewProps } from "react-native";
 import Svg, {
   SvgProps,
   Path,
@@ -32,5 +33,33 @@ export const Lines: FC<SvgProps> = (props) => {
         </LinearGradient>
       </Defs>
     </Svg>
+  );
+};
+
+export const AnimatedSetup: FC<
+  Animated.AnimatedProps<ViewProps> & { delay?: number }
+> = ({ style, delay = 0, ...props }) => {
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacityAnim, {
+      delay,
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+      easing: Easing.inOut(Easing.quad),
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          opacity: opacityAnim,
+        },
+        style,
+      ]}
+      {...props}
+    ></Animated.View>
   );
 };

@@ -71,7 +71,6 @@ export const NextButton: FC<
   };
 
   useEffect(() => {
-    console.log("Set", visible);
     setButtonVisibility(visible);
   }, [visible]);
 
