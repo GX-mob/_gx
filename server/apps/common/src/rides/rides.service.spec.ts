@@ -1,6 +1,4 @@
 /**
- * Data Service
- *
  * @group unit/services/ride
  */
 import { Test, TestingModule } from "@nestjs/testing";

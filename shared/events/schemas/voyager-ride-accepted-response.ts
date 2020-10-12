@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 
 export type VoyagerRideAcceptedResponse = {
   ridePID: string;

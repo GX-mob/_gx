@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import IORedis, { Redis } from "ioredis";
-//@ts-ignore
-import IORedisMock from "ioredis-mock";
 
 @Injectable()
 export class RedisService {
@@ -11,7 +9,8 @@ export class RedisService {
     const redis_uri = this.configService.get("REDIS_URI");
 
     if (!redis_uri && process.env.NODE_ENV !== "production") {
-      this.client = new IORedisMock();
+      //@ts-ignore
+      this.client = new (require("ioredis-mock"))();
       return;
     }
 

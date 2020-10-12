@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 import { positionSchema, Position } from "./position";
 import { configurationSchema, Configuration } from "./configuration";
 

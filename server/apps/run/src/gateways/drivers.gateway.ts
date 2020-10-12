@@ -138,10 +138,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
       throw new TooDistantOfExpectedException("start");
     }
 
-    await this.rideRepository.update(
-      { pid: ridePID },
-      { status: RideStatus.RUNNING },
-    );
+    super.updateRide({ pid: ridePID }, { status: RideStatus.RUNNING });
     this.stateService.updateDriver(client.id, { state: UserState.RUNNING });
 
     return true;
@@ -162,10 +159,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
       throw new TooDistantOfExpectedException("end");
     }
 
-    await this.rideRepository.update(
-      { pid: ridePID },
-      { status: RideStatus.COMPLETED },
-    );
+    super.updateRide({ pid: ridePID }, { status: RideStatus.COMPLETED });
     this.stateService.updateDriver(client.id, { state: UserState.IDLE });
 
     return true;

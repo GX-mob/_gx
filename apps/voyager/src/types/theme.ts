@@ -1,6 +1,6 @@
 export type ColorsThemeProperties = keyof ThemeInterface["colors"];
 
-export interface ThemeInterface {
+export type ThemeInterface = {
   name: string;
   borderRadius: number;
   isDark: boolean;
@@ -22,4 +22,4 @@ export interface ThemeInterface {
     warn: string;
     onWarn: string;
   };
-}
+};

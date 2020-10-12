@@ -8,7 +8,7 @@ import {
 } from "@shared/interfaces";
 import { ENDPOINTS } from "../constants";
 import { createAgent } from "./http";
-import { SignInScreens } from "@screens/signin/common";
+import { SignInScreens } from "@/screens/signin/common";
 
 type ApiReponse<Content, Next> = {
   content: { [K in keyof Content]: Content[K] };

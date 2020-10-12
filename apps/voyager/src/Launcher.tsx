@@ -8,9 +8,8 @@ import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { AppContainer } from "./styles";
 import App from "./App";
-import { UIStore } from "@stores";
+import { UIStore } from "./stores";
 
 const height = Dimensions.get("window").height;
 

@@ -1,4 +1,4 @@
-import { VehicleModelInterface } from "@shared/interfaces";
+import { VehicleMetadataInterface } from "../../../interfaces";
 import { UserBasic, UserState } from "./user-basic";
 import { Position } from "../position";
 import { Configuration } from "../configuration";
@@ -12,5 +12,5 @@ export type Driver = UserBasic & {
    */
   config: Configuration;
   updatedAt: number;
-  vehicleType: VehicleModelInterface["type"];
+  vehicleType: VehicleMetadataInterface["type"];
 };

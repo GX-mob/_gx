@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 import { Position, positionSchema } from "./position";
 
 export type FinishRide = { ridePID: string; latLng: Position["latLng"] };

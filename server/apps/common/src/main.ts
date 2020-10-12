@@ -23,8 +23,8 @@ fastifyInstance.decorateRequest("session", {});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
-
   const cacheService = app.get(CacheService);
+
   fastifyInstance.register(fastifyRateLimit, {
     redis: cacheService.redis,
   });

@@ -31,7 +31,7 @@ export class RidesService {
     const prices = await rideAreaConfigurationModel.find().lean();
 
     if (!prices.length) {
-      throw new Error("Empty rides types list");
+      // throw new Error("Empty rides types list");
     }
 
     prices.forEach((price) => {
@@ -41,6 +41,7 @@ export class RidesService {
     /**
      * Watch prices update
      */
+
     rideAreaConfigurationModel.watch().on("change", (data) => {
       switch (data.operationType) {
         case "update":

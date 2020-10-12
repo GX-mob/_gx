@@ -94,7 +94,9 @@ describe("AccountProfileController", () => {
       const user = mockUser();
       const currentPassword = faker.internet.password();
       const newPassword = faker.internet.password();
-      user.password = await util.hashPassword(currentPassword);
+      user.password = (await util.hashPassword(currentPassword)).toString(
+        "base64",
+      );
 
       fastifyRequestMock.session.user = user;
       const requestBody = new UpdatePasswordDto();
@@ -113,7 +115,9 @@ describe("AccountProfileController", () => {
       const user = mockUser();
       const currentPassword = faker.internet.password();
       const newPassword = currentPassword;
-      user.password = await util.hashPassword(currentPassword);
+      user.password = (await util.hashPassword(currentPassword)).toString(
+        "base64",
+      );
 
       fastifyRequestMock.session.user = user;
       const requestBody = new UpdatePasswordDto();
@@ -132,7 +136,9 @@ describe("AccountProfileController", () => {
       const user = mockUser();
       const currentPassword = faker.internet.password();
       const newPassword = faker.internet.password();
-      user.password = await util.hashPassword(currentPassword);
+      user.password = (await util.hashPassword(currentPassword)).toString(
+        "base64",
+      );
 
       fastifyRequestMock.session.user = user;
       const requestBody = new UpdatePasswordDto();
@@ -169,7 +175,7 @@ describe("AccountProfileController", () => {
     it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT}")`, async () => {
       const user = mockUser();
       const password = faker.internet.password();
-      user.password = await util.hashPassword(password);
+      user.password = (await util.hashPassword(password)).toString("base64");
 
       fastifyRequestMock.session.user = user;
 
@@ -186,7 +192,7 @@ describe("AccountProfileController", () => {
     it(`should enable`, async () => {
       const user = mockUser();
       const password = faker.internet.password();
-      user.password = await util.hashPassword(password);
+      user.password = (await util.hashPassword(password)).toString("base64");
 
       fastifyRequestMock.session.user = user;
 
@@ -220,7 +226,7 @@ describe("AccountProfileController", () => {
     it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}")`, async () => {
       const user = mockUser();
       const password = faker.internet.password();
-      user.password = await util.hashPassword(password);
+      user.password = (await util.hashPassword(password)).toString("base64");
 
       fastifyRequestMock.session.user = user;
 
@@ -237,7 +243,7 @@ describe("AccountProfileController", () => {
     it(`should disable`, async () => {
       const user = mockUser();
       const password = faker.internet.password();
-      user.password = await util.hashPassword(password);
+      user.password = (await util.hashPassword(password)).toString("base64");
 
       fastifyRequestMock.session.user = user;
 

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore, LoginStore } from "@stores";
-import { Text, Button, Input, Divider, Avatar } from "@components/atoms";
-import { styles, NextButton, Props, Error, SignInScreens } from "./common";
+import { UIStore, LoginStore } from "@/stores";
+import { Text, Button, Input, Divider, Avatar } from "@/components/atoms";
+import { styles, NextButton, Props, Error } from "../common";
 
 export const PasswordStep = observer<Props>(({ navigation }) => {
   const [password, setPassword] = useState("");

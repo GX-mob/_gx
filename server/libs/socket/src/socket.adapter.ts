@@ -19,6 +19,7 @@ export class SocketAdapter extends IoAdapter {
     const server: Server = super.createIOServer(port, {
       ...options,
       parser: this.serviceConfiguration.parser.parser,
+      perMessageDeflate: false,
     });
 
     this.socketService.configureServer(server, this.serviceConfiguration);

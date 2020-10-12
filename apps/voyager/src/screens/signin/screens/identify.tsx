@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore, LoginStore } from "@stores";
-import { Text, InputMask, Button, Divider } from "@components/atoms";
-import { SignInButton } from "@components/google";
+import { UIStore, LoginStore } from "@/stores";
+import { Text, InputMask, Button, Divider } from "@/components/atoms";
+import { SignInButton } from "@/components/google";
 import validator from "validator";
-import { styles, NextButton, Error, Props } from "./common";
+import { styles, NextButton, Error, Props } from "../common";
 
 export const IdentifyStep = observer<Props>(({ navigation }) => {
-  const [phone, setPhone] = useState("82988444444");
+  const [phone, setPhone] = useState("");
   const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
   const error = LoginStore.errors.id;
   const handleSubmit = async () => {
@@ -59,7 +59,6 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           setGoogleSigInLoading(true);
           const result = await LoginStore.loginWithGoogle();
           setGoogleSigInLoading(false);
-          console.log(result);
         }}
       />
       <Divider />

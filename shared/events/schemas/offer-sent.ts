@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 import { userSchema, SendableUserData } from "./common";
 
 export type OfferSent = SendableUserData;

@@ -3,12 +3,12 @@ import { observer } from "mobx-react-lite";
 import { Dimensions, Animated, Easing } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { UIStore } from "@stores";
-import { Lines } from "@components/general";
+import { UIStore } from "@/stores";
+import { Lines } from "@/components/general";
 import { SignInScreens } from "./common";
-import { IdentifyStep } from "./identify.step";
-import { PasswordStep } from "./password.step";
-import { CodeStep } from "./code.step";
+import { IdentifyStep } from "./screens/identify";
+import { PasswordStep } from "./screens/password";
+import { CodeStep } from "./screens/code";
 
 const { Navigator, Screen } = createStackNavigator();
 const windowWidth = Dimensions.get("window").width;

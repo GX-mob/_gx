@@ -2,13 +2,13 @@ import "react-native-gesture-handler";
 import { enableScreens } from "react-native-screens";
 enableScreens();
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Animated, Easing } from "react-native";
 import { observer } from "mobx-react-lite";
 import { Dimensions } from "react-native";
-import Logo from "@components/logo";
-import { LoginStore } from "@stores";
-import { LoginScreen, MainScreen } from "@screens";
+import Logo from "@/components/logo";
+import { LoginStore } from "@/stores";
+import { LoginScreen, CreateRideScreen } from "@/screens";
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 const windowHeight = Dimensions.get("window").height;
@@ -34,13 +34,15 @@ function App() {
     }).start();
   };
 
-  if (!LoginStore.initializing) {
-    setValue(64);
-  }
+  useEffect(() => {
+    if (!LoginStore.initializing) {
+      setValue(64);
+    }
 
-  if (LoginStore.token) {
-    setValue(-70);
-  }
+    if (LoginStore.token) {
+      setValue(-70);
+    }
+  }, [LoginStore.initializing, LoginStore.token]);
 
   return (
     <>
@@ -57,7 +59,7 @@ function App() {
       </Animated.View>
       {!LoginStore.initializing ? (
         LoginStore.token ? (
-          <MainScreen />
+          <CreateRideScreen />
         ) : (
           <LoginScreen />
         )

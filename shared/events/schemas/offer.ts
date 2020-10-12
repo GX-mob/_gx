@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 import { PickingUpPath } from "./picking-up-path";
 
 export type OfferRequest = {

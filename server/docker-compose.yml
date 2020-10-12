@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  gx-web-services:
+    build: "."
+    environment:
+      HOST: ${HOST}
+      DATABASE_URI: mongodb://localhost:27017/config
+      REDIS_URI: redis://localhost:6379/
+
+  gx-http-service:
+    extends: gx-web-services
+    command: node dist/common/main.js
+    network_mode: host
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gx-mongo
+      - gx-redis
+
+  gx-websocket-service:
+    extends: gx-web-services
+    command: node dist/run/main.js
+    network_mode: host
+    ports:
+      - "3001:3001"
+    depends_on:
+      - gx-mongo
+      - gx-redis
+
+  gx-mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - mongo:/data
+    environment:
+      MONGO_INITDB_DATABASE: config
+    network_mode: host
+
+  gx-redis:
+    image: redis
+    restart: always
+    network_mode: host
+
+  e2e-testing:
+    extends: gx-web-services
+    command: npm run test -- --group="e2e"
+    depends_on:
+      - gx-mongo
+      - gx-redis
+
+volumes:
+  mongo:

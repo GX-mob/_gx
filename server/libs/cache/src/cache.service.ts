@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Redis } from "ioredis";
-import schemapack, { SchemaObject, Parser } from "schemapack";
+import schemapack, { Parser } from "schemapack";
+import { SchemaObject } from "@shared/types/schemapack";
 import { DEFAULT_TTL, LINK_PREFIX, SEPARATOR } from "./constants";
 import { RedisService } from "./redis.service";
 

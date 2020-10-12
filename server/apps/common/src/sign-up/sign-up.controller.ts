@@ -52,10 +52,10 @@ export class SignUpController {
     @Param() phone: string,
   ) {
     await this.checkUser(phone);
+    await this.contactVerification.request(phone);
 
-    const iat = await this.contactVerification.request(phone);
-
-    reply.send({ iat });
+    reply.code(202);
+    reply.send();
   }
 
   @Post("check")

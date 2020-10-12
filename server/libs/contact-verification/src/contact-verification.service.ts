@@ -14,7 +14,7 @@ export class ContactVerificationService {
    */
   public async request(to: string): Promise<string> {
     if (process.env.NODE_ENV === "development") {
-      return new Date().toUTCString();
+      return "";
     }
 
     const previousRequest = await this.getCache(to);
@@ -25,7 +25,7 @@ export class ContactVerificationService {
 
     const channel = this.checkChannel(to);
 
-    await this.twilio.verify.verifications.create({
+    const { sid } = await this.twilio.verify.verifications.create({
       to,
       channel,
     });
@@ -34,7 +34,7 @@ export class ContactVerificationService {
 
     await this.setCache(to, iat);
 
-    return iat.toUTCString();
+    return sid;
   }
 
   checkChannel(target: string): string {

@@ -23,8 +23,8 @@ fastifyInstance.register(fastifyCompress, { encodings: ["gzip", "deflate"] });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
-
   const cacheService = app.get(CacheService);
+
   fastifyInstance.register(fastifyRateLimit, {
     redis: cacheService.redis,
   });
@@ -46,9 +46,10 @@ async function bootstrap() {
     }),
   );
 
-  const PORT = Number(process.env.PORT || 3001);
-
-  await app.listen(PORT);
+  await app.listen(
+    Number(process.env.PORT || 3001),
+    String(process.env.HOST || "localhost"),
+  );
 }
 bootstrap();
 

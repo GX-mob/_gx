@@ -1,7 +1,5 @@
 /**
- * Repository Factory
- *
- * @group unit/repositories/repository-factory
+ * @group e2e/repositories/repository-factory
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -14,11 +12,8 @@ import {
   UserRepository,
   SessionRepository,
 } from "@app/repositories";
-import { CacheModule, CacheService, RedisService } from "@app/cache";
+import { CacheModule, CacheService } from "@app/cache";
 import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
-//@ts-ignore
-import IORedisMock from "ioredis-mock";
 import { generate } from "shortid";
 
 describe("RepositoryFactory", () => {
@@ -26,7 +21,6 @@ describe("RepositoryFactory", () => {
   let userRepository: UserRepository;
   let sessionRepository: SessionRepository;
   let cacheService: CacheService;
-  let mongoServer: MongoMemoryServer;
 
   const mockUser = {
     firstName: "First",
@@ -46,20 +40,10 @@ describe("RepositoryFactory", () => {
   let cached: any;
   let session: any;
 
-  beforeAll(async () => {
-    mongoServer = new MongoMemoryServer();
-    process.env.DATABASE_URI = await mongoServer.getUri();
-    repositoryService = new RepositoryService(
-      { get: () => process.env.DATABASE_URI } as any,
-      { setContext: () => {}, warn: () => {}, info: () => {} } as any,
-    );
-  });
-
   afterAll(async () => {
     await Promise.all(
       repositoryService.connections.map((connection) => connection.close()),
     );
-    await mongoServer.stop();
   });
 
   beforeEach(async () => {
@@ -74,13 +58,9 @@ describe("RepositoryFactory", () => {
         CacheModule,
       ],
       providers: [ConfigService, UserRepository, SessionRepository],
-    })
-      .overrideProvider(RedisService)
-      .useValue({ client: new IORedisMock() })
-      .overrideProvider(RepositoryService)
-      .useValue(repositoryService)
-      .compile();
+    }).compile();
 
+    repositoryService = module.get<RepositoryService>(RepositoryService);
     userRepository = module.get<UserRepository>(UserRepository);
     sessionRepository = module.get<SessionRepository>(SessionRepository);
     cacheService = module.get<CacheService>(CacheService);

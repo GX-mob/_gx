@@ -13,8 +13,8 @@ import {
   ImageProps,
 } from "react-native";
 import { observer } from "mobx-react-lite";
-import { ColorsThemeProperties } from "@interfaces";
-import UIStore from "@stores/ui.store";
+import { ColorsThemeProperties } from "@/types";
+import UIStore from "@/stores/ui.store";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
 
 export type InputStatus = "error" | "warn";

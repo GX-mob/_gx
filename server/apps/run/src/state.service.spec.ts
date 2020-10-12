@@ -287,7 +287,7 @@ describe("StateService", () => {
 
     it("should insert driver in the list", async () => {
       vehicleRepository.get.mockResolvedValue({
-        vmodel: { type: VehicleTypes.HATCH },
+        metadata: { type: VehicleTypes.HATCH },
       });
       cacheMock.get.mockResolvedValue(null);
 
@@ -305,7 +305,7 @@ describe("StateService", () => {
 
     it("should update driver in the list", async () => {
       vehicleRepository.get.mockResolvedValue({
-        vmodel: { type: VehicleTypes.HATCH },
+        metadata: { type: VehicleTypes.HATCH },
       });
       cacheMock.get.mockResolvedValue(null);
 

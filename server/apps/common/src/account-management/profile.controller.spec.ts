@@ -66,7 +66,7 @@ describe("AccountProfileController", () => {
       phones: ["82988888888"],
       emails: ["valid@email.com"],
       birth: new Date("06/13/1994"),
-      password: Buffer.from("test"),
+      password: Buffer.from("test").toString("base64"),
       averageEvaluation: 5.0,
       roles: [UserRoles.VOYAGER],
     };

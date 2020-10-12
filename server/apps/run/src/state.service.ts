@@ -156,7 +156,7 @@ export class StateService {
       socketId,
       position: setup.position,
       config: setup.config,
-      vehicleType: vehicle.vmodel.type,
+      vehicleType: vehicle.metadata.type,
       state: DriverState.SEARCHING,
       updatedAt: Date.now(),
     };

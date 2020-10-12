@@ -187,7 +187,7 @@ describe("SignUpController", () => {
           requestBody,
         ),
       ).rejects.toStrictEqual(
-        new UnauthorizedException(EXCEPTIONS_MESSAGES.VERIFICATION_NOT_FOUND),
+        new UnauthorizedException(EXCEPTIONS_MESSAGES.PHONE_NOT_VERIFIED),
       );
     });
 
@@ -201,7 +201,7 @@ describe("SignUpController", () => {
       requestBody.birth = faker.date.past(18).toISOString();
       requestBody.terms = true;
 
-      cacheServiceMock.get.mockResolvedValue({ validated: false });
+      verifyServiceMock.verify.mockResolvedValue(false);
 
       await expect(
         signUpController.signUp(
@@ -211,32 +211,6 @@ describe("SignUpController", () => {
         ),
       ).rejects.toStrictEqual(
         new UnauthorizedException(EXCEPTIONS_MESSAGES.PHONE_NOT_VERIFIED),
-      );
-    });
-
-    it(`should throw UnauthorizedException("${EXCEPTIONS_MESSAGES.WRONG_CODE}")`, async () => {
-      const requestBody = new SignUpDto();
-      requestBody.phone = "+5582988884444";
-      requestBody.code = "000000";
-      requestBody.firstName = faker.name.firstName();
-      requestBody.lastName = faker.name.lastName();
-      requestBody.cpf = "123.456.789-09";
-      requestBody.birth = faker.date.past(18).toISOString();
-      requestBody.terms = true;
-
-      cacheServiceMock.get.mockResolvedValue({
-        validated: true,
-        code: "0000001",
-      });
-
-      await expect(
-        signUpController.signUp(
-          fastifyRequestMock,
-          fastifyResponseMock as any,
-          requestBody,
-        ),
-      ).rejects.toStrictEqual(
-        new UnauthorizedException(EXCEPTIONS_MESSAGES.WRONG_CODE),
       );
     });
 
@@ -250,10 +224,7 @@ describe("SignUpController", () => {
       requestBody.birth = faker.date.past(18).toISOString();
       requestBody.terms = true;
 
-      cacheServiceMock.get.mockResolvedValue({
-        validated: true,
-        code: "000000",
-      });
+      verifyServiceMock.verify.mockResolvedValue(true);
 
       await expect(
         signUpController.signUp(
@@ -279,10 +250,7 @@ describe("SignUpController", () => {
       userRepositoryMock.get.mockResolvedValueOnce(null);
       userRepositoryMock.get.mockResolvedValueOnce({ cpf: requestBody.cpf });
 
-      cacheServiceMock.get.mockResolvedValue({
-        validated: true,
-        code: "000000",
-      });
+      verifyServiceMock.verify.mockResolvedValue(true);
 
       await expect(
         signUpController.signUp(
@@ -310,13 +278,8 @@ describe("SignUpController", () => {
       requestBody.birth = faker.date.past(18).toISOString();
       requestBody.terms = true;
 
-      cacheServiceMock.get.mockResolvedValue({
-        validated: true,
-        code: "000000",
-      });
-
+      verifyServiceMock.verify.mockResolvedValue(true);
       userRepositoryMock.create.mockResolvedValue(user);
-
       sessionServiceMock.create.mockResolvedValue({ token });
 
       await signUpController.signUp(

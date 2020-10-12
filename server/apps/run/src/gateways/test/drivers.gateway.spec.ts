@@ -141,6 +141,7 @@ describe("DriversGateway", () => {
 
       const eventBody: Setup = {
         position: mockPosition(),
+        vehicleId: faker.random.alphaNumeric(12),
         config: {
           payMethods: [RidePayMethods.Money],
           types: [RideTypes.Normal],

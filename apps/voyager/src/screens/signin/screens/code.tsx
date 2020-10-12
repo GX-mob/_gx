@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { LoginStore, UIStore } from "@stores";
-import { Text, Button, InputMask, Divider } from "@components/atoms";
-import { styles, NextButton, Error } from "./common";
+import { LoginStore, UIStore } from "@/stores";
+import { Text, Button, InputMask, Divider } from "@/components/atoms";
+import { styles, NextButton, Error } from "../common";
 
 export const CodeStep = observer(() => {
   const [code, setCode] = useState("");

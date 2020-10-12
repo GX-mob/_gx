@@ -5,6 +5,7 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
 import { ContactVerificationService } from "./contact-verification.service";
 import { TwilioService } from "./twilio.service";
 
@@ -20,14 +21,20 @@ describe("ContactVerificationService", () => {
       },
     },
   };
+  const cacheServiceMock = {
+    get: jest.fn(),
+    set: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule],
+      imports: [ConfigModule.forRoot({ isGlobal: true }), CacheModule],
       providers: [TwilioService, ContactVerificationService],
     })
       .overrideProvider(TwilioService)
       .useValue(twilioService)
+      .overrideProvider(CacheService)
+      .useValue(cacheServiceMock)
       .compile();
 
     service = module.get<ContactVerificationService>(

@@ -1,5 +1,5 @@
 /**
- * @group e2e/run
+ * @group e2e/api/websocket
  */
 import { Server as HttpServer } from "http";
 import { Test, TestingModule } from "@nestjs/testing";

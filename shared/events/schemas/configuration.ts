@@ -1,4 +1,4 @@
-import { SchemaObject } from "schemapack";
+import { SchemaObject } from "../../types/schemapack";
 import { RidePayMethods, RideTypes } from "../../interfaces";
 
 export type Configuration = {

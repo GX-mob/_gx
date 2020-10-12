@@ -3,8 +3,8 @@ import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
 import { IdentifyResponseInterface } from "@shared/interfaces";
-import signIn from "@apis/signin";
-import { HttpException } from "@apis/exceptions";
+import signIn from "@/api/signin";
+import { HttpException } from "@/api/exceptions";
 import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import {
   TOKEN_STORAGE_KEY,
@@ -12,8 +12,8 @@ import {
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
   VERIFICATION_RESEND_TIMEOUT,
-} from "../constants";
-import { SignInScreens } from "@screens/signin/common";
+} from "@/constants";
+import { SignInScreens } from "@/screens/signin/common";
 
 type HttpExceptions =
   | HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND
@@ -32,32 +32,18 @@ type Errors = { id?: string; credential?: string; code?: string };
 class LoginStore {
   private secureStorageAvailable!: boolean;
 
-  @observable
-  public initializing = true;
+  @observable initializing = true;
+  @observable loading = false;
+  @observable token = "";
+  @observable errors: Errors = {};
+  @observable indicateAccountCreation = false;
+  @observable countryCode = "+55";
+  @observable profile?: IdentifyResponseInterface;
+  @observable resendSecondsLeft = 60;
 
-  @observable
-  public loading = false;
-
-  @observable
-  public token = "";
-
-  @observable
-  public errors: Errors = {};
-
-  @observable
-  public indicateAccountCreation = false;
-
-  @observable
-  public countryCode = "+55";
   public phone: string = "";
-
-  @observable
-  public profile?: IdentifyResponseInterface;
   public notFoundResponses = 0;
   public verificationIat?: number;
-
-  @observable
-  public resendSecondsLeft = 60;
 
   constructor() {
     this.init();

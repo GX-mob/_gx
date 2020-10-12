@@ -1,4 +1,4 @@
-import { ThemeInterface } from "@interfaces";
+import { ThemeInterface } from "@/types";
 import mapStyle from "./light-theme.map.style.json";
 
 const theme: ThemeInterface = {

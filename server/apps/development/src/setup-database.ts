@@ -24,20 +24,13 @@ export async function createReplSetServer() {
   });
 
   await mongoReplSetServer.waitUntilRunning();
-
   return mongoReplSetServer.getUri();
 }
 
 export async function startDatabase(logging: boolean = true) {
   logging && log("MongoDB", chalk`{yellow Starting Server}`);
 
-  const mongoReplSetServer = new MongoMemoryReplSet({
-    replSet: { storageEngine: "wiredTiger" },
-  });
-
-  await mongoReplSetServer.waitUntilRunning();
-
-  process.env.DATABASE_URI = await mongoReplSetServer.getUri();
+  process.env.DATABASE_URI = await createReplSetServer();
 
   logging &&
     log(
@@ -45,12 +38,10 @@ export async function startDatabase(logging: boolean = true) {
       chalk`{yellow URI: ${chalk.bold(process.env.DATABASE_URI)}}`,
     );
   logging &&
-    log("MongoDB", chalk`{yellow Setted DATABASE_URI enviroment variable}`);
-  logging && log("MongoDB", chalk`{yellow Seeding...}`);
-  await seedDatabase(logging);
-  logging && log("MongoDB", chalk`{yellow Seeded.}`);
-
-  return mongoReplSetServer;
+    log(
+      "MongoDB",
+      chalk`{yellow Setted DATABASE_URI node enviroment variable}`,
+    );
 }
 
 export async function seedDatabase(logging: boolean = true) {
@@ -60,6 +51,7 @@ export async function seedDatabase(logging: boolean = true) {
   );
 
   await Promise.all(db.connections);
+  logging && log("MongoDB", chalk`{yellow Seeding...}`);
 
   logging &&
     log("MongoDB", chalk`{yellow Seeding rides service configuration...}`);
@@ -226,4 +218,6 @@ export async function seedDatabase(logging: boolean = true) {
     inUse: false,
     permissions: [],
   });
+
+  logging && log("MongoDB", chalk`{yellow Seeded.}`);
 }

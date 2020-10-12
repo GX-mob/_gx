@@ -10,9 +10,9 @@ import {
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
-import { Button } from "@components/atoms";
+import { Button } from "@/components/atoms";
 import { StackScreenProps } from "@react-navigation/stack";
-import UIStore from "@stores/ui.store";
+import UIStore from "@/stores/ui.store";
 
 export enum SignInScreens {
   Identify = "Identify",
