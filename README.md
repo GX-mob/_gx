@@ -14,7 +14,19 @@ Contém apps/pwa's de clientes, aplicações web administrativas e servidor.
 
 ### Servidor
 
-Arquitetura monolitíca altamente acoplada a Google Cloud usando o máximo de serviços gerenciados como App Engine, MongoDB Atlas, MemoryStore(Redis), etc, para diminuir ao máximo operações de DevOps.
+Arquitetura monolitíca altamente acoplada a Google Cloud usando serviços gerenciados como App Engine, MongoDB Atlas, MemoryStore(Redis), etc, para diminuir ao máximo operações de DevOps.
+
+#### Bancos de dados:
+
+- **Entities** - _Usuários, Negócios, Empresas_
+- **Operational** - _Corridas, Pendências_
+- ...
+
+#### Serviços:
+
+- **General** - HTTP - _CRUD: corridas, usuários, serviços de terceiros_
+- **RidesFlow** - WebSockets - _Gerencia fluxos de negociação e controle de corridas_
+- **Chat** - WebSockets - _Comunicação geral entre usuários_
 
 ## Clientes
 
