@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": false,
-    "outDir": "../../dist/apps/run",
+    "outDir": "../../dist/apps/rides-flows",
     "strict": false
   },
   "include": ["src/**/*"],

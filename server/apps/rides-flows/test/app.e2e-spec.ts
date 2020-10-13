@@ -40,7 +40,6 @@ import { SessionService } from "@app/session";
 import { BROADCASTED_EVENTS } from "../src/constants";
 import { UserRepository } from "@app/repositories";
 import { AddressInfo } from "net";
-import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
 import ms from "ms";
@@ -49,8 +48,6 @@ import { EXCEPTIONS } from "../src/constants";
 const polyline = require("google-polyline");
 
 describe("RidesWSService (e2e)", () => {
-  let replSetServer: MongoMemoryReplSet;
-
   const appsNodes: {
     httpServer: HttpServer;
     app: INestApplication;
@@ -185,10 +182,6 @@ describe("RidesWSService (e2e)", () => {
   }
 
   beforeAll(async () => {
-    replSetServer = await createReplSetServer();
-    process.env.DATABASE_URI = await replSetServer.getUri();
-    process.env.REDIS_URI = `redis://${process.env.REDIS_HOST}:6379/0`;
-
     await createAppNode();
     await createAppNode();
 
@@ -244,7 +237,6 @@ describe("RidesWSService (e2e)", () => {
 
   afterAll(async () => {
     await Promise.all(appsNodes.map(({ app }) => app.close()));
-    await replSetServer.stop();
   });
 
   let voyager1Token: string;

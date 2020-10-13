@@ -1,32 +1,37 @@
 version: "3"
+x-gxweb-dev: &gxweb-dev
+  build:
+    context: .
+    target: development
+  volumes:
+    - .:/usr/src/app
+    - /usr/src/app/node_modules
+  networks:
+    - gxnet
+  environment:
+    NODE_ENV: development
+    DATABASE_URI: mongodb://gx-mongo:27017/config
+    REDIS_URI: redis://gx-redis:6379/0
+  depends_on:
+    - gx-mongo
+    - gx-redis
 
 services:
-  gx-web-services:
-    build: "."
-    environment:
-      HOST: ${HOST}
-      DATABASE_URI: mongodb://localhost:27017/config
-      REDIS_URI: redis://localhost:6379/
-
-  gx-http-service:
-    extends: gx-web-services
-    command: node dist/common/main.js
-    network_mode: host
+  gx-common:
+    <<: *gxweb-dev
+    container_name: gx-common
+    command: npm run start:debug
     ports:
-      - "3000:3000"
-    depends_on:
-      - gx-mongo
-      - gx-redis
+      - 3000:3000
+      - 9229:9229
 
-  gx-websocket-service:
-    extends: gx-web-services
-    command: node dist/run/main.js
-    network_mode: host
+  gx-rides-flows:
+    <<: *gxweb-dev
+    container_name: gx-rides-flows
+    command: "npm run start:debug rides-flows" # pm2 start dist/run/main.js -i max -- --max_old_space_size=4096
     ports:
-      - "3001:3001"
-    depends_on:
-      - gx-mongo
-      - gx-redis
+      - 3001:3001
+      - 9227:9227
 
   gx-mongo:
     image: mongo
@@ -35,19 +40,22 @@ services:
       - mongo:/data
     environment:
       MONGO_INITDB_DATABASE: config
-    network_mode: host
+      MONGO_REPLICA_SET_NAME: gxmongoreplica
+    networks:
+      - gxnet
 
   gx-redis:
     image: redis
     restart: always
-    network_mode: host
+    networks:
+      - gxnet
 
-  e2e-testing:
-    extends: gx-web-services
-    command: npm run test -- --group="e2e"
-    depends_on:
-      - gx-mongo
-      - gx-redis
+#  e2e-testing:
+#    <<: *standard-webservice
+#    command: npm run test -- --group="e2e"
 
 volumes:
   mongo:
+
+networks:
+  gxnet:

@@ -40,7 +40,7 @@ export class RidesService {
 
     /**
      * Watch prices update
-     */
+    
 
     rideAreaConfigurationModel.watch().on("change", (data) => {
       switch (data.operationType) {
@@ -51,6 +51,7 @@ export class RidesService {
           break;
       }
     });
+    */
   }
 
   /**

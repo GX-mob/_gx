@@ -20,18 +20,29 @@ export class SocketService<
   public nodeId = shortid.generate();
   private broadcastedListener = new EventEmitter();
   private nodeListener = new EventEmitter();
+  public serviceEvents = new EventEmitter();
   readonly nodes = {
     /**
      * Registres a event listener from another server nodes
      */
     on: <K extends keyof NodesEvents>(
       event: K,
-      listener: (data: NodesEvents[K]) => void,
-    ) => this.nodeListener.on(event as string, listener),
+      listener: (
+        data: NodesEvents[K],
+        acknow: (data: NodesEvents[K] | true) => void,
+      ) => void,
+    ) =>
+      this.nodeListener.on(event as string, ({ data, ack }: any) => {
+        listener(data, ack);
+      }),
     /**
      * Emits events to another server nodes
      */
-    emit: <K extends keyof NodesEvents>(event: K, data: NodesEvents[K]) => {
+    emit: <K extends keyof NodesEvents>(
+      event: K,
+      data: NodesEvents[K],
+      acknowledgment?: (response: (NodesEvents[K] | null)[]) => void,
+    ) => {
       const serverEvent = this.createServerEvent(
         SERVER_EVENTS.SOCKET_NODE_EVENT,
         {
@@ -44,6 +55,8 @@ export class SocketService<
         if (err) {
           this.logger.error(err);
         }
+
+        return acknowledgment && acknowledgment(replies);
       });
     },
   };
@@ -76,6 +89,8 @@ export class SocketService<
 
     this.registerServerEventsListener();
     this.configureEventsMiddleware();
+
+    this.serviceEvents.emit("serviceConfigured");
   }
 
   /**
@@ -112,8 +127,25 @@ export class SocketService<
         case SERVER_EVENTS.DISPATCHED_SOCKET_EVENT:
           return this.handleDispatchedSocketEvent(content, cb);
         case SERVER_EVENTS.SOCKET_NODE_EVENT:
-          this.nodeListener.emit(content.event, content.data);
-          return cb(true);
+          const acknowledgmentTimeout = setTimeout(() => {
+            cb(true);
+          }, 3000);
+          this.nodeListener.emit(content.event, {
+            data: content.data,
+            ack: (ackData: any) => {
+              clearTimeout(acknowledgmentTimeout);
+              cb(ackData);
+            },
+          });
+
+          return;
+        /*
+          this.nodeListener.emit(
+            content.event,
+            content.data,
+            (data: any) => {},
+          );
+          return cb(true);*/
       }
 
       cb(null);

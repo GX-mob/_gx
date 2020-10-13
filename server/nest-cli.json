@@ -17,13 +17,13 @@
         "tsConfigPath": "apps/common/tsconfig.app.json"
       }
     },
-    "run": {
+    "rides-flows": {
       "type": "application",
-      "root": "apps/run",
+      "root": "apps/rides-flows",
       "entryFile": "main",
-      "sourceRoot": "apps/run/src",
+      "sourceRoot": "apps/rides-flows/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/run/tsconfig.app.json"
+        "tsConfigPath": "apps/rides-flows/tsconfig.app.json"
       }
     },
     "cache": {

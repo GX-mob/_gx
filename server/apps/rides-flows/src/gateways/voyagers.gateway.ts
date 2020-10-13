@@ -104,7 +104,6 @@ export class VoyagersGateway extends Common {
 
     const isSafeCancel = super.isSafeCancel(acceptTimestamp as number, now);
     const isCreditPayment = ride.payMethod === RidePayMethods.CreditCard;
-
     const status = isSafeCancel
       ? CANCELATION_RESPONSE.SAFE
       : isCreditPayment
@@ -112,12 +111,11 @@ export class VoyagersGateway extends Common {
       : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
 
     this.stateService.updateDriver(socket.id, { state: DriverState.SEARCHING });
-    super.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
-
     this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
       ridePID,
       status,
     });
+    super.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
 
     switch (status) {
       case CANCELATION_RESPONSE.CHARGE_REQUESTED:

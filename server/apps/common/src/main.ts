@@ -32,11 +32,13 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.enableCors();
 
-  await app.listen(
-    Number(process.env.PORT || 3000),
-    String(process.env.HOST || "localhost"),
-  );
+  return app;
 }
-bootstrap();
+
+bootstrap().then((app) => {
+  if (module === require.main) {
+    app.listen(process.env.PORT || 3000);
+  }
+});
 
 module.exports = FastifyAdapterInstance.getHttpServer();

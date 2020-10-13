@@ -24,19 +24,14 @@ fastifyInstance.register(fastifyCompress, { encodings: ["gzip", "deflate"] });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
   const cacheService = app.get(CacheService);
+  const parser = parsers.schemapack(serverEventsSchemas as any);
+  const redis = process.env.REDIS_URI as string;
+
+  app.enableCors();
 
   fastifyInstance.register(fastifyRateLimit, {
     redis: cacheService.redis,
   });
-
-  const parser = parsers.schemapack(serverEventsSchemas as any);
-  const redis =
-    process.env.NODE_ENV !== "production" && !process.env.REDIS_URI
-      ? {
-          pubClient: new (require("ioredis-mock"))(),
-          subClient: new (require("ioredis-mock"))(),
-        }
-      : (process.env.REDIS_URI as string);
 
   app.useWebSocketAdapter(
     new SocketAdapter(app, {
@@ -46,11 +41,13 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(
-    Number(process.env.PORT || 3001),
-    String(process.env.HOST || "localhost"),
-  );
+  return app;
 }
-bootstrap();
+
+bootstrap().then((app) => {
+  if (module === require.main) {
+    app.listen(process.env.PORT || 3001, process.env.HOST || "");
+  }
+});
 
 module.exports = FastifyAdapterInstance.getHttpServer();

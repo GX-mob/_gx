@@ -29,6 +29,7 @@ import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
 import {
   NODES_EVENTS,
   NodesEventsInterface,
+  TellMeYourDriversState,
   UpdateDriverState,
   UpdateLocalSocketData,
 } from "./events/nodes";
@@ -98,7 +99,9 @@ export class StateService {
 
     this.socketService.nodes.on(
       NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA,
-      ({ socketId, namespace, data }) => {
+      ({ socketId, namespace, data }, ack) => {
+        ack(true);
+
         const client = this.socketService.server.of(namespace).sockets[
           socketId
         ];
@@ -123,11 +126,40 @@ export class StateService {
         const { updatedAt } = this.drivers[index];
         const expireTimestamp = updatedAt + driverObjectLifetime;
 
-        if (expireTimestamp > Date.now()) {
+        if (expireTimestamp < Date.now()) {
           this.drivers.splice(index, 1);
         }
       }
     }, driversObjectListCleanUpInterval);
+
+    this.socketService.nodes.on(
+      NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
+      (data, acknow) => {
+        acknow({ drivers: this.drivers });
+      },
+    );
+
+    this.socketService.serviceEvents.on("serviceConfigured", () =>
+      this.warmup(),
+    );
+  }
+
+  /**
+   * Warmup
+   * Get the state of others nodes and merge then
+   */
+  private warmup() {
+    this.socketService.nodes.emit(
+      NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
+      { drivers: [] },
+      (replies) => {
+        this.drivers = replies.reduce((previousValue, item) => {
+          return item ? [...previousValue, ...item.drivers] : previousValue;
+        }, [] as Driver[]);
+
+        console.log(this.drivers);
+      },
+    );
   }
 
   /**

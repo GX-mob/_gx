@@ -88,7 +88,6 @@ export class AccountProfileController {
           {
             filename: fileName,
             public: true,
-            compress: true,
             acceptMIME: ["image/jpeg", "image/png"],
             // Due to upload works under the hood, this is for log purpose only,
             // don't letting user wait any internal stream error alert.
@@ -116,6 +115,9 @@ export class AccountProfileController {
         );
         util.handleRejectionByUnderHood(remove);
       }
+
+      // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.
+      // pseudo: pubSubClient.emit("avatarUploaded", { filename: url.split("/").pop() as string; })
 
       reply.send({ url });
     });

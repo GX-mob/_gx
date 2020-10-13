@@ -1,7 +1,23 @@
-FROM node:current-slim
-RUN mkdir -p /usr/server && chown -R node:node /usr
-WORKDIR /usr/server
+FROM node:12-slim as development
+
+WORKDIR /usr/src/app
+
 COPY . .
-COPY ../shared ../
-USER node 
-RUN npm ci
+RUN npm install
+RUN npm run build
+RUN npm run build -- rides-flows
+
+FROM node:12-slim as production
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install --production
+
+COPY . .
+
+COPY --from=development /usr/src/app/dist ./dist

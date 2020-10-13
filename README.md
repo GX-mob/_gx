@@ -25,7 +25,8 @@ Arquitetura monolitíca altamente acoplada a Google Cloud usando serviços geren
 #### Serviços:
 
 - **General** - HTTP - _CRUD: corridas, usuários, serviços de terceiros_
-- **RidesFlow** - WebSockets - _Gerencia fluxos de negociação e controle de corridas_
+- **RidesFlows** - WebSockets - _Gerencia fluxos de negociação e controle de corridas_
+- **ServicesFlows** - WebSockets - _Gerencia fluxos de negociações entre clientes e provedores de serviços_
 - **Chat** - WebSockets - _Comunicação geral entre usuários_
 
 ## Clientes

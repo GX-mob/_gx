@@ -24,7 +24,6 @@ export type AbstractionBucket = {
 export type UploadStreamOptions = {
   filename: string;
   public: boolean;
-  compress?: boolean;
   acceptMIME: string[];
   /**
    * To catch internal stream errors.
@@ -54,7 +53,7 @@ export class StorageService {
     options: UploadStreamOptions,
   ) {
     const bucket = this.client.bucket(bucket_name);
-    const { filename, compress = true, errorHandler, acceptMIME } = options;
+    const { filename, errorHandler, acceptMIME } = options;
 
     readable.on("error", errorHandler);
 
@@ -81,22 +80,7 @@ export class StorageService {
       storageWritableStream,
     };
 
-    if (!compress) {
-      saveReadable.pipe(storageWritableStream);
-      return response;
-    }
-
-    switch (mime) {
-      case "image/png":
-      case "image/jpeg":
-        const compressor = this.createCompressor(mime);
-        const compressing = saveReadable.pipe(compressor);
-
-        saveReadable.on("error", (err) => compressing.destroy(err));
-        compressing.pipe(storageWritableStream);
-        break;
-    }
-
+    saveReadable.pipe(storageWritableStream);
     return response;
   }
 
@@ -131,14 +115,6 @@ export class StorageService {
         `MIME type not acceptable, provided: ${mime}, accepts: ${mimes}`,
       );
     }
-  }
-
-  createCompressor(mime: CompressibleMIME): Duplex {
-    if (mime === "image/jpeg") {
-      return new JpegTran();
-    }
-
-    return new PngQuant([192, "--quality", "75-85", "--nofs", "-"]);
   }
 
   /**
