@@ -7,8 +7,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { SignInController } from "./sign-in.controller";
-import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
+import { SignInController } from "./signin.controller";
+import { SignInPasswordDto, SignInCodeDto } from "./signin.dto";
 import SecurePassword from "secure-password";
 import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import { util } from "@app/helpers";

@@ -25,7 +25,7 @@ import {
   Post,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { PhoneVerificationCheckDto, SignUpDto } from "./sign-up.dto";
+import { PhoneVerificationCheckDto, SignUpDto } from "./signup.dto";
 import { UsersService } from "../users.service";
 import { SignUpService } from "./signup.service";
 

@@ -5,6 +5,7 @@ import {
   UserRepository,
   UserCreateInterface,
   UserQueryInterface,
+  UserUpdateInterface,
 } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import { SessionService } from "@app/session";
@@ -15,6 +16,9 @@ import {
   InvalidCPFException,
   CPFRegistredException,
   TermsNotAcceptedException,
+  UnchangedPasswordException,
+  PasswordRequiredException,
+  NotOwnContactException,
 } from "./exceptions";
 import { util } from "@app/helpers";
 import { UserInterface } from "@shared/interfaces";
@@ -123,5 +127,80 @@ export class UsersService {
     }
 
     return this.userRepository.create(user);
+  }
+
+  updateById(id: UserInterface["_id"], data: UserUpdateInterface) {
+    return this.userRepository.update({ _id: id }, data);
+  }
+
+  async updatePassword(
+    user: UserInterface,
+    current: string,
+    newPassword: string,
+  ) {
+    if (!user.password) {
+      const password = await util.hashPassword(newPassword);
+
+      await this.userRepository.model.updateOne(
+        { _id: user._id },
+        { password },
+      );
+
+      return;
+    }
+
+    const currentPasswordCompare = await util.assertPassword(
+      current,
+      user.password,
+    );
+
+    if (!currentPasswordCompare) {
+      throw new WrongPasswordException();
+    }
+
+    const matchToCurrentPassword = await util.assertPassword(
+      newPassword,
+      user.password,
+    );
+
+    if (matchToCurrentPassword) {
+      throw new UnchangedPasswordException();
+    }
+
+    const password = await util.hashPassword(newPassword);
+
+    await this.userRepository.model.updateOne({ _id: user._id }, { password });
+  }
+
+  async enable2FA(user: UserInterface, target: string) {
+    this.passwordRequired(user);
+    const { value: contact } = util.isValidContact(target);
+
+    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
+      throw new NotOwnContactException();
+    }
+
+    await this.userRepository.update({ _id: user._id }, { "2fa": contact });
+  }
+
+  async disable2FA(user: UserInterface, password: string) {
+    this.passwordRequired(user);
+
+    const matchPassword = await util.assertPassword(
+      password,
+      user.password as string,
+    );
+
+    if (!matchPassword) {
+      throw new WrongPasswordException();
+    }
+
+    this.userRepository.update({ _id: user._id }, { "2fa": "" });
+  }
+
+  private passwordRequired(user: UserInterface) {
+    if (!user.password) {
+      throw new PasswordRequiredException();
+    }
   }
 }

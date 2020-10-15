@@ -15,23 +15,24 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { UserInterface } from "@shared/interfaces";
-import { UserRepository, SessionRepository } from "@app/repositories";
+import { SessionRepository } from "@app/repositories";
 import { AuthGuard, AuthorizedRequest } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
 import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
-import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../constants";
+import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { Logger } from "pino";
+import { ManagementService } from "./management.service";
 
 @Controller("account/profile")
 @UseGuards(AuthGuard)
-export class AccountProfileController {
+export class ProfileController {
   logger: Logger = logger;
   constructor(
-    readonly userRepository: UserRepository,
     readonly sessionRepository: SessionRepository,
     readonly storage: StorageService,
+    private managementService: ManagementService,
   ) {}
 
   @Get()
@@ -48,10 +49,7 @@ export class AccountProfileController {
     @Request() req: AuthorizedRequest,
     @Body() body: UpdateProfileDto,
   ) {
-    const { session } = req;
-
-    await this.userRepository.update({ _id: session.user._id }, body);
-    await this.sessionRepository.updateCache({ _id: session._id });
+    return this.managementService.updateAccount(req.session, body);
   }
 
   @Patch("avatar")

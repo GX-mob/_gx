@@ -7,7 +7,6 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 
 describe("AppController (e2e)", () => {
-  // TODO
   it("should should should", () => {});
   /*
   let app: INestApplication;

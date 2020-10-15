@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { SignInModule } from "./sign-in/signin.module";
+import { SignInModule } from "./signin/signin.module";
 
 @Module({
   imports: [SignInModule],

@@ -1,4 +1,3 @@
-// TODO Implement fast-json-stringify at response
 declare module "google-polyline" {
   export type Coord = [number, number];
   export type Path = Coord[];

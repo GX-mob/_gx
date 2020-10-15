@@ -17,6 +17,12 @@ export class WrongPasswordException extends UnprocessableEntityException {
   }
 }
 
+export class UnchangedPasswordException extends ConflictException {
+  constructor() {
+    super(HTTP_EXCEPTIONS_MESSAGES.UNCHANGED_DATA);
+  }
+}
+
 export class WrongVerificationCodeException extends UnprocessableEntityException {
   constructor() {
     super(HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE);
@@ -44,5 +50,17 @@ export class CPFRegistredException extends ConflictException {
 export class TermsNotAcceptedException extends UnprocessableEntityException {
   constructor() {
     super(HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED);
+  }
+}
+
+export class PasswordRequiredException extends UnprocessableEntityException {
+  constructor() {
+    super(HTTP_EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED);
+  }
+}
+
+export class NotOwnContactException extends UnprocessableEntityException {
+  constructor() {
+    super(HTTP_EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT);
   }
 }

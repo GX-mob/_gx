@@ -8,10 +8,10 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from "@nestjs/common";
-import { SignUpController } from "./sign-up.controller";
-import { PhoneVerificationCheckDto, SignUpDto } from "./sign-up.dto";
+import { SignUpController } from "./signup.controller";
+import { PhoneVerificationCheckDto, SignUpDto } from "./signup.dto";
 import SecurePassword from "secure-password";
-import { EXCEPTIONS_MESSAGES, CACHE_NAMESPACES } from "../constants";
+import { EXCEPTIONS_MESSAGES, CACHE_NAMESPACES } from "../../constants";
 import faker from "faker";
 
 describe("SignUpController", () => {

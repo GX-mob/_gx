@@ -18,11 +18,11 @@ import {
   ConfirmContactVerificationDto,
   RemoveContactDto,
 } from "./dto";
-import { EXCEPTIONS_MESSAGES } from "../constants";
+import { EXCEPTIONS_MESSAGES } from "../../constants";
 
 @Controller("account/contact")
 @UseGuards(AuthGuard)
-export class AccountContactController {
+export class ContactController {
   constructor(
     readonly userRepository: UserRepository,
     readonly verify: ContactVerificationService,
