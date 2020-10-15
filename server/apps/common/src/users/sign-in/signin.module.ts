@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
-import { ContactVerificationModule } from "@app/contact-verification";
-import { SessionModule } from "@app/session";
 import { SignInController } from "./sign-in.controller";
+import { UsersModule } from "../users.module";
 
 @Module({
-  imports: [ContactVerificationModule, SessionModule],
+  imports: [UsersModule],
   controllers: [SignInController],
   providers: [],
 })

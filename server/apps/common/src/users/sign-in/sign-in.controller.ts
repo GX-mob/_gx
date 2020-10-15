@@ -23,39 +23,29 @@ import {
   Request,
   Response,
   Post,
-  NotFoundException,
-  UnprocessableEntityException,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
-import { util } from "@app/helpers";
 import {
-  UserInterface,
   SignInHttpReponseCodes,
   IdentifyResponseInterface,
   SignInSuccessResponse,
   Password2FARequiredResponse,
 } from "@shared/interfaces";
-import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
-import { UserRepository } from "@app/repositories";
-import { ContactVerificationService } from "@app/contact-verification";
-import { SessionService } from "@app/session";
-import validator from "validator";
+import { UsersService } from "../users.service";
 
-@Controller("sign-in")
+@Controller("signin")
 export class SignInController {
-  constructor(
-    private readonly userRepository: UserRepository,
-    private readonly contactVerification: ContactVerificationService,
-    private readonly session: SessionService,
-  ) {}
+  constructor(private usersService: UsersService) {}
 
-  @Get("id/:phone")
+  @Get(":phone")
   async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
-    const { password, phones, firstName, avatar } = await this.getUser(phone);
+    const user = await this.usersService.findByPhone(phone);
+
+    const { password, firstName, avatar } = user;
 
     if (!password) {
-      await this.contactVerification.request(phone);
+      await this.usersService.requestContactVerify(phone);
       res.code(SignInHttpReponseCodes.SecondaFactorRequired);
     }
 
@@ -66,16 +56,6 @@ export class SignInController {
     return;
   }
 
-  private async getUser(phone: string) {
-    const user = await this.userRepository.get({ phones: phone });
-
-    if (!user) {
-      throw new NotFoundException(HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
-    }
-
-    return user;
-  }
-
   @Post("credential")
   async signIn(
     @Request() request: FastifyRequest,
@@ -83,29 +63,19 @@ export class SignInController {
     @Body() body: SignInPasswordDto,
   ) {
     const { phone, password } = body;
-    const user = await this.getUser(phone);
-    const result = await util.assertPassword(password, user.password as string);
+    const user = await this.usersService.findByPhone(phone);
 
-    if (!result) {
-      throw new UnprocessableEntityException(
-        HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD,
-      );
-    }
+    await this.usersService.assertPassword(user, password);
 
     if (!user["2fa"]) {
-      const { token } = await this.createSession(user, request);
+      const { token } = await this.usersService.createSession(user, request);
 
       reply.code(SignInHttpReponseCodes.Success);
       reply.send<SignInSuccessResponse>({ token });
       return;
     }
 
-    await this.contactVerification.request(user["2fa"]);
-    const isEmail = validator.isEmail(user["2fa"]);
-    const target = isEmail
-      ? util.hideEmail(user["2fa"])
-      : // Phone last 4 numbers
-        user["2fa"].slice(user["2fa"].length - 4);
+    const target = await this.usersService.requestContactVerify(phone);
 
     reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
     reply.send<Password2FARequiredResponse>({
@@ -121,27 +91,14 @@ export class SignInController {
     @Body() body: SignInCodeDto,
   ) {
     const { phone, code } = body;
-    const user = await this.getUser(phone);
-    const valid = await this.contactVerification.verify(phone, code);
+    const user = await this.usersService.findByPhone(phone);
 
-    if (!valid) {
-      throw new UnprocessableEntityException(
-        HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE,
-      );
-    }
+    await this.usersService.verifyContact(phone, code);
 
-    const { token } = await this.createSession(user, request);
+    const { token } = await this.usersService.createSession(user, request);
 
     reply.code(SignInHttpReponseCodes.Success);
     reply.send<SignInSuccessResponse>({ token });
     return;
-  }
-
-  private createSession(user: UserInterface, request: FastifyRequest) {
-    return this.session.create(
-      user,
-      request.headers["user-agent"] as string,
-      util.getClientIp(request.raw),
-    );
   }
 }
