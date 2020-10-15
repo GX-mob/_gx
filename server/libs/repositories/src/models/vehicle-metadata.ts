@@ -15,6 +15,6 @@ export const VehicleMetadataSchema = new Schema(
   { collection: "vehicles_models" },
 );
 
-export const VehicleMetadataModel = Connections.Users.model<
+export const VehicleMetadataModel = Connections.Entities.model<
   VehicleMetadataDocument
 >("VehicleModel", VehicleMetadataSchema);

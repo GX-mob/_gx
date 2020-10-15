@@ -26,7 +26,7 @@ export const VehicleSchema = new Schema(
   { collection: "vehicles" },
 );
 
-export const VehicleModel = Connections.Users.model<VehicleDocument>(
+export const VehicleModel = Connections.Entities.model<VehicleDocument>(
   "Vehicle",
   VehicleSchema,
 );

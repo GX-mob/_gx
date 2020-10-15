@@ -49,8 +49,10 @@ export class RepositoryFactory<
     return data as Model;
   }
 
-  // getMany(query, )
-
+  /**
+   * Execute autopopulate on query
+   * @param query
+   */
   private async makeQuery(query: Configuration["Query"]) {
     const _query = this.model.findOne(query).lean();
 
@@ -59,6 +61,10 @@ export class RepositoryFactory<
     return _query;
   }
 
+  /**
+   * Do auto populate on configured fields
+   * @param query
+   */
   private populateObject(query: DocumentQuery<any, any> | Document) {
     if (!this.settings.autoPopulate) {
       return query;
@@ -71,6 +77,10 @@ export class RepositoryFactory<
     return query;
   }
 
+  /**
+   * Saves cache with configured linking keys
+   * @param data
+   */
   private async setCache(data: any): Promise<void> {
     const promise = this.cache.set(
       this.settings.namespace,
@@ -119,6 +129,10 @@ export class RepositoryFactory<
     return modelResult;
   }
 
+  /**
+   * Updates cache with data from persistent storage
+   * @param query
+   */
   async updateCache(query: Configuration["Query"]) {
     const data = await this.makeQuery(query);
 
@@ -138,6 +152,10 @@ export class RepositoryFactory<
     await this.cache.del(this.settings.namespace, query);
   }
 
+  /**
+   * Mounts the list of linking keys of cache
+   * @param data
+   */
   private mountLinkingKeys(data: any): string[] | undefined {
     if (!this.settings.linkingKeys) {
       return;
@@ -166,6 +184,10 @@ export class RepositoryFactory<
     }, []);
   }
 
+  /**
+   * Helper method to check empty objects of cache linking keys
+   * @param value
+   */
   public isEmpty(value: any) {
     if (Array.isArray(value)) {
       return value.length === 0;

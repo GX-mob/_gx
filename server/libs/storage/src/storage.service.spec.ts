@@ -6,15 +6,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { StorageService, AbstractionBucket } from "./storage.service";
+import { StorageService } from "./storage.service";
 import { GoogleStorageService } from "./google-storage.service";
 import StorageMock from "./mock/gcp-storage.mock";
 //@ts-ignore
-import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
-import {
-  STORAGE_PREFIX_URLS,
-  STORAGE_BUCKETS,
-} from "apps/common/src/constants";
+import { ReadableStreamBuffer } from "stream-buffers";
 
 describe("StorageService", () => {
   let service: StorageService;
@@ -52,7 +48,6 @@ describe("StorageService", () => {
     service.uploadStream("test", stream, {
       filename: "avatar.png",
       public: true,
-      compress: true,
       acceptMIME: ["image/jpeg", "image/png"],
       errorHandler: (error) => {
         expect(error.message).toBe("test");
@@ -71,7 +66,6 @@ describe("StorageService", () => {
       await service.uploadStream("test", readable, {
         filename: "avatar.jpg",
         public: true,
-        compress: true,
         acceptMIME: ["image/png", "image/jpeg"],
         errorHandler(error) {},
       });
@@ -86,7 +80,6 @@ describe("StorageService", () => {
       await service.uploadStream("test", image, {
         filename: "avatar.png",
         public: true,
-        compress: true,
         acceptMIME: ["image/jpeg"],
         errorHandler(error) {},
       });
@@ -97,38 +90,11 @@ describe("StorageService", () => {
     }
   });
 
-  it("should compress png file", (done) => {
-    const readable = createReadableFrom(pngBuffer);
-    const writable = new WritableStreamBuffer();
-    const compressor = service.createCompressor("image/png");
-
-    readable.pipe(compressor).pipe(writable);
-
-    writable.on("finish", () => {
-      expect(writable.getContents().length < pngBuffer.length).toBeTruthy();
-      done();
-    });
-  });
-
-  it("should compress jpg file", (done) => {
-    const readable = createReadableFrom(jpegBuffer);
-    const writable = new WritableStreamBuffer();
-    const compressor = service.createCompressor("image/jpeg");
-
-    readable.pipe(compressor).pipe(writable);
-
-    writable.on("finish", () => {
-      expect(writable.getContents().length < jpegBuffer.length).toBeTruthy();
-      done();
-    });
-  });
-
   it("should upload and don't compress", async (done) => {
     const image = createReadableFrom(pngBuffer);
     const { bucketFile } = await service.uploadStream("test", image, {
       filename: "avatar.png",
       public: true,
-      compress: false,
       acceptMIME: ["image/jpeg", "image/png"],
       errorHandler(error) {},
     });
@@ -146,7 +112,6 @@ describe("StorageService", () => {
     const { bucketFile } = await service.uploadStream("test", image, {
       filename: "avatar.png",
       public: true,
-      compress: true,
       acceptMIME: ["image/jpeg", "image/png"],
       errorHandler(error) {},
     });

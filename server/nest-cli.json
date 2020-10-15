@@ -1,20 +1,20 @@
 {
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/common/src",
+  "sourceRoot": "apps/gateway/src",
   "monorepo": true,
-  "root": "apps/common",
+  "root": "apps/gateway",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "apps/common/tsconfig.app.json"
+    "tsConfigPath": "apps/gateway/tsconfig.app.json"
   },
   "projects": {
-    "common": {
+    "gateway": {
       "type": "application",
-      "root": "apps/common",
+      "root": "apps/gateway",
       "entryFile": "main",
-      "sourceRoot": "apps/common/src",
+      "sourceRoot": "apps/gateway/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/common/tsconfig.app.json"
+        "tsConfigPath": "apps/gateway/tsconfig.app.json"
       }
     },
     "rides-flows": {

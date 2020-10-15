@@ -33,9 +33,9 @@ export class RepositoryService {
 
   readonly connections = [
     Connections.Configuration,
-    Connections.Users,
+    Connections.Entities,
     Connections.Sessions,
-    Connections.Rides,
+    Connections.Operation,
   ];
 
   constructor(
@@ -46,9 +46,9 @@ export class RepositoryService {
     const databaseUri = this.configService.get("DATABASE_URI") as string;
 
     this.configureConnLogger(Connections.Configuration);
-    this.configureConnLogger(Connections.Users);
+    this.configureConnLogger(Connections.Entities);
     this.configureConnLogger(Connections.Sessions);
-    this.configureConnLogger(Connections.Rides);
+    this.configureConnLogger(Connections.Operation);
 
     if (Connections.Configuration.readyState === 1) {
       return;

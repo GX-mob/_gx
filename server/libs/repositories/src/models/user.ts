@@ -87,7 +87,7 @@ UserSchema.pre<UserDocument>("updateOne", function () {
   this.set({ updatedAt: new Date() });
 });
 
-export const UserModel = Connections.Users.model<UserDocument>(
+export const UserModel = Connections.Entities.model<UserDocument>(
   "Users",
   UserSchema,
 );

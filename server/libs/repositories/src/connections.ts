@@ -6,13 +6,13 @@ function makeConnection(database: string, connPool?: Connection): Connection {
 }
 
 const Configuration = makeConnection("configuration");
-const Users = makeConnection("users", Configuration);
-const Rides = makeConnection("rides", Configuration);
+const Entities = makeConnection("users", Configuration);
+const Operation = makeConnection("rides", Configuration);
 const Sessions = makeConnection("sessions", Configuration);
 
 export default {
   Configuration,
-  Users,
-  Rides,
+  Entities,
+  Operation,
   Sessions,
 };

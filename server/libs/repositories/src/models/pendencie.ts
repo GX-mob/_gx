@@ -16,7 +16,7 @@ export const PendencieSchema: Schema = new Schema(
   { collection: "pendencies" },
 );
 
-export const PendencieModel = Connections.Rides.model<PendencieDocument>(
+export const PendencieModel = Connections.Operation.model<PendencieDocument>(
   "Pendencie",
   PendencieSchema,
 );

@@ -10,7 +10,7 @@ Leia mais sobre o projeto aqui: http://gx.com/porque
 
 ### Conteúdo desse repositório
 
-Contém apps/pwa's de clientes, aplicações web administrativas e servidor.
+Contém apps/pwa's de clientes e servidor.
 
 ### Servidor
 
@@ -24,9 +24,9 @@ Arquitetura monolitíca altamente acoplada a Google Cloud usando serviços geren
 
 #### Serviços:
 
-- **General** - HTTP - _CRUD: corridas, usuários, serviços de terceiros_
-- **RidesFlows** - WebSockets - _Gerencia fluxos de negociação e controle de corridas_
-- **ServicesFlows** - WebSockets - _Gerencia fluxos de negociações entre clientes e provedores de serviços_
+- **Gateway** - HTTP - _CRUD: corridas, usuários, serviços de terceiros_
+- **RidesFlows** - WebSockets - _Gerencia fluxos dos eventos de negociação e controle de corridas_
+- **ServicesFlows** - WebSockets - _Gerencia fluxos dos eventos de negociações entre clientes e provedores de serviços_
 - **Chat** - WebSockets - _Comunicação geral entre usuários_
 
 ## Clientes

@@ -125,7 +125,7 @@ export const RideSchema: Schema = new Schema(
   { collection: "rides" },
 );
 
-export const RideModel = Connections.Rides.model<RideDocument>(
+export const RideModel = Connections.Operation.model<RideDocument>(
   "Ride",
   RideSchema,
 );
