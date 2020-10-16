@@ -1,19 +1,25 @@
 import {
-  RideInterface,
+  IRide,
   RideTypes,
   RidePayMethods,
-  RouteInterface,
-  RoutePointInterface,
+  IRoute,
+  IRoutePoint,
+  IGetRideInfoDto,
+  IGetRidePricesDto,
+  ICreateRideDto,
+  ICreatedRideDto,
+  IPendencie,
 } from "@shared/interfaces";
 import {
   ValidateNested,
   IsNotEmpty,
+  IsString,
   IsEnum,
   IsInt,
   IsArray,
 } from "class-validator";
 
-class Point implements RoutePointInterface {
+class Point implements IRoutePoint {
   @IsArray()
   coord!: [number, number];
 
@@ -27,7 +33,7 @@ class Point implements RoutePointInterface {
   district!: string;
 }
 
-class Route implements RouteInterface {
+class Route implements IRoute {
   @ValidateNested()
   start!: Point;
 
@@ -47,12 +53,20 @@ class Route implements RouteInterface {
   duration!: number;
 }
 
-export class GetRidesPricesParams {
-  area!: string;
-  subArea?: string;
+export class GetRideInfoDto implements IGetRideInfoDto {
+  @IsNotEmpty()
+  pid!: IRide["pid"];
 }
 
-export class CreateRideDto {
+export class GetRidesPricesDto implements IGetRidePricesDto {
+  @IsNotEmpty()
+  area!: IRide["area"];
+
+  @IsString()
+  subArea?: IRide["subArea"];
+}
+
+export class CreateRideDto implements ICreateRideDto {
   @ValidateNested()
   route!: Route;
 
@@ -63,11 +77,21 @@ export class CreateRideDto {
   payMethod!: RidePayMethods;
 
   @IsNotEmpty()
-  country!: RideInterface["country"];
+  country!: IRide["country"];
 
   @IsNotEmpty()
-  area!: RideInterface["area"];
+  area!: IRide["area"];
 
   @IsNotEmpty()
-  subArea!: RideInterface["subArea"];
+  subArea!: IRide["subArea"];
+}
+
+export class CreatedRideDto implements ICreatedRideDto {
+  pid!: IRide["pid"];
+  costs!: IRide["costs"];
+  pendencies!: IPendencie[];
+
+  constructor(ride: ICreatedRideDto) {
+    Object.assign(this, ride);
+  }
 }

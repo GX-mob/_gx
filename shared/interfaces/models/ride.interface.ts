@@ -19,7 +19,7 @@ export interface IRoutePoint {
   district: string;
 }
 
-export interface RouteInterface {
+export interface IRoute {
   start: IRoutePoint;
   waypoints?: IRoutePoint[];
   end: IRoutePoint;
@@ -49,7 +49,7 @@ export interface IRide {
   _id: any;
   pid: string;
   voyager: any;
-  route: RouteInterface;
+  route: IRoute;
   /**
    * * 1 = Normal
    * * 2 = VIG - Very important gx

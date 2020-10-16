@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService, setOptions } from "@app/cache";
-import { RideInterface } from "@shared/interfaces";
+import { IRide } from "@shared/interfaces";
 import { RideRepository, VehicleRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
@@ -92,7 +92,8 @@ export class StateService {
      */
     this.socketService.nodes.on(
       NODES_EVENTS.UPDATE_DRIVER_STATE,
-      ({ socketId, state }) => {
+      ({ socketId, state }, ack) => {
+        ack(true);
         this.updateDriver(socketId, state, true);
       },
     );
@@ -134,8 +135,8 @@ export class StateService {
 
     this.socketService.nodes.on(
       NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
-      (data, acknow) => {
-        acknow({ drivers: this.drivers });
+      (data, ack) => {
+        ack({ drivers: this.drivers });
       },
     );
 
@@ -146,7 +147,7 @@ export class StateService {
 
   /**
    * Warmup
-   * Get the state of others nodes and merge then
+   * Gets the state of others nodes and merge it to local list
    */
   private warmup() {
     this.socketService.nodes.emit(
@@ -249,14 +250,13 @@ export class StateService {
   async offerResponseEvent(
     socketId: string,
     offerResponse: OfferResponse,
-    driverConnectionData?: ConnectionData,
+    driverData?: ConnectionData,
   ) {
     const offer = this.findOffer(offerResponse.ridePID);
     if (!offer) return;
 
-    if (!driverConnectionData) {
-      driverConnectionData = await this.getConnectionData(socketId);
-    }
+    const driverConnectionData =
+      driverData || (await this.getConnectionData(socketId));
 
     /**
      * To avoid any bug in a delayed response and other driver already received the offer
@@ -282,7 +282,7 @@ export class StateService {
 
       const ride = await this.rideRepository.get({ pid: offer.ridePID });
 
-      this.offerRide(offer, ride as RideInterface);
+      this.offerRide(offer, ride as IRide);
       return;
     }
 
@@ -300,7 +300,7 @@ export class StateService {
           offer.ridePID,
           {
             ...offerStoreData,
-            driverSocketId: (driverConnectionData as ConnectionData).socketId,
+            driverSocketId: driverConnectionData.socketId,
             acceptTimestamp,
           },
           {
@@ -316,7 +316,7 @@ export class StateService {
       () =>
         this.rideRepository.update(
           { pid: offer.ridePID },
-          { driver: (driverConnectionData as ConnectionData)._id },
+          { driver: driverConnectionData._id },
         ),
       3,
       500,
@@ -342,10 +342,14 @@ export class StateService {
       },
     );
 
-    const voyagerData = await this.getConnectionData(offer.requesterSocketId);
+    const voyagerConnectionData = await this.getConnectionData(
+      offer.requesterSocketId,
+    );
 
     const driverUpdateConnectionData = {
-      observers: [{ socketId: offer.requesterSocketId, p2p: voyagerData.p2p }],
+      observers: [
+        { socketId: offer.requesterSocketId, p2p: voyagerConnectionData.p2p },
+      ],
     };
     const voyagerUpdateConnectionData = {
       observers: [
@@ -359,18 +363,21 @@ export class StateService {
     // Update driver observers
     retryUnderHood(() =>
       this.setConnectionData(
-        (driverConnectionData as ConnectionData).pid,
+        driverConnectionData.pid,
         driverUpdateConnectionData,
       ),
     );
 
     // Update voyager observers
     retryUnderHood(() =>
-      this.setConnectionData(voyagerData.pid, voyagerUpdateConnectionData),
+      this.setConnectionData(
+        voyagerConnectionData.pid,
+        voyagerUpdateConnectionData,
+      ),
     );
 
     this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
-      socketId: voyagerData.socketId,
+      socketId: voyagerConnectionData.socketId,
       namespace: NAMESPACES.VOYAGERS,
       data: voyagerUpdateConnectionData,
     });
@@ -438,7 +445,7 @@ export class StateService {
    * @param {OfferServer} offer
    * @param {string} requesterSocketId SocketId of requester
    */
-  async offerRide(offer: OfferServer, ride: RideInterface): Promise<void> {
+  async offerRide(offer: OfferServer, ride: IRide): Promise<void> {
     const driver = await this.match(offer, ride);
 
     /**
@@ -495,7 +502,7 @@ export class StateService {
    */
   async match(
     offer: OfferServer,
-    ride: RideInterface,
+    ride: IRide,
     list: Driver[] = this.drivers,
     runTimes = 0,
   ): Promise<Driver | null> {

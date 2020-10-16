@@ -30,7 +30,7 @@ import { SessionService } from "@app/session";
 import { SignUpDto } from "./signup.dto";
 import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
 import { util } from "@app/helpers";
-import { ISignUpSuccessResponse } from "@shared/interfaces";
+import { ISignUpSuccessResponseDto } from "@shared/interfaces";
 
 @Controller("sign-up")
 export class SignUpController {
@@ -57,7 +57,7 @@ export class SignUpController {
   async signUp(
     @Request() request: FastifyRequest,
     @Body() body: SignUpDto,
-  ): Promise<ISignUpSuccessResponse> {
+  ): Promise<ISignUpSuccessResponseDto> {
     const {
       contact,
       code,

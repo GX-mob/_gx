@@ -1,13 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { utcToZonedTime } from "date-fns-tz";
 import {
-  RideInterface,
-  RideAreaConfigurationInterface,
-  RideTypeConfigurationInterface,
+  IUser,
+  ICreateRideDto,
+  IRide,
+  IRideAreaConfiguration,
+  IRideTypeConfiguration,
 } from "@shared/interfaces";
-import { RepositoryService } from "@app/repositories";
+import { RepositoryService, RideRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
+import { ICreatedRideDto } from "@shared/interfaces";
 import {
   BUSINESS_TIME_HOURS,
   AMOUT_DECIMAL_ADJUST,
@@ -16,9 +19,12 @@ import {
 
 @Injectable()
 export class RidesService {
-  readonly areas: { [area: string]: RideAreaConfigurationInterface } = {};
+  readonly areas: { [area: string]: IRideAreaConfiguration } = {};
 
-  constructor(readonly repositoryService: RepositoryService) {
+  constructor(
+    private repositoryService: RepositoryService,
+    private rideRepository: RideRepository,
+  ) {
     this.init();
   }
 
@@ -54,6 +60,44 @@ export class RidesService {
     */
   }
 
+  async create(
+    userId: IUser["_id"],
+    data: ICreateRideDto,
+  ): Promise<ICreatedRideDto> {
+    /**
+     * Get user pendencies
+     */
+    const { pendencieModel } = this.repositoryService;
+    const pendencies = await pendencieModel.find({ issuer: userId });
+
+    const { route, type, payMethod, country, area, subArea } = data;
+
+    /**
+     * Calculate rides costs
+     */
+    const rideCosts = this.getRideCosts(data);
+    const base = rideCosts.duration.total + rideCosts.distance.total;
+    const total = pendencies.reduce((currentAmount, pendencie) => {
+      return currentAmount + pendencie.amount;
+    }, base);
+
+    const costs = { ...rideCosts, base, total };
+
+    const { pid } = await this.rideRepository.create({
+      voyager: userId,
+      route,
+      type,
+      pendencies,
+      payMethod,
+      country,
+      area,
+      subArea,
+      costs,
+    });
+
+    return { pid, costs, pendencies };
+  }
+
   /**
    * Returns the rides types and respective prices of the requested area
    * or the price for the respective area for the ride type, if provided a type
@@ -62,14 +106,11 @@ export class RidesService {
    * @param subArea
    * @returns {PriceDetail[] | PriceDetail | undefined} Price list, price for provided ride type or undefined
    */
-  getRideStatusPrice<T extends RideInterface["type"]>(
+  getRideStatusPrice<T extends IRide["type"]>(
     area: string,
     subArea?: string,
     rideType?: T,
-  ):
-    | RideTypeConfigurationInterface
-    | RideTypeConfigurationInterface[]
-    | undefined {
+  ): IRideTypeConfiguration | IRideTypeConfiguration[] | undefined {
     if (!util.hasProp(this.areas, area) || !this.areas[area]) {
       return;
     }
@@ -99,7 +140,7 @@ export class RidesService {
       area,
       subArea,
       type,
-    ) as RideTypeConfigurationInterface;
+    ) as IRideTypeConfiguration;
     const isBusinessTime = this.isBusinessTime(timezone);
 
     const duration = this.durationPrice(
@@ -136,7 +177,7 @@ export class RidesService {
    */
   durationPrice(
     duration: number,
-    price: RideTypeConfigurationInterface,
+    price: IRideTypeConfiguration,
     isBusinessTime: boolean,
   ): {
     total: number;
@@ -181,7 +222,7 @@ export class RidesService {
    */
   distancePrice(
     distance: number,
-    price: RideTypeConfigurationInterface,
+    price: IRideTypeConfiguration,
     isBusinessTime: boolean,
   ): {
     total: number;

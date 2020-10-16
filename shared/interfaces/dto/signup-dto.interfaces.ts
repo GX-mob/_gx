@@ -7,7 +7,7 @@ export interface ISignUpDto {
   credential?: string;
 }
 
-export interface ISignUpSuccessResponse {
+export interface ISignUpSuccessResponseDto {
   user: {
     id: string;
   };
