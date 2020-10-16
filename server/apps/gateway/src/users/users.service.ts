@@ -1,14 +1,11 @@
 // Application Service
-import { FastifyRequest } from "fastify";
 import { Injectable } from "@nestjs/common";
 import {
   UserRepository,
   UserCreateInterface,
-  UserQueryInterface,
   UserUpdateInterface,
 } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
-import { SessionService } from "@app/session";
 import {
   UserNotFoundException,
   WrongPasswordException,
@@ -24,7 +21,7 @@ import {
   RemoveContactNotAllowed,
 } from "./exceptions";
 import { util } from "@app/helpers";
-import { UserInterface } from "@shared/interfaces";
+import { IUser } from "@shared/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import validator from "validator";
 
@@ -35,7 +32,6 @@ export class UsersService {
   constructor(
     private userRepository: UserRepository,
     private contactVerificationService: ContactVerificationService,
-    private sessionService: SessionService,
   ) {}
 
   /**
@@ -56,7 +52,7 @@ export class UsersService {
     return user;
   }
 
-  async assertPassword(user: UserInterface, password: string) {
+  async assertPassword(user: IUser, password: string) {
     const result = await util.assertPassword(password, user.password as string);
 
     if (!result) {
@@ -95,23 +91,10 @@ export class UsersService {
     return type;
   }
 
-  /**
-   * Creates a session to user based on request
-   * @param user
-   * @param request FastifyRequest object
-   */
-  public createSession(user: UserInterface, request: FastifyRequest) {
-    return this.sessionService.create(
-      user,
-      request.headers["user-agent"] as string,
-      util.getClientIp(request.raw),
-    );
-  }
-
   public async create(
     user: UserCreateInterface,
     termsAccepted: boolean,
-  ): Promise<UserInterface> {
+  ): Promise<IUser> {
     const { cpf } = user;
 
     /**
@@ -141,15 +124,11 @@ export class UsersService {
     return this.userRepository.create(user);
   }
 
-  updateById(id: UserInterface["_id"], data: UserUpdateInterface) {
+  updateById(id: IUser["_id"], data: UserUpdateInterface) {
     return this.userRepository.update({ _id: id }, data);
   }
 
-  async updatePassword(
-    user: UserInterface,
-    current: string,
-    newPassword: string,
-  ) {
+  async updatePassword(user: IUser, current: string, newPassword: string) {
     if (!user.password) {
       const password = await util.hashPassword(newPassword);
 
@@ -184,7 +163,7 @@ export class UsersService {
     await this.userRepository.model.updateOne({ _id: user._id }, { password });
   }
 
-  async enable2FA(user: UserInterface, target: string) {
+  async enable2FA(user: IUser, target: string) {
     this.validateContact(target);
     this.passwordRequired(user);
 
@@ -195,7 +174,7 @@ export class UsersService {
     await this.userRepository.update({ _id: user._id }, { "2fa": target });
   }
 
-  async disable2FA(user: UserInterface, password: string) {
+  async disable2FA(user: IUser, password: string) {
     this.passwordRequired(user);
 
     const matchPassword = await util.assertPassword(
@@ -210,7 +189,7 @@ export class UsersService {
     this.userRepository.update({ _id: user._id }, { "2fa": "" });
   }
 
-  private passwordRequired(user: UserInterface) {
+  private passwordRequired(user: IUser) {
     if (!user.password) {
       throw new PasswordRequiredException();
     }
@@ -244,11 +223,9 @@ export class UsersService {
     }
   }
 
-  async addContact(user: UserInterface, contact: string, code: string) {
-    const field =
-      (await this.verifyContact(contact, code)) === "email"
-        ? "emails"
-        : "phones";
+  async addContact(user: IUser, contact: string, code: string) {
+    const type = await this.verifyContact(contact, code);
+    const field = this.getContactFieldName(type);
 
     const update = {
       [field]: [...(user[field] || []), contact],
@@ -257,9 +234,9 @@ export class UsersService {
     await this.userRepository.update({ _id: user._id }, update);
   }
 
-  async removeContact(user: UserInterface, contact: string) {
-    const field =
-      this.validateContact(contact) === "phone" ? "phones" : "emails";
+  async removeContact(user: IUser, contact: string) {
+    const type = this.validateContact(contact);
+    const field = this.getContactFieldName(type);
 
     /**
      * Prevent removing the last contact or

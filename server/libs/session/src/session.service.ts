@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import { UserInterface, UserRoles, SessionInterface } from "@shared/interfaces";
+import { IUser, UserRoles, ISession } from "@shared/interfaces";
 import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
@@ -47,10 +47,10 @@ export class SessionService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user: UserInterface,
-    userAgent: string | null,
-    ip: string | null,
-  ): Promise<{ token: string; session: SessionInterface }> {
+    user: IUser,
+    userAgent?: string | null,
+    ip?: string | null,
+  ): Promise<{ token: string; session: ISession }> {
     const session = await this.sessionRepository.create({
       user: user._id,
       userAgent: userAgent || "",
@@ -101,7 +101,7 @@ export class SessionService {
   private async checkState(
     session_id: Types.ObjectId,
     ip: string | null,
-  ): Promise<SessionInterface> {
+  ): Promise<ISession> {
     const sessionData = await this.get(session_id);
 
     if (!sessionData) {
@@ -126,7 +126,7 @@ export class SessionService {
     return session;
   }
 
-  public hasPermission(session: SessionInterface, roles: UserRoles[]) {
+  public hasPermission(session: ISession, roles: UserRoles[]) {
     return !!roles.find((role) => session.user.roles.includes(role));
   }
 
@@ -136,7 +136,7 @@ export class SessionService {
 
   async update(
     session_id: Types.ObjectId,
-    data: Partial<Omit<SessionInterface, "_id" | "user" | "createdAt">>,
+    data: Partial<Omit<ISession, "_id" | "user" | "createdAt">>,
   ) {
     await this.sessionRepository.update({ _id: session_id }, data);
   }

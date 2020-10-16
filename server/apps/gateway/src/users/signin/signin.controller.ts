@@ -33,20 +33,27 @@ import {
   SignInSuccessResponse,
   Password2FARequiredResponse,
 } from "@shared/interfaces";
+import { SessionService } from "@app/session";
 import { UsersService } from "../users.service";
+import { util } from "@app/helpers";
 
 @Controller("signin")
 export class SignInController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private sessionService: SessionService,
+  ) {}
 
   @Get(":contact")
   async identify(
     @Response() res: FastifyReply,
     @Param() { contact }: ContactDto,
   ) {
-    const user = await this.usersService.findByContact(contact);
-
-    const { password, firstName, avatar } = user;
+    const {
+      password,
+      firstName,
+      avatar,
+    } = await this.usersService.findByContact(contact);
 
     if (!password) {
       await this.usersService.requestContactVerify(contact);
@@ -64,15 +71,16 @@ export class SignInController {
   async signIn(
     @Request() request: FastifyRequest,
     @Response() reply: FastifyReply,
-    @Body() body: SignInPasswordDto,
+    @Body() { contact, password }: SignInPasswordDto,
   ) {
-    const { contact, password } = body;
     const user = await this.usersService.findByContact(contact);
 
     await this.usersService.assertPassword(user, password);
 
     if (!user["2fa"]) {
-      const { token } = await this.usersService.createSession(user, request);
+      const userAgent = request.headers["user-agent"];
+      const ip = util.getClientIp(request.raw);
+      const { token } = await this.sessionService.create(user, userAgent, ip);
 
       reply.code(SignInHttpReponseCodes.Success);
       reply.send<SignInSuccessResponse>({ token });
@@ -92,14 +100,15 @@ export class SignInController {
   async code(
     @Request() request: FastifyRequest,
     @Response() reply: FastifyReply,
-    @Body() body: SignInCodeDto,
+    @Body() { contact, code }: SignInCodeDto,
   ) {
-    const { phone, code } = body;
-    const user = await this.usersService.findByPhone(phone);
+    await this.usersService.verifyContact(contact, code);
 
-    await this.usersService.verifyContact(phone, code);
+    const user = await this.usersService.findByContact(contact);
 
-    const { token } = await this.usersService.createSession(user, request);
+    const userAgent = request.headers["user-agent"];
+    const ip = util.getClientIp(request.raw);
+    const { token } = await this.sessionService.create(user, userAgent, ip);
 
     reply.code(SignInHttpReponseCodes.Success);
     reply.send<SignInSuccessResponse>({ token });

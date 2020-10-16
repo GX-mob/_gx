@@ -1,9 +1,9 @@
 import { Document, Schema } from "mongoose";
-import { PendencieInterface } from "@shared/interfaces";
+import { IPendencie } from "@shared/interfaces";
 import Connections from "../connections";
 import { UserModel } from "./user";
 
-export interface PendencieDocument extends PendencieInterface, Document {}
+export interface PendencieDocument extends IPendencie, Document {}
 
 export const PendencieSchema: Schema = new Schema(
   {

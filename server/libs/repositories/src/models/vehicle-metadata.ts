@@ -1,10 +1,8 @@
-import { VehicleMetadataInterface, VehicleTypes } from "@shared/interfaces";
+import { IVehicleMetadata, VehicleTypes } from "@shared/interfaces";
 import { Document, Schema } from "mongoose";
 import Connections from "../connections";
 
-export interface VehicleMetadataDocument
-  extends VehicleMetadataInterface,
-    Document {}
+export interface VehicleMetadataDocument extends IVehicleMetadata, Document {}
 
 export const VehicleMetadataSchema = new Schema(
   {

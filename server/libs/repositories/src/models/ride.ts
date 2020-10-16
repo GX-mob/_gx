@@ -20,12 +20,12 @@ import shortid from "shortid";
 import { util } from "@app/helpers";
 import Connections from "../connections";
 import {
-  RideInterface,
+  IRide,
   RideStatus,
   RideTypes,
   RidePayMethods,
   RouteInterface,
-  RoutePointInterface,
+  IRoutePoint,
 } from "@shared/interfaces";
 import { UserModel } from "./user";
 
@@ -64,21 +64,17 @@ class Route extends mongoose.SchemaType {
     this.checkPoint("end", route.end);
 
     if (util.hasProp(route, "waypoints")) {
-      for (
-        let i = 0;
-        i < (route.waypoints as RoutePointInterface[]).length;
-        ++i
-      )
+      for (let i = 0; i < (route.waypoints as IRoutePoint[]).length; ++i)
         this.checkPoint(
           `waypoints[${i}]`,
-          (route.waypoints as RoutePointInterface[])[i],
+          (route.waypoints as IRoutePoint[])[i],
         );
     }
 
     return route;
   }
 
-  checkPoint(name: string, point: RoutePointInterface) {
+  checkPoint(name: string, point: IRoutePoint) {
     if (
       !util.hasProp(point, "coord") ||
       !util.hasProp(point, "primary") ||
@@ -93,7 +89,7 @@ class Route extends mongoose.SchemaType {
 
 (mongoose.Schema.Types as any).Route = Route;
 
-export interface RideDocument extends RideInterface, Document {}
+export interface RideDocument extends IRide, Document {}
 
 export const RideSchema: Schema = new Schema(
   {

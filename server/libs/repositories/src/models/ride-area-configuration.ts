@@ -1,9 +1,9 @@
 import { Document, Schema } from "mongoose";
 import Connections from "../connections";
-import { RideAreaConfigurationInterface, RideTypes } from "@shared/interfaces";
+import { IRideAreaConfiguration, RideTypes } from "@shared/interfaces";
 
 export interface RideAreaConfigurationDocument
-  extends RideAreaConfigurationInterface,
+  extends IRideAreaConfiguration,
     Document {}
 
 const RideTypeConfigurationSchema = new Schema({

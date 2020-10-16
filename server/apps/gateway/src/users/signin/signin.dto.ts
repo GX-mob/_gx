@@ -30,11 +30,9 @@ export class SignInPasswordDto
   password!: string;
 }
 
-export class SignInCodeDto implements SignInCodeDtoInterface {
-  @IsNotEmpty()
-  @IsString()
-  phone!: string;
-
+export class SignInCodeDto
+  extends ContactDto
+  implements SignInCodeDtoInterface {
   @IsNotEmpty()
   @IsNumberString()
   code!: string;

@@ -1,19 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository-factory";
-import { VehicleInterface } from "@shared/interfaces";
+import { IVehicle } from "@shared/interfaces";
 import { VehicleModel } from "../models/vehicle";
 
 export interface VehicleQueryInterface
-  extends Partial<Pick<VehicleInterface, "_id" | "plate">> {}
+  extends Partial<Pick<IVehicle, "_id" | "plate">> {}
 export interface VehicleUpdateInterface
-  extends Partial<Omit<VehicleInterface, "year" | "permissions">> {}
+  extends Partial<Omit<IVehicle, "year" | "permissions">> {}
 export interface VehicleCreateInterface
-  extends Omit<VehicleInterface, "_id" | "inUse" | "permissions"> {}
+  extends Omit<IVehicle, "_id" | "inUse" | "permissions"> {}
 
 @Injectable()
 export class VehicleRepository extends RepositoryFactory<
-  VehicleInterface,
+  IVehicle,
   {
     Query: VehicleQueryInterface;
     Update: VehicleUpdateInterface;

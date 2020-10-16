@@ -17,12 +17,12 @@
  */
 import { Document, Schema } from "mongoose";
 import Connections from "../connections";
-import { UserInterface, UserRoles } from "@shared/interfaces";
+import { IUser, UserRoles } from "@shared/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import shortid from "shortid";
 import validator from "validator";
 
-export interface UserDocument extends UserInterface, Document {}
+export interface UserDocument extends IUser, Document {}
 
 export const UserSchema: Schema = new Schema(
   {

@@ -21,48 +21,43 @@ import {
   Param,
   Body,
   Request,
-  Response,
   Post,
   HttpCode,
 } from "@nestjs/common";
-import { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyRequest } from "fastify";
 import { UsersService } from "../users.service";
-import { SignUpService } from "./signup.service";
+import { SessionService } from "@app/session";
 import { SignUpDto } from "./signup.dto";
 import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
+import { util } from "@app/helpers";
+import { ISignUpSuccessResponse } from "@shared/interfaces";
 
 @Controller("sign-up")
 export class SignUpController {
   constructor(
     private usersService: UsersService,
-    private signUpService: SignUpService,
+    private sessionService: SessionService,
   ) {}
 
   @HttpCode(202)
   @Get("verify/:contact")
   async phoneVerificationRequest(@Param() { contact }: ContactDto) {
-    await this.signUpService.checkRegistredPhone(contact);
+    await this.usersService.checkInUseContact(contact);
     await this.usersService.requestContactVerify(contact);
   }
 
   @Post("check")
   async contactVerificationCheck(
-    @Response() reply: FastifyReply,
     @Body() { contact, code }: ContactVerificationCheckDto,
   ) {
     await this.usersService.verifyContact(contact, code);
-
-    reply.code(200);
-    reply.send();
-    return;
   }
 
   @Post()
   async signUp(
     @Request() request: FastifyRequest,
-    @Response() reply: FastifyReply,
     @Body() body: SignUpDto,
-  ) {
+  ): Promise<ISignUpSuccessResponse> {
     const {
       contact,
       code,
@@ -76,8 +71,9 @@ export class SignUpController {
     /**
      * Ensures security checks
      */
-    await this.signUpService.checkRegistredPhone(contact);
+    await this.usersService.checkInUseContact(contact);
     await this.usersService.verifyContact(contact, code);
+
     const user = await this.usersService.create(
       {
         phones: contact,
@@ -88,7 +84,10 @@ export class SignUpController {
       },
       terms,
     );
-    const session = await this.usersService.createSession(user, request);
+
+    const userAgent = request.headers["user-agent"];
+    const ip = util.getClientIp(request.raw);
+    const session = await this.sessionService.create(user, userAgent, ip);
 
     return {
       user: {

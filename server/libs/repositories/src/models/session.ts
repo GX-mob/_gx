@@ -17,10 +17,10 @@
  */
 import { Document, Schema } from "mongoose";
 import Connections from "../connections";
-import { SessionInterface } from "@shared/interfaces";
+import { ISession } from "@shared/interfaces";
 import { UserModel } from "./user";
 
-export interface SessionDocument extends SessionInterface, Document {}
+export interface SessionDocument extends ISession, Document {}
 
 export const SessionSchema: Schema = new Schema(
   {

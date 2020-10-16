@@ -4,7 +4,7 @@
  * @group unit/models/prices
  */
 import { Types } from "mongoose";
-import { RideTypeConfigurationInterface } from "@shared/interfaces";
+import { IRideTypeConfiguration } from "@shared/interfaces";
 import { RideAreaConfigurationModel } from "./ride-area-configuration";
 
 describe("Model: Price", () => {
@@ -18,7 +18,7 @@ describe("Model: Price", () => {
   });
 
   it("should validate", () => {
-    const rideType1: RideTypeConfigurationInterface = {
+    const rideType1: IRideTypeConfiguration = {
       type: 1,
       available: true,
       perKilometer: 1.1,
@@ -29,7 +29,7 @@ describe("Model: Price", () => {
       overBusinessTimeMinuteAdd: 0.3,
     };
 
-    const rideType2: RideTypeConfigurationInterface = {
+    const rideType2: IRideTypeConfiguration = {
       type: 2,
       available: true,
       perKilometer: 1.6,

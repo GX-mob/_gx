@@ -15,16 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumberString,
-  IsBoolean,
-  IsDateString,
-} from "class-validator";
+import { IsNotEmpty, IsString, IsBoolean, IsDateString } from "class-validator";
 import { ContactVerificationCheckDto } from "../users.dto";
+import { ISignUpDto } from "@shared/interfaces";
 
-export class SignUpDto extends ContactVerificationCheckDto {
+export class SignUpDto
+  extends ContactVerificationCheckDto
+  implements ISignUpDto {
   @IsNotEmpty()
   @IsString()
   firstName!: string;
