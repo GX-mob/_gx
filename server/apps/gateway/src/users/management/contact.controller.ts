@@ -6,44 +6,23 @@ import {
   Delete,
   Request,
   Body,
+  Param,
   HttpCode,
-  UnprocessableEntityException,
 } from "@nestjs/common";
 import { AuthGuard, AuthorizedRequest } from "@app/auth";
-import { UserRepository } from "@app/repositories";
-import { ContactVerificationService } from "@app/contact-verification";
-import { util } from "@app/helpers";
-import {
-  ContactVerifyRequestDto,
-  ConfirmContactVerificationDto,
-  RemoveContactDto,
-} from "./dto";
-import { EXCEPTIONS_MESSAGES } from "../../constants";
+import { ConfirmContactVerificationDto, RemoveContactDto } from "./dto";
+import { UsersService } from "../users.service";
 
 @Controller("account/contact")
 @UseGuards(AuthGuard)
 export class ContactController {
-  constructor(
-    readonly userRepository: UserRepository,
-    readonly verify: ContactVerificationService,
-  ) {}
+  constructor(private usersService: UsersService) {}
 
-  @Get("verify")
+  @Get("verify/:phone")
   @HttpCode(202)
-  async verifiContactRequest(@Body() body: ContactVerifyRequestDto) {
-    const { field, value } = util.isValidContact(body.contact);
-
-    const user = await this.userRepository.get({ [field]: value });
-
-    if (user) {
-      throw new UnprocessableEntityException(
-        EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED,
-      );
-    }
-
-    await this.verify.request(value);
-
-    return;
+  async verifiContactRequest(@Param() contact: string) {
+    await this.usersService.checkInUseContact(contact);
+    await this.usersService.requestContactVerify(contact);
   }
 
   @Put("confirm")
@@ -52,21 +31,11 @@ export class ContactController {
     @Request() request: AuthorizedRequest,
     @Body() body: ConfirmContactVerificationDto,
   ) {
-    const { user } = request.session;
-    const { contact, code } = body;
-    const { value, field } = util.isValidContact(contact);
-
-    const valid = await this.verify.verify(value, code);
-
-    if (!valid) {
-      throw new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE);
-    }
-
-    const update = {
-      [field]: [...(user[field] || []), contact],
-    };
-
-    await this.userRepository.update({ _id: user._id }, update);
+    await this.usersService.addContact(
+      request.session.user,
+      body.contact,
+      body.code,
+    );
   }
 
   @Delete()
@@ -74,27 +43,6 @@ export class ContactController {
     @Request() request: AuthorizedRequest,
     @Body() body: RemoveContactDto,
   ) {
-    const { user } = request.session;
-    const { field, value } = util.isValidContact(body.contact);
-
-    /**
-     * Prevent removing the last contact or
-     * the second factor authentication
-     */
-    if (
-      [...user.phones, ...user.emails].length === 1 ||
-      user["2fa"] === value
-    ) {
-      throw new UnprocessableEntityException(
-        EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED,
-      );
-    }
-
-    const updated = [...user[field]];
-    const index = updated.indexOf(value);
-
-    updated.splice(index, 1);
-
-    await this.userRepository.update({ _id: user._id }, { [field]: updated });
+    await this.usersService.removeContact(request.session.user, body.contact);
   }
 }

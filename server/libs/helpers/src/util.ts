@@ -18,7 +18,6 @@
 import SecurePassword from "secure-password";
 export { getClientIp } from "request-ip";
 import logger from "./logger";
-import { UnprocessableEntityException } from "@nestjs/common";
 import { Logger } from "pino";
 import validator from "validator";
 
@@ -35,35 +34,11 @@ export const handleRejectionByUnderHood = (
  * General regexes
  */
 export const passwordRegex = /^(?=.*\\d)(?=.*[a-z]).{5,}$/;
-
-export type PhoneContactObject = {
-  cc: string;
-  number: string;
-};
-
-export type ContactResultObject = {
-  value: string;
-  field: "emails" | "phones";
-};
-
 /**
- * Validates a contact
- *
- * @param {stirng} value
- * @throws UnprocessableEntityException("invalid-contact")
- * @return {object} { value: string, type: "email" | "phone" }
+ * Validates a contact, mobile phone number or string
  */
-export function isValidContact(value: string): ContactResultObject {
-  const isMobilePhone = validator.isMobilePhone(value);
-
-  if (!isMobilePhone && !validator.isEmail(value)) {
-    throw new UnprocessableEntityException("invalid-contact");
-  }
-
-  return {
-    field: isMobilePhone ? "phones" : "emails",
-    value,
-  };
+export function isValidContact(value: string): boolean {
+  return validator.isMobilePhone(value) || validator.isEmail(value);
 }
 
 /**

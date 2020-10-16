@@ -23,16 +23,16 @@ import { UpdateProfileDto } from "./dto";
 import { UserEntity } from "./entities/user.entity";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { Logger } from "pino";
-import { ManagementService } from "./management.service";
+import { UsersService } from "../users.service";
 
 @Controller("account/profile")
 @UseGuards(AuthGuard)
 export class ProfileController {
   logger: Logger = logger;
   constructor(
+    private usersService: UsersService,
     readonly sessionRepository: SessionRepository,
     readonly storage: StorageService,
-    private managementService: ManagementService,
   ) {}
 
   @Get()
@@ -49,7 +49,8 @@ export class ProfileController {
     @Request() req: AuthorizedRequest,
     @Body() body: UpdateProfileDto,
   ) {
-    return this.managementService.updateAccount(req.session, body);
+    await this.usersService.updateById(req.session.user._id, body);
+    await this.sessionRepository.updateCache({ _id: req.session._id });
   }
 
   @Patch("avatar")
@@ -107,12 +108,20 @@ export class ProfileController {
       }
 
       if (user.avatar) {
-        const remove = this.storage.delete(
-          STORAGE_BUCKETS.USERS_AVATARTS,
-          user.avatar,
+        util.retryUnderHood(() =>
+          this.storage.delete(
+            STORAGE_BUCKETS.USERS_AVATARTS,
+            user.avatar as string,
+          ),
         );
-        util.handleRejectionByUnderHood(remove);
       }
+
+      util.retryUnderHood(() =>
+        this.usersService.updateById(
+          { _id: request.session._id },
+          { avatar: url },
+        ),
+      );
 
       // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.
       // pseudo: pubSubClient.emit("avatarUploaded", { filename: url.split("/").pop() as string; })

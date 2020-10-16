@@ -29,7 +29,7 @@ export class WrongVerificationCodeException extends UnprocessableEntityException
   }
 }
 
-export class PhoneRegistredException extends ConflictException {
+export class ContactRegistredException extends ConflictException {
   constructor() {
     super(HTTP_EXCEPTIONS_MESSAGES.PHONE_REGISTRED);
   }
@@ -62,5 +62,17 @@ export class PasswordRequiredException extends UnprocessableEntityException {
 export class NotOwnContactException extends UnprocessableEntityException {
   constructor() {
     super(HTTP_EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT);
+  }
+}
+
+export class InvalidContactException extends UnprocessableEntityException {
+  constructor() {
+    super(HTTP_EXCEPTIONS_MESSAGES.INVALID_CONTACT);
+  }
+}
+
+export class RemoveContactNotAllowed extends UnprocessableEntityException {
+  constructor() {
+    super(HTTP_EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED);
   }
 }

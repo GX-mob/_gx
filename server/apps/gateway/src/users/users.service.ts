@@ -19,11 +19,16 @@ import {
   UnchangedPasswordException,
   PasswordRequiredException,
   NotOwnContactException,
+  InvalidContactException,
+  ContactRegistredException,
+  RemoveContactNotAllowed,
 } from "./exceptions";
 import { util } from "@app/helpers";
 import { UserInterface } from "@shared/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import validator from "validator";
+
+type ContactTypes = "email" | "phone";
 
 @Injectable()
 export class UsersService {
@@ -65,22 +70,27 @@ export class UsersService {
    * @returns Hidded target
    */
   public async requestContactVerify(target: string): Promise<string> {
+    const type = this.validateContact(target);
     await this.contactVerificationService.request(target);
-    const isEmail = validator.isEmail(target);
-    const hiddenTarget = isEmail
-      ? util.hideEmail(target)
-      : // Phone last 4 numbers
-        target.slice(target.length - 4);
+
+    const hiddenTarget =
+      type === "email"
+        ? util.hideEmail(target)
+        : // Phone last 4 numbers
+          target.slice(target.length - 4);
 
     return hiddenTarget;
   }
 
   public async verifyContact(target: string, code: string) {
+    const type = this.validateContact(target);
     const valid = await this.contactVerificationService.verify(target, code);
 
     if (!valid) {
       throw new WrongVerificationCodeException();
     }
+
+    return type;
   }
 
   /**
@@ -173,14 +183,14 @@ export class UsersService {
   }
 
   async enable2FA(user: UserInterface, target: string) {
+    this.validateContact(target);
     this.passwordRequired(user);
-    const { value: contact } = util.isValidContact(target);
 
-    if (!user.phones.includes(contact) && !user.emails.includes(contact)) {
+    if (!user.phones.includes(target) && !user.emails.includes(target)) {
       throw new NotOwnContactException();
     }
 
-    await this.userRepository.update({ _id: user._id }, { "2fa": contact });
+    await this.userRepository.update({ _id: user._id }, { "2fa": target });
   }
 
   async disable2FA(user: UserInterface, password: string) {
@@ -202,5 +212,65 @@ export class UsersService {
     if (!user.password) {
       throw new PasswordRequiredException();
     }
+  }
+
+  /**
+   * Validates the contact and return the type
+   * @param contact
+   */
+  validateContact(contact: string): ContactTypes {
+    const isMobilePhone = validator.isMobilePhone(contact);
+
+    if (!isMobilePhone || !validator.isEmail(contact)) {
+      throw new InvalidContactException();
+    }
+
+    return isMobilePhone ? "phone" : "email";
+  }
+
+  async checkInUseContact(contact: string) {
+    const field =
+      this.validateContact(contact) === "phone" ? "phones" : "emails";
+    const user = await this.userRepository.get({ [field]: contact });
+
+    if (user) {
+      throw new ContactRegistredException();
+    }
+  }
+
+  async addContact(user: UserInterface, contact: string, code: string) {
+    const field =
+      (await this.verifyContact(contact, code)) === "email"
+        ? "emails"
+        : "phones";
+
+    const update = {
+      [field]: [...(user[field] || []), contact],
+    };
+
+    await this.userRepository.update({ _id: user._id }, update);
+  }
+
+  async removeContact(user: UserInterface, contact: string) {
+    const field =
+      this.validateContact(contact) === "phone" ? "phones" : "emails";
+
+    /**
+     * Prevent removing the last contact or
+     * the second factor authentication
+     */
+    if (
+      [...user.phones, ...user.emails].length === 1 ||
+      user["2fa"] === contact
+    ) {
+      throw new RemoveContactNotAllowed();
+    }
+
+    const updated = [...user[field]];
+    const index = updated.indexOf(contact);
+
+    updated.splice(index, 1);
+
+    await this.userRepository.update({ _id: user._id }, { [field]: updated });
   }
 }
