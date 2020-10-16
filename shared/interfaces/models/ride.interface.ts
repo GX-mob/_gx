@@ -1,6 +1,6 @@
-import { PendencieInterface } from "./pendencie.interface";
+import { IPendencie } from "./pendencie.interface";
 
-export interface RoutePointInterface {
+export interface IRoutePoint {
   /**
    * Latitude and longitude
    */
@@ -20,9 +20,9 @@ export interface RoutePointInterface {
 }
 
 export interface RouteInterface {
-  start: RoutePointInterface;
-  waypoints?: RoutePointInterface[];
-  end: RoutePointInterface;
+  start: IRoutePoint;
+  waypoints?: IRoutePoint[];
+  end: IRoutePoint;
   path: string;
   distance: number;
   duration: number;
@@ -45,7 +45,7 @@ export enum RideStatus {
   CANCELED,
 }
 
-export interface RideInterface {
+export interface IRide {
   _id: any;
   pid: string;
   voyager: any;
@@ -88,5 +88,5 @@ export interface RideInterface {
   subArea: string;
   status: RideStatus;
   driver?: any;
-  pendencies?: PendencieInterface[];
+  pendencies?: IPendencie[];
 }

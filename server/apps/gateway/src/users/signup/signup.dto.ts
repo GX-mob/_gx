@@ -22,18 +22,9 @@ import {
   IsBoolean,
   IsDateString,
 } from "class-validator";
+import { ContactVerificationCheckDto } from "../users.dto";
 
-export class PhoneVerificationCheckDto {
-  @IsNotEmpty()
-  @IsString()
-  phone!: string;
-
-  @IsNotEmpty()
-  @IsNumberString()
-  code!: string;
-}
-
-export class SignUpDto extends PhoneVerificationCheckDto {
+export class SignUpDto extends ContactVerificationCheckDto {
   @IsNotEmpty()
   @IsString()
   firstName!: string;

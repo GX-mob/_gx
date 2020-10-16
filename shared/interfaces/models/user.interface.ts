@@ -3,7 +3,7 @@ export enum UserRoles {
   DRIVER = "DRIVER",
 }
 
-export interface UserInterface {
+export interface IUser {
   _id: any;
   /**
    * Public ID

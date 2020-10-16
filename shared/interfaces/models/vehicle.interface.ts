@@ -1,22 +1,22 @@
-import { UserInterface } from "./user.interface";
+import { IUser } from "./user.interface";
 
 export enum VehicleTypes {
   HATCH = "HATCH",
   SEDAN = "SEDAN",
 }
 
-export interface VehicleMetadataInterface {
+export interface IVehicleMetadata {
   name: string;
   manufacturer: string;
   type: VehicleTypes;
 }
 
-export interface VehicleInterface {
+export interface IVehicle {
   _id: any;
   plate: string;
   year: number;
-  owner: UserInterface;
+  owner: IUser;
   inUse: boolean;
-  metadata: VehicleMetadataInterface;
+  metadata: IVehicleMetadata;
   permissions: { user: string; expiration: number }[];
 }

@@ -25,7 +25,8 @@ import {
   Post,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { SignInPasswordDto, SignInCodeDto } from "./sign-in.dto";
+import { ContactDto } from "../users.dto";
+import { SignInPasswordDto, SignInCodeDto } from "./signin.dto";
 import {
   SignInHttpReponseCodes,
   IdentifyResponseInterface,
@@ -38,14 +39,17 @@ import { UsersService } from "../users.service";
 export class SignInController {
   constructor(private usersService: UsersService) {}
 
-  @Get(":phone")
-  async identify(@Response() res: FastifyReply, @Param("phone") phone: string) {
-    const user = await this.usersService.findByPhone(phone);
+  @Get(":contact")
+  async identify(
+    @Response() res: FastifyReply,
+    @Param() { contact }: ContactDto,
+  ) {
+    const user = await this.usersService.findByContact(contact);
 
     const { password, firstName, avatar } = user;
 
     if (!password) {
-      await this.usersService.requestContactVerify(phone);
+      await this.usersService.requestContactVerify(contact);
       res.code(SignInHttpReponseCodes.SecondaFactorRequired);
     }
 
@@ -62,8 +66,8 @@ export class SignInController {
     @Response() reply: FastifyReply,
     @Body() body: SignInPasswordDto,
   ) {
-    const { phone, password } = body;
-    const user = await this.usersService.findByPhone(phone);
+    const { contact, password } = body;
+    const user = await this.usersService.findByContact(contact);
 
     await this.usersService.assertPassword(user, password);
 
@@ -75,7 +79,7 @@ export class SignInController {
       return;
     }
 
-    const target = await this.usersService.requestContactVerify(phone);
+    const target = await this.usersService.requestContactVerify(contact);
 
     reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
     reply.send<Password2FARequiredResponse>({

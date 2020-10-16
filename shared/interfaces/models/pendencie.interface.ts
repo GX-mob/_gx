@@ -1,4 +1,4 @@
-export interface PendencieInterface {
+export interface IPendencie {
   _id: any;
   ride: string;
   issuer: any;

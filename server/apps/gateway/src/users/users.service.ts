@@ -44,8 +44,10 @@ export class UsersService {
    * @throws [HTTP] UserNotFoundException
    * @returns <UserInterface> User
    */
-  async findByPhone(phone: UserQueryInterface["phones"]) {
-    const user = await this.userRepository.get({ phones: phone });
+  async findByContact(contact: string) {
+    const type = this.validateContact(contact);
+    const field = this.getContactFieldName(type);
+    const user = await this.userRepository.get({ [field]: contact });
 
     if (!user) {
       throw new UserNotFoundException();
@@ -228,9 +230,13 @@ export class UsersService {
     return isMobilePhone ? "phone" : "email";
   }
 
+  private getContactFieldName(type: ContactTypes): "emails" | "phones" {
+    return type === "email" ? "emails" : "phones";
+  }
+
   async checkInUseContact(contact: string) {
-    const field =
-      this.validateContact(contact) === "phone" ? "phones" : "emails";
+    const type = this.validateContact(contact);
+    const field = this.getContactFieldName(type);
     const user = await this.userRepository.get({ [field]: contact });
 
     if (user) {

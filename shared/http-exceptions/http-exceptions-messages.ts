@@ -12,4 +12,5 @@ export enum HTTP_EXCEPTIONS_MESSAGES {
   UNCHANGED_DATA = "unchanged-data",
   CONTACT_ALREADY_REGISTRED = "contact-already-registred",
   NOT_OWN_CONTACT = "not-own-contact",
+  INVALID_CONTACT = "invalid-contact",
 }

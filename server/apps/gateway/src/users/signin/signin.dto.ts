@@ -20,12 +20,11 @@ import {
   SignInPasswordDtoInterface,
   SignInCodeDtoInterface,
 } from "@shared/interfaces";
+import { ContactDto } from "../users.dto";
 
-export class SignInPasswordDto implements SignInPasswordDtoInterface {
-  @IsNotEmpty()
-  @IsString()
-  phone!: string;
-
+export class SignInPasswordDto
+  extends ContactDto
+  implements SignInPasswordDtoInterface {
   @IsNotEmpty()
   @IsString()
   password!: string;

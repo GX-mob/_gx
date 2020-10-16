@@ -1,16 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { UsersService } from "../users.service";
-import { PhoneRegistredException } from "../exceptions";
+import { ContactRegistredException } from "../exceptions";
 
 @Injectable()
 export class SignUpService {
   constructor(private usersService: UsersService) {}
 
-  async checkRegistredPhone(phone: string) {
-    const user = await this.usersService.findByPhone(phone);
+  async checkRegistredPhone(contact: string) {
+    const user = await this.usersService.findByContact(contact);
 
     if (user) {
-      throw new PhoneRegistredException();
+      throw new ContactRegistredException();
     }
   }
 }

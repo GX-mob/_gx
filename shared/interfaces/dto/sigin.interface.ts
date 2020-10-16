@@ -1,4 +1,5 @@
-import { UserInterface } from "./user.interface";
+import { IUser } from "../models/user.interface";
+import { IContactDto } from "./common-dto.interfaces";
 
 export enum SignInHttpReponseCodes {
   Success = 201,
@@ -13,8 +14,8 @@ export interface SignInSuccessResponse {
 }
 
 export interface IdentifyResponseInterface {
-  firstName: UserInterface["firstName"];
-  avatar: UserInterface["avatar"];
+  firstName: IUser["firstName"];
+  avatar: IUser["avatar"];
 }
 
 export interface Password2FARequiredResponse {
@@ -24,12 +25,10 @@ export interface Password2FARequiredResponse {
   target: string;
 }
 
-export interface SignInPasswordDtoInterface {
-  phone: string;
+export interface SignInPasswordDtoInterface extends IContactDto {
   password: string;
 }
 
-export interface SignInCodeDtoInterface {
-  phone: string;
+export interface SignInCodeDtoInterface extends IContactDto {
   code: string;
 }

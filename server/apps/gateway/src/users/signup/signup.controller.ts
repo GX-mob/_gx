@@ -23,11 +23,13 @@ import {
   Request,
   Response,
   Post,
+  HttpCode,
 } from "@nestjs/common";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { PhoneVerificationCheckDto, SignUpDto } from "./signup.dto";
 import { UsersService } from "../users.service";
 import { SignUpService } from "./signup.service";
+import { SignUpDto } from "./signup.dto";
+import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
 
 @Controller("sign-up")
 export class SignUpController {
@@ -36,25 +38,19 @@ export class SignUpController {
     private signUpService: SignUpService,
   ) {}
 
-  @Get("verify/:number")
-  async phoneVerificationRequest(
-    @Response() reply: FastifyReply,
-    @Param() phone: string,
-  ) {
-    await this.signUpService.checkRegistredPhone(phone);
-    await this.usersService.requestContactVerify(phone);
-
-    reply.code(202);
-    reply.send();
+  @HttpCode(202)
+  @Get("verify/:contact")
+  async phoneVerificationRequest(@Param() { contact }: ContactDto) {
+    await this.signUpService.checkRegistredPhone(contact);
+    await this.usersService.requestContactVerify(contact);
   }
 
   @Post("check")
-  async phoneVerificationCheck(
+  async contactVerificationCheck(
     @Response() reply: FastifyReply,
-    @Body() body: PhoneVerificationCheckDto,
+    @Body() { contact, code }: ContactVerificationCheckDto,
   ) {
-    const { phone, code } = body;
-    await this.usersService.verifyContact(phone, code);
+    await this.usersService.verifyContact(contact, code);
 
     reply.code(200);
     reply.send();
@@ -68,7 +64,7 @@ export class SignUpController {
     @Body() body: SignUpDto,
   ) {
     const {
-      phone,
+      contact,
       code,
       firstName,
       lastName,
@@ -80,11 +76,11 @@ export class SignUpController {
     /**
      * Ensures security checks
      */
-    await this.signUpService.checkRegistredPhone(phone);
-    await this.usersService.verifyContact(phone, code);
+    await this.signUpService.checkRegistredPhone(contact);
+    await this.usersService.verifyContact(contact, code);
     const user = await this.usersService.create(
       {
-        phones: phone,
+        phones: contact,
         firstName,
         lastName,
         cpf,
@@ -94,14 +90,13 @@ export class SignUpController {
     );
     const session = await this.usersService.createSession(user, request);
 
-    reply.code(201);
-    reply.send({
+    return {
       user: {
         id: user._id,
       },
       session: {
         token: session.token,
       },
-    });
+    };
   }
 }

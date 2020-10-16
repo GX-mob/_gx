@@ -1,6 +1,6 @@
 import { RideTypes } from "./ride.interface";
 
-export interface RideTypeConfigurationInterface {
+export interface IRideTypeConfiguration {
   /**
    * Ride type
    */
@@ -23,10 +23,10 @@ export interface RideTypeConfigurationInterface {
   overBusinessTimeMinuteAdd: number;
 }
 
-export interface RideAreaConfigurationInterface {
+export interface IRideAreaConfiguration {
   area: string;
   currency: string;
   timezone: string;
-  general: RideTypeConfigurationInterface[];
-  subAreas: { [subArea: string]: RideTypeConfigurationInterface[] };
+  general: IRideTypeConfiguration[];
+  subAreas: { [subArea: string]: IRideTypeConfiguration[] };
 }
