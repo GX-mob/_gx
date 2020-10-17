@@ -48,21 +48,6 @@ export class RidesService {
     prices.forEach((price) => {
       this.areas[price.area] = price;
     });
-
-    /**
-     * Watch prices update
-    
-
-    rideAreaConfigurationModel.watch().on("change", (data) => {
-      switch (data.operationType) {
-        case "update":
-        case "insert":
-          const { fullDocument } = data;
-          this.areas[fullDocument.area] = fullDocument;
-          break;
-      }
-    });
-    */
   }
 
   async getRideByPid(pid: IRide["pid"]) {

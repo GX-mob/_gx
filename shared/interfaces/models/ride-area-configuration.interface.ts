@@ -27,6 +27,10 @@ export interface IRideAreaConfiguration {
   area: string;
   currency: string;
   timezone: string;
+  longRideConditions: {
+    ditanceKm: number;
+    minutes: number;
+  };
   general: IRideTypeConfiguration[];
   subAreas: { [subArea: string]: IRideTypeConfiguration[] };
 }

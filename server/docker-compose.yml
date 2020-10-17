@@ -1,11 +1,10 @@
 version: "3"
 x-gxweb-dev: &gxweb-dev
   build:
-    context: .
-    target: development
+    context: ../
+    dockerfile: ./Dockerfile
   volumes:
-    - .:/usr/src/app
-    - /usr/src/app/node_modules
+    - ./server:/usr/src/app
   networks:
     - gxnet
   environment:
@@ -28,7 +27,7 @@ services:
   gx-rides-flows:
     <<: *gxweb-dev
     container_name: gx-rides-flows
-    command: "npm run start:debug rides-flows" # pm2 start dist/run/main.js -i max -- --max_old_space_size=4096
+    command: "npm run start:debug -- rides-flows" # pm2 start dist/run/main.js -i max -- --max_old_space_size=4096
     ports:
       - 3001:3001
       - 9227:9227
@@ -40,7 +39,6 @@ services:
       - mongo:/data
     environment:
       MONGO_INITDB_DATABASE: config
-      MONGO_REPLICA_SET_NAME: gxmongoreplica
     networks:
       - gxnet
 
@@ -59,3 +57,4 @@ volumes:
 
 networks:
   gxnet:
+    driver: bridge

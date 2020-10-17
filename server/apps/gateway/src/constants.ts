@@ -1,14 +1,5 @@
 import { CONSTANTS as STORAGE_CONSTANTS } from "@app/storage";
 
-export const CACHE_NAMESPACES = {
-  REGISTRY_VERIFICATIONS: "registryVerifications",
-  SIGNIN_VERIFICATIONS: "signInVerifications",
-};
-
-export const CACHE_TTL = {
-  CONTACT_VERIFICATION: 1000 * 60,
-};
-
 export const STORAGE_BUCKETS = {
   USERS_AVATARTS: "gx-mob-users-avatars",
 };

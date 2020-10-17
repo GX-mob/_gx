@@ -59,7 +59,8 @@ export class RidesController {
     const ride = await this.rideService.getRideByPid(pid);
 
     if (!ride) throw new NotFoundException();
-    if (ride.driver !== driverPid) throw new ForbiddenException();
+    if (!ride.driver || ride.driver.pid !== driverPid)
+      throw new ForbiddenException();
 
     return new RideInfoDto(ride);
   }
