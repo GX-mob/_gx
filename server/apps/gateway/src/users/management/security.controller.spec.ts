@@ -8,7 +8,11 @@ import { UnprocessableEntityException } from "@nestjs/common";
 import { UserInterface, UserRoles } from "@shared/interfaces";
 import { util } from "@app/helpers";
 import { AccountSecurityController } from "./security.controller";
-import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "./dto";
+import {
+  UpdatePasswordDto,
+  Enable2FADto,
+  Disable2FADto,
+} from "./management.dto";
 import shortid from "shortid";
 import faker from "faker";
 import { EXCEPTIONS_MESSAGES } from "../constants";

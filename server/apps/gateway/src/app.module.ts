@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { RepositoryModule } from "@app/repositories";
 import { UsersHttpModule } from "./users/users-http.module";
 import { RidesModule } from "./rides/rides.module";
 import { LoggerModule } from "nestjs-pino";
@@ -16,6 +17,7 @@ import { LoggerModule } from "nestjs-pino";
     LoggerModule.forRoot({
       pinoHttp: { prettyPrint: process.env.NODE_ENV !== "production" },
     }),
+    RepositoryModule,
     UsersHttpModule,
     RidesModule,
   ],

@@ -4,14 +4,17 @@ import {
   Get,
   Put,
   Delete,
-  Request,
   Body,
   Param,
   HttpCode,
 } from "@nestjs/common";
-import { AuthGuard, AuthorizedRequest } from "@app/auth";
-import { ConfirmContactVerificationDto, RemoveContactDto } from "./dto";
+import { AuthGuard, User } from "@app/auth";
+import {
+  ConfirmContactVerificationDto,
+  RemoveContactDto,
+} from "./management.dto";
 import { UsersService } from "../users.service";
+import { IUser } from "@shared/interfaces";
 
 @Controller("account/contact")
 @UseGuards(AuthGuard)
@@ -28,21 +31,17 @@ export class ContactController {
   @Put("confirm")
   @HttpCode(201)
   async addContact(
-    @Request() request: AuthorizedRequest,
-    @Body() body: ConfirmContactVerificationDto,
+    @User() user: IUser,
+    @Body() { contact, code }: ConfirmContactVerificationDto,
   ) {
-    await this.usersService.addContact(
-      request.session.user,
-      body.contact,
-      body.code,
-    );
+    await this.usersService.addContact(user, contact, code);
   }
 
   @Delete()
   async removeContact(
-    @Request() request: AuthorizedRequest,
-    @Body() body: RemoveContactDto,
+    @User() user: IUser,
+    @Body() { contact }: RemoveContactDto,
   ) {
-    await this.usersService.removeContact(request.session.user, body.contact);
+    await this.usersService.removeContact(user, contact);
   }
 }

@@ -10,7 +10,7 @@ import {
   ContactVerifyRequestDto,
   ConfirmContactVerificationDto,
   RemoveContactDto,
-} from "./dto";
+} from "./management.dto";
 import SecurePassword from "secure-password";
 import { EXCEPTIONS_MESSAGES } from "../constants";
 

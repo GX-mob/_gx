@@ -10,12 +10,17 @@ import {
 import { RepositoryService, RideRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
-import { ICreatedRideDto } from "@shared/interfaces";
 import {
   BUSINESS_TIME_HOURS,
   AMOUT_DECIMAL_ADJUST,
   LONG_RIDE,
 } from "../constants";
+
+type CalculatedPriceAspect = {
+  total: number;
+  aditionalForLongRide: number;
+  aditionalForOutBusinessTime: number;
+};
 
 @Injectable()
 export class RidesService {
@@ -60,16 +65,16 @@ export class RidesService {
     */
   }
 
-  async create(
-    userId: IUser["_id"],
-    data: ICreateRideDto,
-  ): Promise<ICreatedRideDto> {
+  async getRideByPid(pid: IRide["pid"]) {
+    return this.rideRepository.get({ pid });
+  }
+
+  async create(userId: IUser["_id"], data: ICreateRideDto) {
     /**
      * Get user pendencies
      */
     const { pendencieModel } = this.repositoryService;
     const pendencies = await pendencieModel.find({ issuer: userId });
-
     const { route, type, payMethod, country, area, subArea } = data;
 
     /**
@@ -83,7 +88,7 @@ export class RidesService {
 
     const costs = { ...rideCosts, base, total };
 
-    const { pid } = await this.rideRepository.create({
+    return this.rideRepository.create({
       voyager: userId,
       route,
       type,
@@ -94,8 +99,6 @@ export class RidesService {
       subArea,
       costs,
     });
-
-    return { pid, costs, pendencies };
   }
 
   /**
@@ -179,11 +182,7 @@ export class RidesService {
     duration: number,
     price: IRideTypeConfiguration,
     isBusinessTime: boolean,
-  ): {
-    total: number;
-    aditionalForLongRide: number;
-    aditionalForOutBusinessTime: number;
-  } {
+  ): CalculatedPriceAspect {
     /**
      * Default price multiplier
      */
@@ -217,18 +216,14 @@ export class RidesService {
   /**
    *
    * @param distance in KM
-   * @param costs Fares of ride type
+   * @param price Fares of ride type
    * @param isBusinessTime
    */
   distancePrice(
     distance: number,
     price: IRideTypeConfiguration,
     isBusinessTime: boolean,
-  ): {
-    total: number;
-    aditionalForLongRide: number;
-    aditionalForOutBusinessTime: number;
-  } {
+  ): CalculatedPriceAspect {
     /**
      * Default price multiplier
      */

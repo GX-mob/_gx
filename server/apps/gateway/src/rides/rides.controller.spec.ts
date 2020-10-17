@@ -3,24 +3,25 @@
  *
  * @group unit/controllers/rides
  */
+import { Test } from "@nestjs/testing";
 import { RidesController } from "./rides.controller";
 import { RidesService } from "./rides.service";
 import { EventEmitter } from "events";
 import {
-  RideAreaConfigurationInterface,
+  IRideAreaConfiguration,
   RidePayMethods,
   RideTypes,
-  RoutePointInterface,
+  IRoutePoint,
 } from "@shared/interfaces";
-import { GetRidesPricesParams, CreateRideDto } from "./rides.dto";
+import { GetRidesPricesDto, CreateRideDto } from "./rides.dto";
 import { prices, path } from "./__mocks__";
 import shortid from "shortid";
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Types } from "mongoose";
 
 describe("RidesController", () => {
-  let rideService: RidesService;
-  let controller: RidesController;
+  let ridesService: RidesService;
+  let ridesController: RidesController;
   const emitter = new EventEmitter();
 
   emitter.setMaxListeners(50);
@@ -36,9 +37,7 @@ describe("RidesController", () => {
     },
     rideAreaConfigurationModel: {
       find: () => ({
-        lean: async (): Promise<RideAreaConfigurationInterface[]> => [
-          ...prices,
-        ],
+        lean: async (): Promise<IRideAreaConfiguration[]> => [...prices],
       }),
       watch: () => emitter,
     },
@@ -57,13 +56,8 @@ describe("RidesController", () => {
     session: { user: {} },
   };
 
-  const fastifyResponseMock = {
-    code: jest.fn(),
-    send: jest.fn(),
-  };
-
   const mockRoute = () => {
-    const point: RoutePointInterface = {
+    const point: IRoutePoint = {
       coord: [0, 0],
       primary: "foo",
       secondary: "foo",
@@ -87,14 +81,14 @@ describe("RidesController", () => {
     return body;
   };
 
-  beforeEach(() => {
-    rideService = new RidesService(repositoryServiceMock as any);
-    controller = new RidesController(
-      cacheMock as any,
-      repositoryServiceMock as any,
-      rideRepositoryMock as any,
-      rideService,
-    );
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [RidesController],
+      providers: [RidesService],
+    }).compile();
+
+    ridesService = moduleRef.get<RidesService>(RidesService);
+    ridesController = moduleRef.get<RidesController>(RidesController);
   });
 
   afterEach(() => {
@@ -111,11 +105,11 @@ describe("RidesController", () => {
   describe("getPricesStatusHandler", () => {
     it("should return general price", () => {
       const { area, general } = prices[0];
-      const params = new GetRidesPricesParams();
+      const params = new GetRidesPricesDto();
 
       params.area = area;
 
-      const response = controller.getPricesStatusHandler(params);
+      const response = ridesController.getPricesStatusHandler(params);
 
       expect(response).toStrictEqual({
         target: area,
@@ -127,11 +121,11 @@ describe("RidesController", () => {
       const { area, general, subAreas } = prices[0];
       const [subArea] = Object.keys(subAreas);
 
-      const params = new GetRidesPricesParams();
+      const params = new GetRidesPricesDto();
       params.area = area;
       params.subArea = subArea;
 
-      const response = controller.getPricesStatusHandler(params);
+      const response = ridesController.getPricesStatusHandler(params);
 
       expect(response).toStrictEqual({
         target: `${area}/${subArea}`,
@@ -142,11 +136,11 @@ describe("RidesController", () => {
     it("should return fallback to general due to non existent subArea", () => {
       const { area, general, subAreas } = prices[0];
 
-      const params = new GetRidesPricesParams();
+      const params = new GetRidesPricesDto();
       params.area = area;
       params.subArea = "not-have";
 
-      const response = controller.getPricesStatusHandler(params);
+      const response = ridesController.getPricesStatusHandler(params);
 
       expect(response).toStrictEqual({
         target: area,
@@ -157,29 +151,29 @@ describe("RidesController", () => {
 
   describe("getRideDataHandler", () => {
     it("should throw ForbiddenException", async () => {
-      const ridePid = shortid.generate();
+      const pid = shortid.generate();
       fastifyRequestMock.session.user = { pid: shortid.generate() };
       cacheMock.get.mockResolvedValue(shortid.generate());
 
       await expect(
-        controller.getRideDataHandler(fastifyRequestMock, ridePid),
+        ridesController.getRideDataHandler(fastifyRequestMock, { pid }),
       ).rejects.toStrictEqual(new ForbiddenException());
     });
 
     it("should throw NotFoundException", async () => {
-      const ridePid = shortid.generate();
+      const pid = shortid.generate();
       const driverPid = shortid.generate();
       fastifyRequestMock.session.user = { pid: driverPid };
       cacheMock.get.mockResolvedValue(driverPid);
       rideRepositoryMock.get.mockResolvedValue(null);
 
       await expect(
-        controller.getRideDataHandler(fastifyRequestMock, ridePid),
+        ridesController.getRideDataHandler(fastifyRequestMock, { pid }),
       ).rejects.toStrictEqual(new NotFoundException());
     });
 
     it("should throw NotFoundException", async () => {
-      const ridePid = shortid.generate();
+      const pid = shortid.generate();
       const driverPid = shortid.generate();
       const rideData = { pendencies: { foo: "bar" }, route: { foo: "foo" } };
       const { pendencies, ...expected } = rideData;
@@ -188,9 +182,9 @@ describe("RidesController", () => {
       cacheMock.get.mockResolvedValue(driverPid);
       rideRepositoryMock.get.mockResolvedValue(rideData);
 
-      const response = await controller.getRideDataHandler(
+      const response = await ridesController.getRideDataHandler(
         fastifyRequestMock,
-        ridePid,
+        { pid },
       );
 
       expect(response).toStrictEqual(expected);
@@ -213,7 +207,7 @@ describe("RidesController", () => {
       fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
 
       const body = mockRoute();
-      const calculatedPrices = rideService.getRideCosts(body);
+      const calculatedPrices = ridesService.getRideCosts(body);
       const costsSummary =
         calculatedPrices.distance.total + calculatedPrices.duration.total;
       const expectedCosts = {
@@ -222,7 +216,7 @@ describe("RidesController", () => {
         total: costsSummary,
       };
 
-      const response = await controller.createRideHandler(
+      const response = await ridesController.createRideHandler(
         fastifyRequestMock,
         body,
       );
@@ -256,7 +250,7 @@ describe("RidesController", () => {
       fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
 
       const body = mockRoute();
-      const calculatedPrices = rideService.getRideCosts(body);
+      const calculatedPrices = ridesService.getRideCosts(body);
       const costsSummary =
         calculatedPrices.distance.total + calculatedPrices.duration.total;
       const expectedCosts = {
@@ -265,7 +259,7 @@ describe("RidesController", () => {
         total: costsSummary + voyagerPendencies[0].amount,
       };
 
-      const response = await controller.createRideHandler(
+      const response = await ridesController.createRideHandler(
         fastifyRequestMock,
         body,
       );

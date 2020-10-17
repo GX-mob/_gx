@@ -1,4 +1,5 @@
 import { IPendencie } from "./pendencie.interface";
+import { IUser } from "./user.interface";
 
 export interface IRoutePoint {
   /**
@@ -45,10 +46,31 @@ export enum RideStatus {
   CANCELED,
 }
 
+export interface IRideCosts {
+  /**
+   * Ride cost, distance + duration
+   */
+  base: number;
+  distance: {
+    total: number;
+    aditionalForLongRide: number;
+    aditionalForOutBusinessTime: number;
+  };
+  duration: {
+    total: number;
+    aditionalForLongRide: number;
+    aditionalForOutBusinessTime: number;
+  };
+  /**
+   * Total cost, ride costs + pendencies costs
+   */
+  total: number;
+}
+
 export interface IRide {
   _id: any;
   pid: string;
-  voyager: any;
+  voyager: IUser;
   route: IRoute;
   /**
    * * 1 = Normal
@@ -63,30 +85,11 @@ export interface IRide {
   /**
    * Ride costs
    */
-  costs: {
-    /**
-     * Ride cost, distance + duration
-     */
-    base: number;
-    distance: {
-      total: number;
-      aditionalForLongRide: number;
-      aditionalForOutBusinessTime: number;
-    };
-    duration: {
-      total: number;
-      aditionalForLongRide: number;
-      aditionalForOutBusinessTime: number;
-    };
-    /**
-     * Total cost, ride costs + pendencies costs
-     */
-    total: number;
-  };
+  costs: IRideCosts;
   country: string;
   area: string;
   subArea: string;
   status: RideStatus;
-  driver?: any;
+  driver?: IUser;
   pendencies?: IPendencie[];
 }

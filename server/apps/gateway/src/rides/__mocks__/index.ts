@@ -1,12 +1,12 @@
 import {
-  RideAreaConfigurationInterface,
-  RideTypeConfigurationInterface,
+  IRideAreaConfiguration,
+  IRideTypeConfiguration,
 } from "@shared/interfaces";
 import { geometry } from "@app/helpers";
 //@ts-ignore
 const { decode } = require("google-polyline");
 
-export const rideType1: RideTypeConfigurationInterface = {
+export const rideType1: IRideTypeConfiguration = {
   type: 1,
   available: true,
   perKilometer: 1.1,
@@ -17,7 +17,7 @@ export const rideType1: RideTypeConfigurationInterface = {
   overBusinessTimeMinuteAdd: 0.3,
 };
 
-export const rideType2: RideTypeConfigurationInterface = {
+export const rideType2: IRideTypeConfiguration = {
   type: 2,
   available: true,
   perKilometer: 1.6,
@@ -28,7 +28,7 @@ export const rideType2: RideTypeConfigurationInterface = {
   overBusinessTimeMinuteAdd: 0.5,
 };
 
-export const prices: RideAreaConfigurationInterface[] = [
+export const prices: IRideAreaConfiguration[] = [
   {
     area: "AL",
     currency: "BRL",

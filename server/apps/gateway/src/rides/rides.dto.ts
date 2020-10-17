@@ -7,8 +7,8 @@ import {
   IGetRideInfoDto,
   IGetRidePricesDto,
   ICreateRideDto,
-  ICreatedRideDto,
   IPendencie,
+  RideStatus,
 } from "@shared/interfaces";
 import {
   ValidateNested,
@@ -18,6 +18,7 @@ import {
   IsInt,
   IsArray,
 } from "class-validator";
+import { Exclude, Expose } from "class-transformer";
 
 class Point implements IRoutePoint {
   @IsArray()
@@ -86,12 +87,39 @@ export class CreateRideDto implements ICreateRideDto {
   subArea!: IRide["subArea"];
 }
 
-export class CreatedRideDto implements ICreatedRideDto {
-  pid!: IRide["pid"];
+export class RideInfoDto implements IRide {
+  _id!: any;
+  pid!: string;
+  voyager!: any;
+  route!: IRoute;
+  /**
+   * * 1 = Normal
+   * * 2 = VIG - Very important gx
+   */
+  type!: RideTypes;
+  /**
+   * * 1 = Money
+   * * 2 = Credit card
+   */
+  payMethod!: RidePayMethods;
+  /**
+   * Ride costs
+   */
   costs!: IRide["costs"];
-  pendencies!: IPendencie[];
 
-  constructor(ride: ICreatedRideDto) {
+  @Exclude()
+  country!: string;
+  @Exclude()
+  area!: string;
+  @Exclude()
+  subArea!: string;
+  @Exclude()
+  status!: RideStatus;
+  driver?: any;
+  @Expose({ groups: ["voyager"] })
+  pendencies?: IPendencie[];
+
+  constructor(ride: IRide) {
     Object.assign(this, ride);
   }
 }

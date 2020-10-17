@@ -8,9 +8,9 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { UserInterface, UserRoles } from "@shared/interfaces";
-import { AccountProfileController } from "./profile.controller";
-import { UpdateProfileDto } from "./dto";
+import { IUser, UserRoles } from "@shared/interfaces";
+import { ProfileController } from "./profile.controller";
+import { UpdateProfileDto } from "./management.dto";
 import { UserEntity } from "./entities/user.entity";
 import shortid from "shortid";
 import faker from "faker";
@@ -56,7 +56,7 @@ describe("AccountProfileController", () => {
     send: jest.fn(),
   };
 
-  function mockUser(): UserInterface {
+  function mockUser(): IUser {
     return {
       _id: new Types.ObjectId(),
       pid: shortid.generate(),

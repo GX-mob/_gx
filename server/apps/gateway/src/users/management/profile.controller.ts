@@ -1,5 +1,5 @@
 import { Readable } from "stream";
-import { FastifyReply } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import {
   Controller,
   Get,
@@ -14,12 +14,12 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { IUser } from "@shared/interfaces";
+import { ISession, IUser } from "@shared/interfaces";
 import { SessionRepository } from "@app/repositories";
-import { AuthGuard, AuthorizedRequest } from "@app/auth";
+import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
-import { UpdateProfileDto } from "./dto";
+import { UpdateProfileDto } from "./management.dto";
 import { UserEntity } from "./entities/user.entity";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { Logger } from "pino";
@@ -40,29 +40,29 @@ export class ProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getHandler(@Request() req: AuthorizedRequest): IUser {
-    return new UserEntity(req.session.user);
+  getHandler(@User() user: IUser): IUser {
+    return new UserEntity(user);
   }
 
   @Patch()
   async updateHandler(
-    @Request() req: AuthorizedRequest,
+    @User() user: IUser,
+    @Session() session: ISession,
     @Body() body: UpdateProfileDto,
   ) {
-    await this.usersService.updateById(req.session.user._id, body);
-    await this.sessionRepository.updateCache({ _id: req.session._id });
+    await this.usersService.updateById(user._id, body);
+    await this.sessionRepository.updateCache({ _id: session._id });
   }
 
   @Patch("avatar")
   async uploadAvatar(
-    @Request() request: AuthorizedRequest,
+    @User() user: IUser,
+    @Request() request: FastifyRequest,
     @Response() reply: FastifyReply,
   ) {
     if (!request.isMultipart()) {
       throw new NotAcceptableException();
     }
-
-    const { user } = request.session;
 
     let handling = false;
     let error: Error;
@@ -117,10 +117,7 @@ export class ProfileController {
       }
 
       util.retryUnderHood(() =>
-        this.usersService.updateById(
-          { _id: request.session._id },
-          { avatar: url },
-        ),
+        this.usersService.updateById(user._id, { avatar: url }),
       );
 
       // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.

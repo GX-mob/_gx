@@ -24,7 +24,7 @@ import {
   RideStatus,
   RideTypes,
   RidePayMethods,
-  RouteInterface,
+  IRoute,
   IRoutePoint,
 } from "@shared/interfaces";
 import { UserModel } from "./user";
@@ -34,7 +34,7 @@ class Route extends mongoose.SchemaType {
     super(key, options, "Route");
   }
 
-  cast(route: RouteInterface) {
+  cast(route: IRoute) {
     if (!(route instanceof Object) || Object.keys(route).length < 3) {
       throw new Error(
         'Route must be an object with "start", "path", "end" and "distance" props',

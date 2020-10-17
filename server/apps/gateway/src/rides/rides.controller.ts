@@ -4,7 +4,6 @@ import {
   Get,
   Post,
   Param,
-  Request,
   NotFoundException,
   ForbiddenException,
   Body,
@@ -12,26 +11,23 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
 } from "@nestjs/common";
-import { AuthGuard, AuthorizedRequest, Driver } from "@app/auth";
+import { AuthGuard, Driver, User } from "@app/auth";
 import { CacheService } from "@app/cache";
-import { RepositoryService, RideRepository } from "@app/repositories";
 import { util } from "@app/helpers";
 import { RidesService } from "./rides.service";
 import {
   GetRideInfoDto,
   GetRidesPricesDto,
   CreateRideDto,
-  CreatedRideDto,
+  RideInfoDto,
 } from "./rides.dto";
-import { CACHE_NAMESPACES } from "../constants";
+import { IUser } from "@shared/interfaces";
 
 @Controller("rides/")
 @UseGuards(AuthGuard)
 export class RidesController {
   constructor(
     readonly cache: CacheService,
-    readonly repositoryService: RepositoryService,
-    readonly rideRepository: RideRepository,
     readonly rideService: RidesService,
   ) {}
 
@@ -50,42 +46,32 @@ export class RidesController {
 
   @Driver()
   @Get(":pid")
+  @UseInterceptors(ClassSerializerInterceptor)
+  @SerializeOptions({
+    excludePrefixes: ["_"],
+    groups: ["driver"],
+  })
   async getRideDataHandler(
-    @Request() req: AuthorizedRequest,
+    @User() user: IUser,
     @Param() { pid }: GetRideInfoDto,
   ) {
-    const { pid: driverPid } = req.session.user;
+    const { pid: driverPid } = user;
+    const ride = await this.rideService.getRideByPid(pid);
 
-    const readPermission = await this.cache.get(
-      CACHE_NAMESPACES.RIDE_READ_PERMISSIONS,
-      pid,
-    );
+    if (!ride) throw new NotFoundException();
+    if (ride.driver !== driverPid) throw new ForbiddenException();
 
-    if (driverPid !== readPermission) {
-      throw new ForbiddenException();
-    }
-
-    const ride = await this.rideRepository.get({ pid });
-
-    if (!ride) {
-      throw new NotFoundException();
-    }
-
-    const { pendencies, ...publicData } = ride;
-
-    return publicData;
+    return new RideInfoDto(ride);
   }
 
   @Post()
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     excludePrefixes: ["_"],
+    groups: ["voyager"],
   })
-  async createRideHandler(
-    @Request() req: AuthorizedRequest,
-    @Body() body: CreateRideDto,
-  ) {
-    const ride = await this.rideService.create(req.session.user._id, body);
-    return new CreatedRideDto(ride);
+  async createRideHandler(@User() user: IUser, @Body() body: CreateRideDto) {
+    const ride = await this.rideService.create(user._id, body);
+    return new RideInfoDto(ride);
   }
 }

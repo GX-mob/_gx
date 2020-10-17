@@ -3,7 +3,6 @@ import { CONSTANTS as STORAGE_CONSTANTS } from "@app/storage";
 export const CACHE_NAMESPACES = {
   REGISTRY_VERIFICATIONS: "registryVerifications",
   SIGNIN_VERIFICATIONS: "signInVerifications",
-  RIDE_READ_PERMISSIONS: "rideReadPermission",
 };
 
 export const CACHE_TTL = {

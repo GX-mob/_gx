@@ -6,8 +6,8 @@ import { ConfigModule } from "@nestjs/config";
 import { parseISO } from "date-fns";
 import {
   RideTypes,
-  RoutePointInterface,
-  RideAreaConfigurationInterface,
+  IRoutePoint,
+  IRideAreaConfiguration,
 } from "@shared/interfaces";
 import { RepositoryModule, RepositoryService } from "@app/repositories";
 import { RidesService } from "./rides.service";
@@ -24,9 +24,7 @@ describe("RideService", () => {
   const repositoryServiceMock = {
     rideAreaConfigurationModel: {
       find: () => ({
-        lean: async (): Promise<RideAreaConfigurationInterface[]> => [
-          ...prices,
-        ],
+        lean: async (): Promise<IRideAreaConfiguration[]> => [...prices],
       }),
       watch: () => emitter,
     },
@@ -52,69 +50,13 @@ describe("RideService", () => {
     const prices = await repositoryServiceMock.rideAreaConfigurationModel
       .find()
       .lean();
-    const areas: { [area: string]: RideAreaConfigurationInterface } = {};
+    const areas: { [area: string]: IRideAreaConfiguration } = {};
 
     prices.forEach((price) => {
       areas[price.area] = price;
     });
 
     expect(service.areas).toStrictEqual(areas);
-  });
-
-  it("should update area prices", async () => {
-    const prices = await repositoryServiceMock.rideAreaConfigurationModel
-      .find()
-      .lean();
-
-    const newRideType1Values = {
-      ...rideType1,
-      perKilometer: 1.7,
-      perMinute: 0.6,
-      kilometerMultipler: 0.4,
-      minuteMultipler: 0.3,
-      overBusinessTimeKmAdd: 0.7,
-      overBusinessTimeMinuteAdd: 0.6,
-    };
-
-    emitter.emit("change", {
-      operationType: "update",
-      fullDocument: {
-        ...prices[0],
-        general: [prices[0].general[1], newRideType1Values],
-      },
-    });
-
-    const general = service.areas[prices[0].area].general;
-
-    expect(general).toStrictEqual([prices[0].general[1], newRideType1Values]);
-  });
-
-  it("should insert area prices", async () => {
-    const newRideType1Values = {
-      ...rideType1,
-      perKilometer: 1.7,
-      perMinute: 0.6,
-      kilometerMultipler: 0.4,
-      minuteMultipler: 0.3,
-      overBusinessTimeKmAdd: 0.7,
-      overBusinessTimeMinuteAdd: 0.6,
-    };
-
-    const newDocument = {
-      ...prices[0],
-      area: "SP",
-      general: [prices[0].general[1], newRideType1Values],
-      subAreas: {},
-    };
-
-    emitter.emit("change", {
-      operationType: "insert",
-      fullDocument: newDocument,
-    });
-
-    const general = service.areas[newDocument.area];
-
-    expect(general).toStrictEqual(newDocument);
   });
 
   describe("getPrice", () => {
@@ -264,7 +206,7 @@ describe("RideService", () => {
 
   describe("getRideCosts", () => {
     it("should calculate ", () => {
-      const point: RoutePointInterface = {
+      const point: IRoutePoint = {
         coord: [0, 0],
         primary: "foo",
         secondary: "foo",

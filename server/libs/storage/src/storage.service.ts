@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Storage, Bucket, File } from "@google-cloud/storage";
 import { Readable, Writable, Duplex } from "stream";
-import PngQuant from "pngquant";
-import JpegTran from "jpegtran";
 import { PassThrough } from "stream";
 import FileType from "file-type";
 import { GoogleStorageService } from "./google-storage.service";
@@ -31,8 +29,6 @@ export type UploadStreamOptions = {
    */
   errorHandler(error: Error): void;
 };
-
-export type CompressibleMIME = "image/png" | "image/jpg" | "image/jpeg";
 
 @Injectable()
 export class StorageService {
