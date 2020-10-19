@@ -19,10 +19,9 @@ import { SessionRepository } from "@app/repositories";
 import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
-import { UpdateProfileDto } from "./management.dto";
-import { UserEntity } from "./entities/user.entity";
-import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
+import { UserDto, UpdateProfileDto } from "./management.dto";
 import { Logger } from "pino";
+import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { UsersService } from "../users.service";
 
 @Controller("account/profile")
@@ -41,7 +40,7 @@ export class ProfileController {
     excludePrefixes: ["_"],
   })
   getHandler(@User() user: IUser): IUser {
-    return new UserEntity(user);
+    return new UserDto(user);
   }
 
   @Patch()

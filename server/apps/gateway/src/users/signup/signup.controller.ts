@@ -66,7 +66,7 @@ export class SignUpController {
       cpf,
       birth,
       terms,
-      credential,
+      password,
     } = body;
     /**
      * Ensures security checks
@@ -80,6 +80,7 @@ export class SignUpController {
         firstName,
         lastName,
         cpf,
+        password,
         birth: new Date(birth),
       },
       terms,

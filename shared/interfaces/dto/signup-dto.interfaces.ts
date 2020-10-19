@@ -4,7 +4,7 @@ export interface ISignUpDto {
   cpf: string;
   birth: string;
   terms: boolean;
-  credential?: string;
+  password?: string;
 }
 
 export interface ISignUpSuccessResponseDto {

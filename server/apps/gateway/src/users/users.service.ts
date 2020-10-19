@@ -1,5 +1,6 @@
 // Application Service
 import { Injectable } from "@nestjs/common";
+import SecurePassword from "secure-password";
 import {
   UserRepository,
   UserCreateInterface,
@@ -29,6 +30,8 @@ type ContactTypes = "email" | "phone";
 
 @Injectable()
 export class UsersService {
+  private securePassword = new SecurePassword();
+
   constructor(
     private userRepository: UserRepository,
     private contactVerificationService: ContactVerificationService,
@@ -52,14 +55,31 @@ export class UsersService {
     return user;
   }
 
+  hashPassword(password: string) {
+    return this.securePassword.hash(Buffer.from(password));
+  }
+
   async assertPassword(user: IUser, password: string) {
-    const result = await util.assertPassword(password, user.password as string);
+    const passwordValue = Buffer.from(password);
+    const currentPassword = Buffer.from(user.password as string, "base64");
+    const result = await this.securePassword.verify(
+      passwordValue,
+      currentPassword,
+    );
 
-    if (!result) {
-      throw new WrongPasswordException();
+    switch (result) {
+      case SecurePassword.VALID:
+        return;
+      case SecurePassword.VALID_NEEDS_REHASH:
+        const newHash = await this.hashPassword(password);
+        await this.userRepository.update(
+          { pid: user.pid },
+          { password: newHash.toString("base64") },
+        );
+        return;
+      default:
+        throw new WrongPasswordException();
     }
-
-    return user;
   }
 
   /**
@@ -130,40 +150,33 @@ export class UsersService {
 
   async updatePassword(user: IUser, current: string, newPassword: string) {
     if (!user.password) {
-      const password = await util.hashPassword(newPassword);
+      const password = await this.hashPassword(newPassword);
 
-      await this.userRepository.model.updateOne(
+      await this.userRepository.update(
         { _id: user._id },
-        { password },
+        { password: password.toString("base64") },
       );
 
       return;
     }
 
-    const currentPasswordCompare = await util.assertPassword(
-      current,
-      user.password,
+    await this.assertPassword(user, current);
+
+    const compareResult = await this.securePassword.verify(
+      Buffer.from(newPassword),
+      Buffer.from(user.password, "base64"),
     );
 
-    if (!currentPasswordCompare) {
-      throw new WrongPasswordException();
-    }
-
-    const matchToCurrentPassword = await util.assertPassword(
-      newPassword,
-      user.password,
-    );
-
-    if (matchToCurrentPassword) {
+    if (compareResult === SecurePassword.VALID) {
       throw new UnchangedPasswordException();
     }
 
-    const password = await util.hashPassword(newPassword);
+    const password = await this.hashPassword(newPassword);
 
     await this.userRepository.model.updateOne({ _id: user._id }, { password });
   }
 
-  async enable2FA(user: IUser, target: string) {
+  enable2FA(user: IUser, target: string) {
     this.validateContact(target);
     this.passwordRequired(user);
 
@@ -171,22 +184,15 @@ export class UsersService {
       throw new NotOwnContactException();
     }
 
-    await this.userRepository.update({ _id: user._id }, { "2fa": target });
+    return this.userRepository.update({ _id: user._id }, { "2fa": target });
   }
 
   async disable2FA(user: IUser, password: string) {
     this.passwordRequired(user);
 
-    const matchPassword = await util.assertPassword(
-      password,
-      user.password as string,
-    );
+    await this.assertPassword(user, password);
 
-    if (!matchPassword) {
-      throw new WrongPasswordException();
-    }
-
-    this.userRepository.update({ _id: user._id }, { "2fa": "" });
+    return this.userRepository.update({ _id: user._id }, { "2fa": "" });
   }
 
   private passwordRequired(user: IUser) {

@@ -43,5 +43,5 @@ export class SignUpDto
   terms!: boolean;
 
   @IsString()
-  credential?: string;
+  password?: string;
 }

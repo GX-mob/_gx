@@ -3,7 +3,7 @@ import { IUser, UserRoles } from "@shared/interfaces";
 
 export function genNumber() {
   const random = Math.floor(Math.random() * 999999);
-  return `5582988${String(random).padEnd(6, "0")}`;
+  return `+5582988${String(random).padEnd(6, "0")}`;
 }
 
 export function mockUser(override: Partial<IUser> = {}): IUser {

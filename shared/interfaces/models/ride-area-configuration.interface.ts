@@ -28,7 +28,7 @@ export interface IRideAreaConfiguration {
   currency: string;
   timezone: string;
   longRideConditions: {
-    ditanceKm: number;
+    distanceKm: number;
     minutes: number;
   };
   general: IRideTypeConfiguration[];
