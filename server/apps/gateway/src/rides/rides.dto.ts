@@ -19,6 +19,7 @@ import {
   IsArray,
 } from "class-validator";
 import { Exclude, Expose } from "class-transformer";
+import { UserRoles } from "@shared/interfaces";
 
 class Point implements IRoutePoint {
   @IsArray()
@@ -90,17 +91,21 @@ export class CreateRideDto implements ICreateRideDto {
 export class RideInfoDto implements IRide {
   _id!: any;
   pid!: string;
+  @Expose({ groups: [UserRoles.DRIVER] })
   voyager!: any;
+  @Expose({ groups: [UserRoles.DRIVER] })
   route!: IRoute;
   /**
    * * 1 = Normal
    * * 2 = VIG - Very important gx
    */
+  @Expose({ groups: [UserRoles.DRIVER] })
   type!: RideTypes;
   /**
    * * 1 = Money
    * * 2 = Credit card
    */
+  @Expose({ groups: [UserRoles.DRIVER] })
   payMethod!: RidePayMethods;
   /**
    * Ride costs
@@ -115,8 +120,9 @@ export class RideInfoDto implements IRide {
   subArea!: string;
   @Exclude()
   status!: RideStatus;
+  @Expose({ groups: [UserRoles.VOYAGER] })
   driver?: any;
-  @Expose({ groups: ["voyager"] })
+  @Expose({ groups: [UserRoles.VOYAGER] })
   pendencies?: IPendencie[];
 
   constructor(ride: IRide) {

@@ -10,6 +10,7 @@ import { SessionService } from "@app/session";
 import { getClientIp } from "request-ip";
 import { FastifyRequest } from "fastify";
 import { UserRoles } from "@shared/interfaces";
+import { ROLES_METATADA_KEY } from "./constants";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -20,9 +21,9 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<UserRoles[]>(
-      "roles",
+      ROLES_METATADA_KEY,
       context.getHandler(),
-    );
+    ) || [UserRoles.VOYAGER];
 
     const request: FastifyRequest = context.switchToHttp().getRequest();
 

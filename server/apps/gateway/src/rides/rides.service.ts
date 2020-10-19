@@ -6,6 +6,7 @@ import {
   IRide,
   IRideAreaConfiguration,
   IRideTypeConfiguration,
+  RideTypes,
 } from "@shared/interfaces";
 import { RepositoryService, RideRepository } from "@app/repositories";
 import { util } from "@app/helpers";
@@ -16,10 +17,21 @@ import {
   LONG_RIDE,
 } from "../constants";
 
+import {
+  InvalidRideTypeException,
+  UnsupportedAreaException,
+  RideNotFoundException,
+} from "./exceptions";
+
 type CalculatedPriceAspect = {
   total: number;
   aditionalForLongRide: number;
   aditionalForOutBusinessTime: number;
+};
+
+type RideBasePrices = {
+  duration: CalculatedPriceAspect;
+  distance: CalculatedPriceAspect;
 };
 
 @Injectable()
@@ -92,45 +104,36 @@ export class RidesService {
    * fallback to $area if not have results for $area.$subArea
    * @param area
    * @param subArea
-   * @returns {PriceDetail[] | PriceDetail | undefined} Price list, price for provided ride type or undefined
+   * @returns {IRideTypeConfiguration} Price list, price for provided ride type or undefined
    */
-  getRideStatusPrice<T extends IRide["type"]>(
+  getPricesOfRidesType(
     area: string,
     subArea?: string,
-    rideType?: T,
-  ): IRideTypeConfiguration | IRideTypeConfiguration[] | undefined {
-    if (!util.hasProp(this.areas, area) || !this.areas[area]) {
-      return;
+  ): IRideTypeConfiguration[] {
+    if (!util.hasProp(this.areas, area)) {
+      throw new UnsupportedAreaException();
     }
 
     const areaPrices = this.areas[area];
 
     const response =
-      subArea && areaPrices.subAreas[subArea]
+      subArea && util.hasProp(areaPrices.subAreas, subArea)
         ? areaPrices.subAreas[subArea]
         : areaPrices.general;
-
-    if (typeof rideType !== "undefined") {
-      return response.find((price) => price.type === rideType);
-    }
 
     return response;
   }
 
-  getRideCosts(request: CreateRideDto) {
+  getRideCosts(request: CreateRideDto): RideBasePrices {
     const { type, area, subArea } = request;
 
     /**
      * The costs of ride type
      */
     const timezone = this.areas[area].timezone;
-    const costs = this.getRideStatusPrice(
-      area,
-      subArea,
-      type,
-    ) as IRideTypeConfiguration;
+    const pricesOfRidesType = this.getPricesOfRidesType(area, subArea);
+    const costs = this.getCostsOfRideType(pricesOfRidesType, type);
     const isBusinessTime = this.isBusinessTime(timezone);
-
     const duration = this.durationPrice(
       request.route.duration,
       costs,
@@ -143,6 +146,19 @@ export class RidesService {
     );
 
     return { duration, distance };
+  }
+
+  getCostsOfRideType(
+    pricesOfRidesType: IRideTypeConfiguration[],
+    type: RideTypes,
+  ) {
+    const costs = pricesOfRidesType.find((price) => price.type === type);
+
+    if (!costs) {
+      throw new InvalidRideTypeException();
+    }
+
+    return costs;
   }
 
   isBusinessTime(timezone: string, date: Date = new Date()) {

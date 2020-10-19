@@ -16,4 +16,22 @@ export class RedisService {
 
     this.client = new IORedis(redis_uri);
   }
+
+  public multi(commands: string[][]) {
+    return this.client.multi(commands);
+  }
+
+  public get(key: string) {
+    return this.client.get(key);
+  }
+
+  public set(key: string, value: string, ...extras: string[]) {
+    return this.client.set(key, value, ...extras);
+  }
+
+  public del(key: string | string[]) {
+    return typeof key === "string"
+      ? this.client.del(key)
+      : this.client.del(...key);
+  }
 }

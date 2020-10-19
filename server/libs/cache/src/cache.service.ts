@@ -1,11 +1,21 @@
 import { Injectable } from "@nestjs/common";
-import { Redis } from "ioredis";
-import schemapack, { Parser } from "schemapack";
-import { SchemaObject } from "@shared/types/schemapack";
-import { DEFAULT_TTL, LINK_PREFIX, SEPARATOR } from "./constants";
+import { Redis, Commands, Pipeline } from "ioredis";
+import {
+  DEFAULT_TTL,
+  LINK_PREFIX,
+  SEPARATOR,
+  AUTO_RETRY_ATTEMPS,
+  AUTO_RETRY_INTERVAL_MS,
+} from "./constants";
 import { RedisService } from "./redis.service";
+import { util } from "@app/helpers";
 
 export type setOptions = {
+  /**
+   * Retry over fail
+   * @default true
+   */
+  autoReTry?: boolean;
   ex?: number;
   link?: string[];
 };
@@ -14,19 +24,9 @@ export type setOptions = {
 export class CacheService {
   private defaultLifetime = String(DEFAULT_TTL);
   readonly redis: Redis;
-  public schemas: { [k: string]: Parser } = {};
 
   constructor(private redisService: RedisService) {
     this.redis = this.redisService.client;
-  }
-
-  /**
-   * Build schema serialization
-   * @param name schema namespace
-   * @param structure schema structure
-   */
-  buildSchema<T = any>(name: string, structure: SchemaObject<any>): Parser<T> {
-    return (this.schemas[name] = schemapack.build<T>(structure));
   }
 
   /**
@@ -35,20 +35,20 @@ export class CacheService {
    * @param key Key name
    * @returns Value cached or null
    */
-  async get(ns: string, key: any): Promise<any> {
+  async get(
+    ns: string,
+    key: any,
+    { autoReTry = true }: Pick<setOptions, "autoReTry"> = {},
+  ): Promise<any> {
     const finalKey = this.key(ns, key);
-    const data = await this.redis.get(finalKey);
+    const data = await this.execute("get", autoReTry, finalKey);
 
     if (!data) {
       return null;
     }
 
     if (this.isLink(data)) {
-      return this.get(...this.getParentKey(data));
-    }
-
-    if (ns in this.schemas) {
-      return data && this.schemas[ns].decode((data as unknown) as Buffer);
+      return this.get(...this.getParentKey(data), { autoReTry });
     }
 
     return JSON.parse(data);
@@ -79,43 +79,78 @@ export class CacheService {
    * @param key key name
    * @param value value to store
    * @param options
-   * @param options.ex key expiration in ms
-   * @param options.link link key list
+   * @param options.autoReTry Auto retry
+   * @default true
+   * @param options.ex Expiration in ms
+   * @param options.link Link keys list
    */
-  async set(ns: string, key: any, value: any, options: setOptions = {}) {
+  async set(ns: string, key: any, value: any, options?: setOptions) {
     const parentKey = this.key(ns, key);
+    const { ex, link, autoReTry = true } = options || {};
 
-    value =
-      ns in this.schemas
-        ? this.schemas[ns].encode(value)
-        : JSON.stringify(value);
+    value = JSON.stringify(value);
 
-    const ex = options.ex ? String(options.ex) : this.defaultLifetime;
+    const expiration = ex ? String(ex) : this.defaultLifetime;
 
-    if (!options.link) {
-      return this.redis.set(parentKey, value, "PX", ex);
+    if (!link) {
+      return this.execute("set", autoReTry, parentKey, value, "PX", expiration);
     }
 
-    return this.redis
-      .multi([
-        ["set", parentKey, value, "PX", ex],
-        ...options.link.map((childKey) => [
-          "set",
-          this.key(ns, childKey),
-          `${LINK_PREFIX}${parentKey}`,
-        ]),
-      ])
-      .exec();
+    return this.execute("multi", autoReTry, [
+      // Set the parent key, that have the value
+      ["set", parentKey, value, "PX", expiration],
+      // And linked keys
+      ...link.map((childKey) => [
+        "set",
+        this.key(ns, childKey),
+        `${LINK_PREFIX}${parentKey}`,
+      ]),
+    ]).exec();
   }
 
   /**
    * Delete cached value
-   * @param ns Key namespace
-   * @param key Key name
+   * @param namespace
+   * @param key
    */
-  del(ns: string, key: any) {
-    const finalKey = this.key(ns, key);
+  del(
+    namespace: string,
+    key: any,
+    { autoReTry = true }: Pick<setOptions, "autoReTry"> = {},
+  ) {
+    const finalKey = this.key(namespace, key);
 
-    return this.redis.del(finalKey);
+    return this.execute("del", autoReTry, finalKey);
   }
+
+  public execute<K extends keyof Omit<RedisService, "client">>(
+    cmd: K,
+    retry: boolean,
+    ...args: Parameters<RedisService[K]>
+  ): ReturnType<RedisService[K]> {
+    const command = this.redisService[cmd] as any;
+    return retry
+      ? util.retry(
+          () => command(...args),
+          AUTO_RETRY_ATTEMPS,
+          AUTO_RETRY_INTERVAL_MS,
+        )
+      : command(...args);
+  }
+
+  /*
+  private execute<K extends keyof Commands>(
+    cmd: K,
+    args: Parameters<Commands[K]>,
+    retry: boolean,
+  ): ReturnType<Commands[K]> {
+    return retry
+      ? util.retry(
+          () => (this.redis as any)[cmd](...args),
+          AUTO_RETRY_ATTEMPS,
+          AUTO_RETRY_INTERVAL_MS,
+        )
+      : (this.redis as any)[cmd](...args);
+  }
+  */
 }

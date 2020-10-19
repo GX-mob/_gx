@@ -1,124 +1,111 @@
 /**
- * Data Service
- *
- * @group unit/controllers/rides
+ * @group unit/controller
+ * @group unit/gateway/controller
+ * @group unit/gateway/rides/controller
  */
 import { Test } from "@nestjs/testing";
+import { LoggerModule } from "nestjs-pino";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
+import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { SessionModule, SessionService } from "@app/session";
+import { IRideAreaConfiguration, ISession } from "@shared/interfaces";
+import { mockRide, mockSession, mockAreaConfiguration } from "@testing/testing";
 import { RidesController } from "./rides.controller";
 import { RidesService } from "./rides.service";
-import { EventEmitter } from "events";
 import {
-  IRideAreaConfiguration,
-  RidePayMethods,
-  RideTypes,
-  IRoutePoint,
-} from "@shared/interfaces";
-import { GetRidesPricesDto, CreateRideDto } from "./rides.dto";
-import { prices, path } from "./__mocks__";
-import shortid from "shortid";
-import { ForbiddenException, NotFoundException } from "@nestjs/common";
-import { Types } from "mongoose";
+  RideInfoDto,
+  GetRidesPricesDto,
+  CreateRideDto,
+  GetRideInfoDto,
+} from "./rides.dto";
+import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 
 describe("RidesController", () => {
   let ridesService: RidesService;
   let ridesController: RidesController;
-  const emitter = new EventEmitter();
-
-  emitter.setMaxListeners(50);
-
-  const cacheMock = {
-    get: jest.fn(),
-    set: jest.fn(),
-  };
+  let sessionService: SessionService;
 
   const repositoryServiceMock = {
-    pendencieModel: {
-      find: jest.fn(),
-    },
     rideAreaConfigurationModel: {
       find: () => ({
-        lean: async (): Promise<IRideAreaConfiguration[]> => [...prices],
+        lean: async (): Promise<IRideAreaConfiguration[]> => [],
       }),
-      watch: () => emitter,
     },
-  };
-
-  const rideRepositoryMock = {
-    get: jest.fn(),
-    create: jest.fn(),
-  };
-
-  let fastifyRequestMock: any = {
-    headers: {
-      "user-agent": "foo",
-    },
-    raw: { headers: { "x-client-ip": "127.0.0.1" } },
-    session: { user: {} },
-  };
-
-  const mockRoute = () => {
-    const point: IRoutePoint = {
-      coord: [0, 0],
-      primary: "foo",
-      secondary: "foo",
-      district: "foo",
-    };
-
-    const body = new CreateRideDto();
-    body.country = "BR";
-    body.area = "AL";
-    body.subArea = "maceio";
-    body.payMethod = RidePayMethods.Money;
-    body.type = RideTypes.Normal;
-    body.route = {
-      start: point,
-      end: point,
-      path: path.encoded,
-      distance: path.distance,
-      duration: path.duration,
-    };
-
-    return body;
   };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        SessionModule,
+        CacheModule,
+        RepositoryModule,
+      ],
       controllers: [RidesController],
-      providers: [RidesService],
-    }).compile();
+      providers: [SessionService, RidesService],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({ get() {} })
+      .overrideProvider(CacheService)
+      .useValue({})
+      .overrideProvider(RepositoryService)
+      .useValue(repositoryServiceMock)
+      .compile();
 
+    sessionService = moduleRef.get<SessionService>(SessionService);
     ridesService = moduleRef.get<RidesService>(RidesService);
     ridesController = moduleRef.get<RidesController>(RidesController);
   });
 
   afterEach(() => {
-    fastifyRequestMock = {
-      headers: {
-        "user-agent": "foo",
-      },
-      raw: { headers: { "x-client-ip": "127.0.0.1" } },
-      session: { user: {} },
-    };
     jest.resetAllMocks();
   });
 
   describe("getPricesStatusHandler", () => {
-    it("should return general price", () => {
-      const { area, general } = prices[0];
-      const params = new GetRidesPricesDto();
+    let prices: IRideAreaConfiguration[];
+    let session: ISession;
+    let sessionVerifySpy: jest.SpyInstance;
+    let ridesGetPriceOfRydesType: jest.SpyInstance;
 
+    beforeEach(() => {
+      prices = [mockAreaConfiguration()];
+      session = mockSession();
+      sessionVerifySpy = jest
+        .spyOn(sessionService, "verify")
+        .mockImplementationOnce(async () => session);
+
+      ridesGetPriceOfRydesType = jest
+        .spyOn(ridesService, "getPricesOfRidesType")
+        .mockImplementationOnce((area: string, subArea?: string) => {
+          const config = prices.find(
+            (config) => config.area === area,
+          ) as IRideAreaConfiguration;
+
+          if (!subArea) return config.general;
+
+          return config.subAreas[subArea] || config.general;
+        });
+    });
+
+    afterEach(() => {
+      sessionVerifySpy.mockReset();
+      ridesGetPriceOfRydesType.mockReset();
+    });
+
+    it("should return general price", () => {
+      const [{ area, general }] = prices;
+      const params = new GetRidesPricesDto();
       params.area = area;
 
       const response = ridesController.getPricesStatusHandler(params);
 
-      expect(response).toStrictEqual({
-        target: area,
-        list: general,
-      });
+      expect(response).toStrictEqual(general);
     });
 
     it("should return subArea price", () => {
-      const { area, general, subAreas } = prices[0];
+      const [{ area, subAreas }] = prices;
       const [subArea] = Object.keys(subAreas);
 
       const params = new GetRidesPricesDto();
@@ -127,14 +114,11 @@ describe("RidesController", () => {
 
       const response = ridesController.getPricesStatusHandler(params);
 
-      expect(response).toStrictEqual({
-        target: `${area}/${subArea}`,
-        list: general,
-      });
+      expect(response).toStrictEqual(subAreas[subArea]);
     });
 
     it("should return fallback to general due to non existent subArea", () => {
-      const { area, general, subAreas } = prices[0];
+      const [{ area, general }] = prices;
 
       const params = new GetRidesPricesDto();
       params.area = area;
@@ -142,140 +126,100 @@ describe("RidesController", () => {
 
       const response = ridesController.getPricesStatusHandler(params);
 
-      expect(response).toStrictEqual({
-        target: area,
-        list: general,
-      });
+      expect(response).toStrictEqual(general);
     });
   });
 
   describe("getRideDataHandler", () => {
-    it("should throw ForbiddenException", async () => {
-      const pid = shortid.generate();
-      fastifyRequestMock.session.user = { pid: shortid.generate() };
-      cacheMock.get.mockResolvedValue(shortid.generate());
+    it("should throw RideNotFoundException", async () => {
+      const session = mockSession();
+
+      jest
+        .spyOn(sessionService, "verify")
+        .mockImplementationOnce(async () => session);
+
+      jest
+        .spyOn(ridesService, "getRideByPid")
+        .mockImplementationOnce(async () => null);
+
+      const getRideInfoDto = new GetRideInfoDto();
+      getRideInfoDto.pid = "no-exist";
 
       await expect(
-        ridesController.getRideDataHandler(fastifyRequestMock, { pid }),
-      ).rejects.toStrictEqual(new ForbiddenException());
+        ridesController.getRideDataHandler(session.user, getRideInfoDto),
+      ).rejects.toStrictEqual(new RideNotFoundException());
     });
 
-    it("should throw NotFoundException", async () => {
-      const pid = shortid.generate();
-      const driverPid = shortid.generate();
-      fastifyRequestMock.session.user = { pid: driverPid };
-      cacheMock.get.mockResolvedValue(driverPid);
-      rideRepositoryMock.get.mockResolvedValue(null);
+    it("should throw RideNoReadPermission", async () => {
+      const session = mockSession();
+      const ride = mockRide();
+
+      jest
+        .spyOn(sessionService, "verify")
+        .mockImplementationOnce(async () => session);
+
+      jest
+        .spyOn(ridesService, "getRideByPid")
+        .mockImplementationOnce(async (pid: string) =>
+          pid === ride.pid ? ride : null,
+        );
+
+      const getRideInfoDto = new GetRideInfoDto();
+      getRideInfoDto.pid = ride.pid;
 
       await expect(
-        ridesController.getRideDataHandler(fastifyRequestMock, { pid }),
-      ).rejects.toStrictEqual(new NotFoundException());
+        ridesController.getRideDataHandler(session.user, getRideInfoDto),
+      ).rejects.toStrictEqual(new RideNoReadPermission());
     });
 
-    it("should throw NotFoundException", async () => {
-      const pid = shortid.generate();
-      const driverPid = shortid.generate();
-      const rideData = { pendencies: { foo: "bar" }, route: { foo: "foo" } };
-      const { pendencies, ...expected } = rideData;
+    it("should return RideInfoDto instance", async () => {
+      const session = mockSession();
+      const ride = mockRide({ driver: session.user });
+      const rideDto = new RideInfoDto(ride);
 
-      fastifyRequestMock.session.user = { pid: driverPid };
-      cacheMock.get.mockResolvedValue(driverPid);
-      rideRepositoryMock.get.mockResolvedValue(rideData);
+      jest
+        .spyOn(sessionService, "verify")
+        .mockImplementationOnce(async () => session);
 
-      const response = await ridesController.getRideDataHandler(
-        fastifyRequestMock,
-        { pid },
-      );
+      jest
+        .spyOn(ridesService, "getRideByPid")
+        .mockImplementationOnce(async (pid: string) =>
+          pid === ride.pid ? ride : null,
+        );
 
-      expect(response).toStrictEqual(expected);
+      const getRideInfoDto = new GetRideInfoDto();
+      getRideInfoDto.pid = ride.pid;
+
+      await expect(
+        ridesController.getRideDataHandler(session.user, getRideInfoDto),
+      ).resolves.toStrictEqual(rideDto);
     });
   });
 
   describe("createRideHandler", () => {
-    it("should create without any pendencie", async () => {
-      const voyagerId = new Types.ObjectId();
-      const voyagerPid = shortid.generate();
-      const generatedRidePid = shortid.generate();
-      const voyagerPendencies: [] = [];
+    it("should create", async () => {
+      const session = mockSession();
+      const ride = mockRide();
+      delete ride.driver;
+      const rideDto = new RideInfoDto(ride);
+      const createRideDto = new CreateRideDto();
+      createRideDto.area = ride.area;
+      createRideDto.subArea = ride.subArea;
+      createRideDto.country = ride.country;
+      createRideDto.route = ride.route;
+      createRideDto.type = ride.type;
 
-      repositoryServiceMock.pendencieModel.find.mockResolvedValue(
-        voyagerPendencies,
-      );
-      rideRepositoryMock.create.mockResolvedValue({
-        pid: generatedRidePid,
-      });
-      fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
+      jest
+        .spyOn(sessionService, "verify")
+        .mockImplementationOnce(async () => session);
 
-      const body = mockRoute();
-      const calculatedPrices = ridesService.getRideCosts(body);
-      const costsSummary =
-        calculatedPrices.distance.total + calculatedPrices.duration.total;
-      const expectedCosts = {
-        ...calculatedPrices,
-        base: costsSummary,
-        total: costsSummary,
-      };
+      jest
+        .spyOn(ridesService, "create")
+        .mockImplementationOnce(async () => ride);
 
-      const response = await ridesController.createRideHandler(
-        fastifyRequestMock,
-        body,
-      );
-
-      expect(response).toStrictEqual({
-        pid: generatedRidePid,
-        costs: expectedCosts,
-        pendencies: voyagerPendencies,
-      });
-
-      expect(rideRepositoryMock.create.mock.calls[0][0]).toStrictEqual({
-        ...body,
-        voyager: voyagerId,
-        costs: expectedCosts,
-        pendencies: voyagerPendencies,
-      });
-    });
-
-    it("should create with a pendencie", async () => {
-      const voyagerId = new Types.ObjectId();
-      const voyagerPid = shortid.generate();
-      const generatedRidePid = shortid.generate();
-      const voyagerPendencies: any[] = [{ amount: 3 }];
-
-      repositoryServiceMock.pendencieModel.find.mockResolvedValue(
-        voyagerPendencies,
-      );
-      rideRepositoryMock.create.mockResolvedValue({
-        pid: generatedRidePid,
-      });
-      fastifyRequestMock.session.user = { _id: voyagerId, pid: voyagerPid };
-
-      const body = mockRoute();
-      const calculatedPrices = ridesService.getRideCosts(body);
-      const costsSummary =
-        calculatedPrices.distance.total + calculatedPrices.duration.total;
-      const expectedCosts = {
-        ...calculatedPrices,
-        base: costsSummary,
-        total: costsSummary + voyagerPendencies[0].amount,
-      };
-
-      const response = await ridesController.createRideHandler(
-        fastifyRequestMock,
-        body,
-      );
-
-      expect(response).toStrictEqual({
-        pid: generatedRidePid,
-        costs: expectedCosts,
-        pendencies: voyagerPendencies,
-      });
-
-      expect(rideRepositoryMock.create.mock.calls[0][0]).toStrictEqual({
-        ...body,
-        voyager: voyagerId,
-        costs: expectedCosts,
-        pendencies: voyagerPendencies,
-      });
+      await expect(
+        ridesController.createRideHandler(session.user, createRideDto),
+      ).resolves.toStrictEqual(rideDto);
     });
   });
 });

@@ -1,49 +1,93 @@
 /**
- * @group unit/services/ride
+ * @group unit/service
+ * @group unit/gateway/service
+ * @group unit/gateway/rides/service
  */
-import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigModule } from "@nestjs/config";
-import { parseISO } from "date-fns";
+import { Test } from "@nestjs/testing";
+import { LoggerModule } from "nestjs-pino";
+import faker from "faker";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
 import {
-  RideTypes,
-  IRoutePoint,
-  IRideAreaConfiguration,
-} from "@shared/interfaces";
-import { RepositoryModule, RepositoryService } from "@app/repositories";
+  RepositoryModule,
+  RepositoryService,
+  RideRepository,
+} from "@app/repositories";
+import { SessionModule, SessionService } from "@app/session";
+import { parseISO } from "date-fns";
+import { IRide, RideTypes, IRideAreaConfiguration } from "@shared/interfaces";
 import { RidesService } from "./rides.service";
-import { EventEmitter } from "events";
-
-import { rideType1, prices, path } from "./__mocks__";
+import {
+  mockRide,
+  mockAreaConfiguration,
+  mockRideTypeConfiguration,
+  mockPendencie,
+} from "@testing/testing";
+import {
+  InvalidRideTypeException,
+  UnsupportedAreaException,
+} from "./exceptions";
+import { CreateRideDto } from "./rides.dto";
 
 describe("RideService", () => {
-  let service: RidesService;
-  const emitter = new EventEmitter();
-
-  emitter.setMaxListeners(50);
+  let ridesService: RidesService;
+  let rideRepository: RideRepository;
+  const { route } = mockRide();
+  const rideType1 = mockRideTypeConfiguration();
+  const rideType2 = mockRideTypeConfiguration({
+    type: 2,
+    available: true,
+    perKilometer: 1.6,
+    perMinute: 0.5,
+    kilometerMultipler: 0.3,
+    minuteMultipler: 0.2,
+    overBusinessTimeKmAdd: 0.6,
+    overBusinessTimeMinuteAdd: 0.5,
+  });
+  const prices = [
+    mockAreaConfiguration({
+      general: [rideType1, rideType2],
+    }),
+  ];
 
   const repositoryServiceMock = {
+    pendencieModel: { find: jest.fn() },
     rideAreaConfigurationModel: {
       find: () => ({
         lean: async (): Promise<IRideAreaConfiguration[]> => [...prices],
       }),
-      watch: () => emitter,
     },
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), RepositoryModule],
-      providers: [RidesService],
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        SessionModule,
+        CacheModule,
+        RepositoryModule,
+      ],
+      providers: [SessionService, RidesService],
     })
+      .overrideProvider(ConfigService)
+      .useValue({ get() {} })
+      .overrideProvider(CacheService)
+      .useValue({})
       .overrideProvider(RepositoryService)
       .useValue(repositoryServiceMock)
       .compile();
 
-    service = module.get<RidesService>(RidesService);
+    ridesService = moduleRef.get<RidesService>(RidesService);
+    rideRepository = moduleRef.get<RideRepository>(RideRepository);
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it("should be defined", () => {
-    expect(service).toBeDefined();
+    expect(ridesService).toBeDefined();
   });
 
   it("should has rides types loaded", async () => {
@@ -56,44 +100,53 @@ describe("RideService", () => {
       areas[price.area] = price;
     });
 
-    expect(service.areas).toStrictEqual(areas);
+    expect(ridesService.areas).toStrictEqual(areas);
   });
 
-  describe("getPrice", () => {
-    it("should return undefined", () => {
-      expect(service.getRideStatusPrice("MG")).toBe(undefined);
+  describe("getRideByPid", () => {
+    it("should call rideRepository", async () => {
+      const pid = faker.random.alphaNumeric(12);
+      const rideRepositoryGetSpy = jest
+        .spyOn(rideRepository, "get")
+        .mockResolvedValue(null);
+
+      await ridesService.getRideByPid(pid);
+
+      const [[query]] = rideRepositoryGetSpy.mock.calls;
+      expect(query).toStrictEqual({ pid });
+    });
+  });
+
+  describe("getRideStatusPrice", () => {
+    it("should throw UnsupportedAreaException", async () => {
+      expect(() =>
+        ridesService.getPricesOfRidesType("NON-EXISTENT"),
+      ).toThrowError(new UnsupportedAreaException());
     });
 
     it("should return the price list of an area", () => {
-      expect(service.getRideStatusPrice("AL")).toStrictEqual(prices[0].general);
-    });
+      const { area } = prices[0];
 
-    it("should return the price list of a subArea", () => {
-      expect(service.getRideStatusPrice("AL", "maceio")).toStrictEqual(
-        prices[0].subAreas["maceio"],
-      );
-    });
-
-    it("should return the fallback to area due to an undefined subArea", () => {
-      expect(service.getRideStatusPrice("AL", "arapiraca")).toStrictEqual(
+      expect(ridesService.getPricesOfRidesType(area)).toStrictEqual(
         prices[0].general,
       );
     });
 
-    it("should return the price of a ride type", () => {
-      const [, ridePrice] = prices[0].subAreas["maceio"];
+    it("should return the price list of an area", () => {
+      const { area } = prices[0];
+      const [subArea] = Object.keys(prices[0].subAreas);
 
-      expect(
-        service.getRideStatusPrice("AL", "maceio", ridePrice.type),
-      ).toStrictEqual(ridePrice);
+      expect(ridesService.getPricesOfRidesType(area, subArea)).toStrictEqual(
+        prices[0].subAreas[subArea],
+      );
     });
 
-    it("should return the fallback price of a ride type", () => {
-      const [, ridePrice] = prices[0].subAreas["maceio"];
+    it("should return the fallback to area due to an undefined subArea", () => {
+      const { area } = prices[0];
 
-      expect(
-        service.getRideStatusPrice("AL", "arapiraca", ridePrice.type),
-      ).toStrictEqual(ridePrice);
+      expect(ridesService.getPricesOfRidesType(area, "not-have")).toStrictEqual(
+        prices[0].general,
+      );
     });
   });
 
@@ -102,8 +155,12 @@ describe("RideService", () => {
       const dateTime = parseISO("2020-06-13 12:00");
       const dateTime2 = parseISO("2020-06-13 20:00");
 
-      expect(service.isBusinessTime("America/Maceio", dateTime)).toBeTruthy();
-      expect(service.isBusinessTime("America/Maceio", dateTime2)).toBeTruthy();
+      expect(
+        ridesService.isBusinessTime("America/Maceio", dateTime),
+      ).toBeTruthy();
+      expect(
+        ridesService.isBusinessTime("America/Maceio", dateTime2),
+      ).toBeTruthy();
     });
 
     it("should return false", () => {
@@ -111,9 +168,87 @@ describe("RideService", () => {
       const dateTime2 = parseISO("2020-06-13 22:00");
       const sunday = parseISO("2020-06-14 12:00");
 
-      expect(service.isBusinessTime("America/Maceio", dateTime)).toBeFalsy();
-      expect(service.isBusinessTime("America/Maceio", dateTime2)).toBeFalsy();
-      expect(service.isBusinessTime("America/Maceio", sunday)).toBeFalsy();
+      expect(
+        ridesService.isBusinessTime("America/Maceio", dateTime),
+      ).toBeFalsy();
+      expect(
+        ridesService.isBusinessTime("America/Maceio", dateTime2),
+      ).toBeFalsy();
+      expect(ridesService.isBusinessTime("America/Maceio", sunday)).toBeFalsy();
+    });
+  });
+
+  describe("getCostsOfRideType", () => {
+    it("should throw InvalidRideTypeException", () => {
+      expect(() =>
+        ridesService.getCostsOfRideType(prices[0].general, 3),
+      ).toThrowError(new InvalidRideTypeException());
+    });
+
+    it("should return the prices", () => {
+      expect(
+        ridesService.getCostsOfRideType(prices[0].general, RideTypes.Normal),
+      ).toStrictEqual(
+        prices[0].general.find((price) => price.type === RideTypes.Normal),
+      );
+    });
+  });
+
+  describe("create", () => {
+    function makeCrateRideDto(ride: IRide) {
+      const createRideDto = new CreateRideDto();
+      createRideDto.route = ride.route;
+      createRideDto.type = ride.type;
+      createRideDto.payMethod = ride.payMethod;
+      createRideDto.country = ride.country;
+      createRideDto.area = ride.area;
+      createRideDto.subArea = ride.subArea;
+
+      return createRideDto;
+    }
+
+    it("should create with pendencie", async () => {
+      const ride = mockRide();
+      const createRideDto = makeCrateRideDto(ride);
+      const rideRepositoryCreateSpy = jest.spyOn(rideRepository, "create");
+
+      rideRepositoryCreateSpy.mockImplementation(
+        async (input) => input as IRide,
+      );
+      repositoryServiceMock.pendencieModel.find.mockResolvedValue([]);
+
+      await ridesService.create(ride.voyager._id, createRideDto);
+
+      const expectBaseCosts = ridesService.getRideCosts(ride);
+      const expectTotalBaseCosts =
+        expectBaseCosts.distance.total + expectBaseCosts.duration.total;
+      const [[{ costs }]] = rideRepositoryCreateSpy.mock.calls;
+
+      expect(costs.base).toBe(expectTotalBaseCosts);
+      expect(costs.total).toBe(expectTotalBaseCosts);
+    });
+
+    it("should create without pendencies", async () => {
+      const ride = mockRide();
+      const pendencie = mockPendencie({ issuer: ride.voyager._id });
+      const createRideDto = makeCrateRideDto(ride);
+      const rideRepositoryCreateSpy = jest.spyOn(rideRepository, "create");
+
+      rideRepositoryCreateSpy.mockImplementation(
+        async (input) => input as IRide,
+      );
+      repositoryServiceMock.pendencieModel.find.mockResolvedValue([pendencie]);
+
+      await ridesService.create(ride.voyager._id, createRideDto);
+
+      const expectBaseCosts = ridesService.getRideCosts(ride);
+      const expectTotalBaseCosts =
+        expectBaseCosts.distance.total + expectBaseCosts.duration.total;
+      const [[{ costs, pendencies }]] = rideRepositoryCreateSpy.mock.calls;
+
+      expect(pendencies).toStrictEqual([pendencie]);
+      expect(costs.base).toBe(expectTotalBaseCosts);
+      expect(costs.total).toBe(expectTotalBaseCosts + pendencie.amount);
     });
   });
 
@@ -124,44 +259,44 @@ describe("RideService", () => {
   ) {
     describe(func, () => {
       it("should calculate", () => {
-        const costsType1InBusiness = service[func](
+        const costsType1InBusiness = ridesService[func](
           value,
           prices[0].general[0],
           true,
         );
-        const costsType2InBusiness = service[func](
+        const costsType2InBusiness = ridesService[func](
           value,
           prices[0].general[1],
           true,
         );
-        const costsType1OutBusiness = service[func](
+        const costsType1OutBusiness = ridesService[func](
           value,
           prices[0].general[0],
           false,
         );
-        const costsType2OutBusiness = service[func](
+        const costsType2OutBusiness = ridesService[func](
           value,
-          prices[0].general[1],
-          false,
-        );
-
-        const costsType1OverOutBusiness = service[func](
-          value + over,
-          prices[0].general[0],
-          false,
-        );
-        const costsType2OverOutBusiness = service[func](
-          value + over,
           prices[0].general[1],
           false,
         );
 
-        const costsType1OverInBusiness = service[func](
+        const costsType1OverOutBusiness = ridesService[func](
+          value + over,
+          prices[0].general[0],
+          false,
+        );
+        const costsType2OverOutBusiness = ridesService[func](
+          value + over,
+          prices[0].general[1],
+          false,
+        );
+
+        const costsType1OverInBusiness = ridesService[func](
           value + over,
           prices[0].general[0],
           true,
         );
-        const costsType2OverInBusiness = service[func](
+        const costsType2OverInBusiness = ridesService[func](
           value + over,
           prices[0].general[1],
           true,
@@ -201,45 +336,29 @@ describe("RideService", () => {
     });
   }
 
-  priceCalculationTest("distancePrice", path.distance, 10);
-  priceCalculationTest("durationPrice", path.duration, 40);
+  priceCalculationTest("distancePrice", route.distance, 10);
+  priceCalculationTest("durationPrice", route.duration, 40);
 
   describe("getRideCosts", () => {
     it("should calculate ", () => {
-      const point: IRoutePoint = {
-        coord: [0, 0],
-        primary: "foo",
-        secondary: "foo",
-        district: "foo",
-      };
-
       const mockCreateRideDto: any = {};
-      mockCreateRideDto.route = {
-        start: point,
-        end: point,
-        path: path.encoded,
-        distance: path.distance,
-        duration: path.duration,
-      };
+      mockCreateRideDto.route = { ...route };
       mockCreateRideDto.area = "AL";
       mockCreateRideDto.subArea = "maceio";
       mockCreateRideDto.type = RideTypes.Normal;
 
-      const isBusinessTime = service.isBusinessTime(prices[0].timezone);
-      const distancePrice = service.distancePrice(
-        path.distance,
+      const ridePrice = ridesService.getRideCosts(mockCreateRideDto);
+      const isBusinessTime = ridesService.isBusinessTime(prices[0].timezone);
+      const distancePrice = ridesService.distancePrice(
+        route.distance,
         prices[0].general[0],
         isBusinessTime,
       );
-      const durationPrice = service.durationPrice(
-        path.duration,
+      const durationPrice = ridesService.durationPrice(
+        route.duration,
         prices[0].general[0],
         isBusinessTime,
       );
-
-      const total = distancePrice.total + durationPrice.total;
-
-      const ridePrice = service.getRideCosts(mockCreateRideDto);
 
       expect(distancePrice).toStrictEqual(ridePrice.distance);
       expect(durationPrice).toStrictEqual(ridePrice.duration);

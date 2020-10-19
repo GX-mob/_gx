@@ -6,7 +6,6 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "up-shared": "rimraf ./shared/* && cp -r ../shared/* ./shared",
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
@@ -109,7 +108,7 @@
     "ts-loader": "^8.0.3",
     "ts-node": "9.0.0",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^4.0.2"
+    "typescript": "^4.0.3"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -156,7 +155,7 @@
       "@app/socket": "<rootDir>/libs/socket/src",
       "@testing/testing/(.*)": "<rootDir>/libs/testing/src/$1",
       "@testing/testing": "<rootDir>/libs/testing/src",
-      "@shared/(.*)": "<rootDir>/shared/$1"
+      "@shared/(.*)": "<rootDir>/../shared/$1"
     }
   }
 }

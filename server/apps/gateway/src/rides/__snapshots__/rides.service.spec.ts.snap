@@ -4,7 +4,7 @@ exports[`RideService distancePrice should calculate 1`] = `
 Object {
   "aditionalForLongRide": 0,
   "aditionalForOutBusinessTime": 0,
-  "total": 2,
+  "total": 11,
 }
 `;
 
@@ -12,23 +12,23 @@ exports[`RideService distancePrice should calculate 2`] = `
 Object {
   "aditionalForLongRide": 0,
   "aditionalForOutBusinessTime": 0,
-  "total": 2.8,
+  "total": 16,
 }
 `;
 
 exports[`RideService distancePrice should calculate 3`] = `
 Object {
   "aditionalForLongRide": 0,
-  "aditionalForOutBusinessTime": 0.7,
-  "total": 2.7,
+  "aditionalForOutBusinessTime": 4,
+  "total": 15,
 }
 `;
 
 exports[`RideService distancePrice should calculate 4`] = `
 Object {
   "aditionalForLongRide": 0,
-  "aditionalForOutBusinessTime": 1.1,
-  "total": 3.9,
+  "aditionalForOutBusinessTime": 6,
+  "total": 22,
 }
 `;
 

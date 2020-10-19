@@ -2,7 +2,7 @@ version: "3"
 x-gxweb-dev: &gxweb-dev
   build:
     context: ../
-    dockerfile: ./Dockerfile
+    dockerfile: ./server/Dockerfile
   volumes:
     - ./server:/usr/src/app
   networks:
