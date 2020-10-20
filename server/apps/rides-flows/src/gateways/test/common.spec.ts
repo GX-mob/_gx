@@ -1,5 +1,7 @@
 /**
- * @group unit/gateways/common
+ * @group unit/rides-flows
+ * @group unit/rides-flows/gateways
+ * @group unit/rides-flows/gateways/common
  */
 import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";

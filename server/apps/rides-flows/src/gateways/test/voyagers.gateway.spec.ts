@@ -1,5 +1,7 @@
 /**
- * @group unit/gateways/voyagers
+ * @group unit/rides-flows
+ * @group unit/rides-flows/voyagers
+ * @group unit/rides-flows/voyagers/drivers
  */
 import { Server as HttpServer } from "http";
 import IOServer, { Server } from "socket.io";

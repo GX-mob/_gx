@@ -20,16 +20,15 @@ import {
   Get,
   Param,
   Body,
-  Request,
   Post,
   HttpCode,
+  Ip,
+  Headers,
 } from "@nestjs/common";
-import { FastifyRequest } from "fastify";
 import { UsersService } from "../users.service";
 import { SessionService } from "@app/session";
 import { SignUpDto } from "./signup.dto";
 import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { util } from "@app/helpers";
 import { ISignUpSuccessResponseDto } from "@shared/interfaces";
 
 @Controller("sign-up")
@@ -55,7 +54,8 @@ export class SignUpController {
 
   @Post()
   async signUp(
-    @Request() request: FastifyRequest,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent: string,
     @Body() body: SignUpDto,
   ): Promise<ISignUpSuccessResponseDto> {
     const {
@@ -80,14 +80,12 @@ export class SignUpController {
         firstName,
         lastName,
         cpf,
-        password,
         birth: new Date(birth),
+        ...(password ? { password } : {}),
       },
       terms,
     );
 
-    const userAgent = request.headers["user-agent"];
-    const ip = util.getClientIp(request.raw);
     const session = await this.sessionService.create(user, userAgent, ip);
 
     return {
