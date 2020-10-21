@@ -20,22 +20,19 @@ import {
   Get,
   Param,
   Body,
-  Request,
-  Response,
   Post,
+  Ip,
+  Headers,
 } from "@nestjs/common";
-import { FastifyRequest, FastifyReply } from "fastify";
 import { ContactDto } from "../users.dto";
 import { SignInPasswordDto, SignInCodeDto } from "./signin.dto";
 import {
-  SignInHttpReponseCodes,
-  IdentifyResponseInterface,
-  SignInSuccessResponse,
-  Password2FARequiredResponse,
+  SignInIdentify,
+  SignInPasswordResponse,
+  SignInCodeResponse,
 } from "@shared/interfaces";
 import { SessionService } from "@app/session";
 import { UsersService } from "../users.service";
-import { util } from "@app/helpers";
 
 @Controller("signin")
 export class SignInController {
@@ -45,10 +42,9 @@ export class SignInController {
   ) {}
 
   @Get(":contact")
-  async identify(
-    @Response() res: FastifyReply,
+  async identifyHandler(
     @Param() { contact }: ContactDto,
-  ) {
+  ): Promise<SignInIdentify> {
     const {
       password,
       firstName,
@@ -57,61 +53,42 @@ export class SignInController {
 
     if (!password) {
       await this.usersService.requestContactVerify(contact);
-      res.code(SignInHttpReponseCodes.SecondaFactorRequired);
+      return { next: "code", body: { firstName, avatar } };
     }
 
-    res.send<IdentifyResponseInterface>({
-      firstName,
-      avatar,
-    });
-    return;
+    return { next: "password", body: { firstName, avatar } };
   }
 
-  @Post("credential")
-  async signIn(
-    @Request() request: FastifyRequest,
-    @Response() reply: FastifyReply,
+  @Post()
+  async passwordHandler(
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent: string,
     @Body() { contact, password }: SignInPasswordDto,
-  ) {
+  ): Promise<SignInPasswordResponse> {
     const user = await this.usersService.findByContact(contact);
 
     await this.usersService.assertPassword(user, password);
 
     if (!user["2fa"]) {
-      const userAgent = request.headers["user-agent"];
-      const ip = util.getClientIp(request.raw);
       const { token } = await this.sessionService.create(user, userAgent, ip);
-
-      reply.code(SignInHttpReponseCodes.Success);
-      reply.send<SignInSuccessResponse>({ token });
-      return;
+      return { next: "authorized", body: { token } };
     }
 
-    const target = await this.usersService.requestContactVerify(contact);
-
-    reply.code(SignInHttpReponseCodes.SecondaFactorRequired);
-    reply.send<Password2FARequiredResponse>({
-      target,
-    });
-    return;
+    const target = await this.usersService.requestContactVerify(user["2fa"]);
+    return { next: "code", body: { target } };
   }
 
   @Post("code")
-  async code(
-    @Request() request: FastifyRequest,
-    @Response() reply: FastifyReply,
+  async codeHandler(
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent: string,
     @Body() { contact, code }: SignInCodeDto,
-  ) {
+  ): Promise<SignInCodeResponse> {
     await this.usersService.verifyContact(contact, code);
 
     const user = await this.usersService.findByContact(contact);
-
-    const userAgent = request.headers["user-agent"];
-    const ip = util.getClientIp(request.raw);
     const { token } = await this.sessionService.create(user, userAgent, ip);
 
-    reply.code(SignInHttpReponseCodes.Success);
-    reply.send<SignInSuccessResponse>({ token });
-    return;
+    return { next: "authorized", body: { token } };
   }
 }

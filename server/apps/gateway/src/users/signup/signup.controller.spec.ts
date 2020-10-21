@@ -2,6 +2,8 @@
  * @group unit/controller
  * @group unit/gateway/controller
  * @group unit/gateway/users/controller
+ * @group unit/gateway/users/register
+ * @group unit/gateway/users/register/controller
  */
 import { Test } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";
@@ -11,16 +13,15 @@ import { RepositoryModule, RepositoryService } from "@app/repositories";
 import { SessionModule, SessionService } from "@app/session";
 import {
   ContactVerificationModule,
-  ContactVerificationService,
   TwilioService,
 } from "@app/contact-verification";
-import { SignUpController } from "./signup.controller";
 import { UsersModule } from "../users.module";
 import { UsersService } from "../users.service";
 import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { SignUpDto } from "./signup.dto";
 import { mockUser, mockSession } from "@testing/testing";
 import faker from "faker";
+import { SignUpController } from "./signup.controller";
+import { SignUpDto } from "./signup.dto";
 
 describe("SignUpController", () => {
   let controller: SignUpController;
