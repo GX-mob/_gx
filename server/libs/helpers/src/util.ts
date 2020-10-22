@@ -26,9 +26,7 @@ export const securePassword = new SecurePassword();
 export const handleRejectionByUnderHood = (
   promise: Promise<unknown>,
   loggerInstance: Logger = logger,
-) => {
-  promise.catch((error) => loggerInstance.error(error));
-};
+) => promise.catch((error) => loggerInstance.error(error));
 
 /**
  * General regexes
@@ -160,6 +158,6 @@ export function decimalAdjust(
 /**
  * Mix of `handleRejectionByUnderHood` and `retry`
  */
-export function retryUnderHood(...args: Parameters<typeof retry>): void {
+export function retryUnderHood(...args: Parameters<typeof retry>) {
   return handleRejectionByUnderHood(retry(...args));
 }

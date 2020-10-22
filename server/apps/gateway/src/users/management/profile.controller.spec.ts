@@ -7,12 +7,12 @@
  */
 import { Test } from "@nestjs/testing";
 import faker from "faker";
-import { LoggerModule } from "nestjs-pino";
+import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule, RepositoryService } from "@app/repositories";
 import { SessionModule } from "@app/session";
-import { StorageModule } from "@app/storage";
+import { StorageModule, StorageService } from "@app/storage";
 import {
   ContactVerificationModule,
   TwilioService,
@@ -23,22 +23,31 @@ import { mockUser, mockSession } from "@testing/testing";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 //@ts-ignore
-import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
+import { ReadableStreamBuffer } from "stream-buffers";
 import { Readable } from "stream";
 import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../../constants";
-
 import { ProfileController } from "./profile.controller";
 import { UpdateProfileDto, UserDto } from "./management.dto";
+import {
+  InternalServerErrorException,
+  NotAcceptableException,
+} from "@nestjs/common";
+import { IUser } from "@shared/interfaces";
 
 describe("User: ProfileController", () => {
   let usersService: UsersService;
+  let storageService: StorageService;
+  let pinoLogger: PinoLogger = {
+    setContext: jest.fn(),
+    error: jest.fn(),
+  } as any;
   let controller: ProfileController;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
-        LoggerModule.forRoot(),
+        LoggerModule.forRoot({ pinoHttp: {} }),
         UsersModule,
         SessionModule,
         CacheModule,
@@ -56,17 +65,19 @@ describe("User: ProfileController", () => {
       .useValue({})
       .overrideProvider(TwilioService)
       .useValue({})
+      .overrideProvider(PinoLogger)
+      .useValue(pinoLogger)
       .compile();
 
     usersService = moduleRef.get<UsersService>(UsersService);
+    storageService = moduleRef.get<StorageService>(StorageService);
     controller = moduleRef.get<ProfileController>(ProfileController);
   });
 
   it("getProfileHandler", async () => {
     const user = mockUser();
     const userDto = new UserDto(user);
-
-    const response = await controller.getProfileHandler(user);
+    const response = controller.getProfileHandler(user);
 
     expect(response).toStrictEqual(userDto);
   });
@@ -87,141 +98,40 @@ describe("User: ProfileController", () => {
       firstName: newFirstName,
     });
   });
-});
-
-/*
-describe("AccountProfileController", () => {
-  let profileController: AccountProfileController;
-
-  const userRepositoryMock = {
-    get: jest.fn(),
-    update: jest.fn(),
-  };
-
-  const sessionRepositoryMock = {
-    updateCache: jest.fn(),
-  };
-
-  const storageServiceMock = {
-    uploadStream: jest.fn(),
-    delete: jest.fn(),
-  };
-
-  const loggerMock = {
-    error: jest.fn(),
-  };
-
-  let fastifyRequestMock: any = {
-    headers: {
-      "user-agent": "foo",
-    },
-    raw: { headers: { "x-client-ip": "127.0.0.1" } },
-    session: { user: {} },
-  };
-
-  const fastifyResponseMock = {
-    code: jest.fn(),
-    send: jest.fn(),
-  };
-
-  function mockUser(): IUser {
-    return {
-      _id: new Types.ObjectId(),
-      pid: shortid.generate(),
-      firstName: "First",
-      lastName: "Last",
-      cpf: "123.456.789-09",
-      phones: ["82988888888"],
-      emails: ["valid@email.com"],
-      birth: new Date("06/13/1994"),
-      password: Buffer.from("test").toString("base64"),
-      averageEvaluation: 5.0,
-      roles: [UserRoles.VOYAGER],
-    };
-  }
-
-  const jpegBuffer = readFileSync(
-    resolve(__dirname, "../../../../libs/storage/src/mock", "mock.jpeg"),
-  );
-  const pngBuffer = readFileSync(
-    resolve(__dirname, "../../../../libs/storage/src/mock", "mock.png"),
-  );
-
-  function createReadableFrom(buffer: Buffer) {
-    const readable = new ReadableStreamBuffer();
-    readable.put(buffer);
-    readable.stop();
-    return readable;
-  }
-
-  beforeEach(() => {
-    profileController = new AccountProfileController(
-      userRepositoryMock as any,
-      sessionRepositoryMock as any,
-      storageServiceMock as any,
-    );
-
-    profileController.logger = (loggerMock as unknown) as Logger;
-  });
-
-  afterEach(() => {
-    jest.resetAllMocks();
-    fastifyRequestMock = {
-      headers: {
-        "user-agent": "foo",
-      },
-      raw: { headers: { "x-client-ip": "127.0.0.1" } },
-      session: { user: {} },
-    };
-  });
-
-  describe("getHandler", () => {
-    it("should result user data", async () => {
-      const user = mockUser();
-
-      fastifyRequestMock.session.user = user;
-
-      const userEntity = new UserEntity(user);
-
-      expect(profileController.getHandler(fastifyRequestMock)).toStrictEqual(
-        userEntity,
-      );
-    });
-  });
-
-  describe("updateHandler", () => {
-    it("should update", async () => {
-      const user = mockUser();
-
-      fastifyRequestMock.session = { _id: new Types.ObjectId(), user };
-
-      const requestBody = new UpdateProfileDto();
-      requestBody.firstName = faker.name.firstName();
-      requestBody.lastName = faker.name.lastName();
-
-      await profileController.updateHandler(fastifyRequestMock, requestBody);
-
-      const dataCalls = userRepositoryMock.update.mock.calls;
-
-      expect(dataCalls[0][0]).toStrictEqual({
-        _id: user._id,
-      });
-      expect(dataCalls[0][1]).toStrictEqual(requestBody);
-      expect(sessionRepositoryMock.updateCache.mock.calls[0][0]).toStrictEqual({
-        _id: fastifyRequestMock.session._id,
-      });
-    });
-  });
 
   describe("uploadAvatar", () => {
-    it("should thow NotAcceptableException due to non-multipart content-type", async () => {
-      fastifyRequestMock.isMultipart = () => false;
+    let user: IUser;
+    let request = {
+      isMultipart: jest.fn(),
+      multipart: jest.fn(),
+    };
 
+    const jpegBuffer = readFileSync(
+      resolve(__dirname, "../../../../../libs/storage/src/mock", "mock.jpeg"),
+    );
+    const pngBuffer = readFileSync(
+      resolve(__dirname, "../../../../../libs/storage/src/mock", "mock.png"),
+    );
+
+    function createReadableFrom(buffer: Buffer) {
+      const readable = new ReadableStreamBuffer();
+      readable.put(buffer);
+      readable.stop();
+      return readable;
+    }
+
+    beforeEach(() => {
+      user = mockUser();
+    });
+
+    afterEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it("should throw NotAcceptableException", async () => {
+      request.isMultipart.mockReturnValue(false);
       await expect(
-        profileController.uploadAvatar(
-          fastifyRequestMock,
-          fastifyResponseMock as any,
-        ),
+        controller.uploadAvatar({} as any, request as any),
       ).rejects.toStrictEqual(new NotAcceptableException());
     });
 
@@ -229,122 +139,116 @@ describe("AccountProfileController", () => {
       const error = new Error("internal");
       const readable = createReadableFrom(pngBuffer);
 
-      fastifyRequestMock.isMultipart = () => true;
-      storageServiceMock.uploadStream.mockRejectedValue(error);
-      fastifyRequestMock.multipart = async (handler: any, finish: any) => {
-        await handler("photo", readable, "myphoto.png");
-        finish();
+      request.isMultipart.mockReturnValue(true);
+      jest.spyOn(storageService, "uploadStream").mockRejectedValue(error);
+      request.multipart.mockImplementation(
+        async (handler: any, finish: any) => {
+          await handler("photo", readable, "myphoto.png");
+          finish();
 
-        expect(loggerMock.error.mock.calls[0][0]).toStrictEqual(error);
-        expect(fastifyResponseMock.send.mock.calls[0][0]).toStrictEqual(
-          new InternalServerErrorException(),
-        );
-        done();
-      };
+          expect(pinoLogger.error).toBeCalledWith(error);
 
-      await profileController.uploadAvatar(
-        fastifyRequestMock,
-        fastifyResponseMock as any,
+          done();
+        },
       );
+
+      await expect(
+        controller.uploadAvatar(user, request as any),
+      ).rejects.toStrictEqual(new InternalServerErrorException());
     });
 
     it("should catch stream error", async (done) => {
-      const user = mockUser();
-      const error = new Error("stream");
+      const error = new Error("internal");
       const readable = createReadableFrom(pngBuffer);
 
       readable.destroy(error);
+      request.isMultipart.mockReturnValue(true);
+      jest
+        .spyOn(storageService, "uploadStream")
+        .mockImplementation(
+          (bucket: string, readable: Readable, config: any) => {
+            readable.on("error", config.errorHandler);
 
-      fastifyRequestMock.isMultipart = () => true;
-      fastifyRequestMock.session.user = user;
-
-      (storageServiceMock as any).uploadStream = (
-        bucket: string,
-        readable: Readable,
-        config: any,
-      ) => {
-        readable.on("error", config.errorHandler);
-
-        return Promise.resolve();
-      };
-
-      fastifyRequestMock.multipart = async (handler: any, finish: any) => {
-        await handler("photo", readable, "myphoto.png");
-        finish();
-
-        await new Promise((resolve) => setTimeout(resolve, 10));
-
-        // catch internal stream errors
-        expect(loggerMock.error.mock.calls[0][0]).toStrictEqual(error);
-        expect(typeof fastifyResponseMock.send.mock.calls[0][0].url).toBe(
-          "string",
+            return Promise.resolve() as any;
+          },
         );
-        storageServiceMock.uploadStream = jest.fn();
-        done();
-      };
+      request.multipart.mockImplementation(
+        async (handler: any, finish: any) => {
+          await handler("photo", readable, "myphoto.png");
+          finish();
 
-      await profileController.uploadAvatar(
-        fastifyRequestMock,
-        fastifyResponseMock as any,
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // catch internal stream errors
+          expect(pinoLogger.error).toBeCalledWith(error);
+          done();
+        },
       );
+
+      await expect(
+        controller.uploadAvatar(user, request as any),
+      ).resolves.toBeTruthy();
     });
 
     it("should handle a unique file", async (done) => {
-      const user = mockUser();
-      const error = new Error("stream");
-      const readable = createReadableFrom(jpegBuffer);
-      const readable2 = createReadableFrom(pngBuffer);
+      const readable = createReadableFrom(pngBuffer);
+      const readable2 = createReadableFrom(jpegBuffer);
 
-      fastifyRequestMock.isMultipart = () => true;
-      fastifyRequestMock.session.user = user;
+      request.isMultipart.mockReturnValue(true);
+      const uploatStream = jest
+        .spyOn(storageService, "uploadStream")
+        .mockImplementation(() => {
+          return Promise.resolve() as any;
+        });
 
-      fastifyRequestMock.multipart = async (handler: any, finish: any) => {
-        await handler("photo", readable, "myphoto.jpeg");
-        handler("photo2", readable2, "myphoto.png");
-        finish();
+      request.multipart.mockImplementation(
+        async (handler: any, finish: any) => {
+          await handler("photo", readable, "myphoto.jpeg");
+          await handler("photo2", readable2, "myphoto.png");
+          finish();
 
-        await new Promise((resolve) => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
 
-        // catch internal stream errors
-        expect(storageServiceMock.uploadStream).toHaveBeenCalledTimes(1);
-        done();
-      };
-
-      await profileController.uploadAvatar(
-        fastifyRequestMock,
-        fastifyResponseMock as any,
+          expect(uploatStream).toHaveBeenCalledTimes(1);
+          done();
+        },
       );
+
+      await controller.uploadAvatar(user, request as any);
     });
 
     it("should delete current avatar", async (done) => {
-      const user = mockUser();
-      const currentAvatar = `http://${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/current.jpeg`;
-      const readable = createReadableFrom(jpegBuffer);
+      const avatar = `http://${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/current.jpeg`;
+      const user = mockUser({ avatar });
+      const readable = createReadableFrom(pngBuffer);
 
-      storageServiceMock.delete.mockResolvedValue({});
+      request.isMultipart.mockReturnValue(true);
+      const uploatStream = jest
+        .spyOn(storageService, "uploadStream")
+        .mockImplementation(() => {
+          return Promise.resolve() as any;
+        });
+      const storageDelete = jest
+        .spyOn(storageService, "delete")
+        .mockResolvedValue({} as any);
 
-      fastifyRequestMock.isMultipart = () => true;
-      fastifyRequestMock.session.user = { ...user, avatar: currentAvatar };
+      request.multipart.mockImplementation(
+        async (handler: any, finish: any) => {
+          await handler("photo", readable, "myphoto.jpeg");
+          finish();
 
-      fastifyRequestMock.multipart = async (handler: any, finish: any) => {
-        await handler("photo", readable, "myphoto.png");
-        finish();
+          await new Promise((resolve) => setTimeout(resolve, 10));
 
-        const deleteCalls = storageServiceMock.delete.mock.calls;
-        const sendCalls = fastifyResponseMock.send.mock.calls;
-
-        expect(deleteCalls[0][0]).toBe(STORAGE_BUCKETS.USERS_AVATARTS);
-        expect(deleteCalls[0][1]).toBe(currentAvatar);
-
-        expect(typeof sendCalls[0][0].url).toBe("string");
-        done();
-      };
-
-      await profileController.uploadAvatar(
-        fastifyRequestMock,
-        fastifyResponseMock as any,
+          expect(storageDelete).toBeCalledWith(
+            STORAGE_BUCKETS.USERS_AVATARTS,
+            avatar,
+          );
+          expect(uploatStream).toHaveBeenCalledTimes(1);
+          done();
+        },
       );
+
+      await controller.uploadAvatar(user, request as any);
     });
   });
 });
-*/

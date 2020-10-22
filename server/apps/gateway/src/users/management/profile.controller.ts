@@ -1,12 +1,11 @@
 import { Readable } from "stream";
-import { FastifyRequest, FastifyReply } from "fastify";
+import { FastifyRequest } from "fastify";
 import {
   Controller,
   Get,
   Patch,
   UseGuards,
   Request,
-  Response,
   Body,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -17,20 +16,22 @@ import {
 import { ISession, IUser } from "@shared/interfaces";
 import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
-import { logger, util } from "@app/helpers";
+import { util } from "@app/helpers";
+import { PinoLogger } from "nestjs-pino";
 import { UserDto, UpdateProfileDto } from "./management.dto";
-import { Logger } from "pino";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { UsersService } from "../users.service";
 
 @Controller("account/profile")
 @UseGuards(AuthGuard)
 export class ProfileController {
-  logger: Logger = logger;
   constructor(
     private usersService: UsersService,
-    readonly storage: StorageService,
-  ) {}
+    private storage: StorageService,
+    private logger: PinoLogger,
+  ) {
+    logger.setContext(ProfileController.name);
+  }
 
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
@@ -53,15 +54,14 @@ export class ProfileController {
   async uploadAvatar(
     @User() user: IUser,
     @Request() request: FastifyRequest,
-    @Response() reply: FastifyReply,
-  ) {
+  ): Promise<{ url: string }> {
     if (!request.isMultipart()) {
       throw new NotAcceptableException();
     }
 
     let handling = false;
-    let error: Error;
-    let url: string;
+    let error: Error | null = null;
+    let url = "";
 
     const handler = async (
       _field: string,
@@ -95,30 +95,35 @@ export class ProfileController {
       }
     };
 
-    request.multipart(handler, () => {
-      if (error) {
-        this.logger.error(error);
-        reply.send(new InternalServerErrorException());
-        return;
-      }
+    await new Promise((resolve, reject) => {
+      request.multipart(handler, () => {
+        if (error) {
+          this.logger.error(error);
+          return reject(new InternalServerErrorException());
+        }
 
-      if (user.avatar) {
+        if (user.avatar) {
+          util.retryUnderHood(() =>
+            this.storage.delete(
+              STORAGE_BUCKETS.USERS_AVATARTS,
+              user.avatar as string,
+            ),
+          );
+        }
+
         util.retryUnderHood(() =>
-          this.storage.delete(
-            STORAGE_BUCKETS.USERS_AVATARTS,
-            user.avatar as string,
-          ),
+          this.usersService.updateById(user._id, { avatar: url }),
         );
-      }
 
-      util.retryUnderHood(() =>
-        this.usersService.updateById(user._id, { avatar: url }),
-      );
+        // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.
+        // pseudo: pubSubClient.emit("avatarUploaded", { filename: url.split("/").pop() as string; })
 
-      // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.
-      // pseudo: pubSubClient.emit("avatarUploaded", { filename: url.split("/").pop() as string; })
-
-      reply.send({ url });
+        resolve();
+      });
     });
+
+    if (error) throw error;
+
+    return { url };
   }
 }
