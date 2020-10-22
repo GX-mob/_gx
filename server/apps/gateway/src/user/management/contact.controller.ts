@@ -10,14 +10,14 @@ import {
 } from "@nestjs/common";
 import { AuthGuard, User } from "@app/auth";
 import { IUser } from "@shared/interfaces";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { UsersService } from "../users.service";
-import { RemoveContactDto } from "./management.dto";
+import { ContactDto, ContactVerificationCheckDto } from "../user.dto";
+import { UserService } from "../user.service";
+import { RemoveContactDto } from "../user.dto";
 
-@Controller("account/contact")
+@Controller("user/contact")
 @UseGuards(AuthGuard)
-export class ContactController {
-  constructor(private usersService: UsersService) {}
+export class UserContactController {
+  constructor(private usersService: UserService) {}
 
   @Get("verify/:contact")
   async verifyContactRequest(@Param() { contact }: ContactDto) {

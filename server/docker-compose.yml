@@ -1,36 +1,26 @@
 version: "3"
-x-gxweb-dev: &gxweb-dev
-  build:
-    context: ../
-    dockerfile: ./server/Dockerfile
-  volumes:
-    - ./server:/usr/src/app
-  networks:
-    - gxnet
-  environment:
-    NODE_ENV: development
-    DATABASE_URI: mongodb://gx-mongo:27017/config
-    REDIS_URI: redis://gx-redis:6379/0
-  depends_on:
-    - gx-mongo
-    - gx-redis
-
 services:
   gx-common:
-    <<: *gxweb-dev
+    build:
+      context: ../
+      dockerfile: ./server/Dockerfile
+    volumes:
+      - ./server:/usr/src/app
+    networks:
+      - gxnet
+    environment:
+      NODE_ENV: development
+      DATABASE_URI: mongodb://gx-mongo:27017/config
+      REDIS_URI: redis://gx-redis:6379/0
+    depends_on:
+      - gx-mongo
+      - gx-redis
     container_name: gx-common
-    command: npm run start:debug
+    command: npm run start:debug & npm run start:debug -- rides-flows
     ports:
       - 3000:3000
-      - 9229:9229
-
-  gx-rides-flows:
-    <<: *gxweb-dev
-    container_name: gx-rides-flows
-    command: "npm run start:debug -- rides-flows" # pm2 start dist/run/main.js -i max -- --max_old_space_size=4096
-    ports:
       - 3001:3001
-      - 9227:9227
+      - 9229:9229
 
   gx-mongo:
     image: mongo

@@ -7,7 +7,7 @@ export const DRIVERS_OBJECTS = registerAs("DRIVERS_OBJECTS", () => ({
 }));
 
 export const MATCH = registerAs("MATCH", () => ({
-  MAX_ITERATION: 60,
+  MAX_ITERATION: 60 * 20,
   ITERATION_INTERVAL: ms("1 second"),
   TOO_AWAY: 2000,
 }));

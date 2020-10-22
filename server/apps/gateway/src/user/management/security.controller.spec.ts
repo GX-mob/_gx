@@ -16,34 +16,28 @@ import {
   ContactVerificationModule,
   TwilioService,
 } from "@app/contact-verification";
-import { UsersModule } from "../users.module";
-import { UsersService } from "../users.service";
+import { UserModule } from "../user.module";
+import { UserService } from "../user.service";
 import { mockUser } from "@testing/testing";
-
-import { SecurityController } from "./security.controller";
-
-import {
-  UpdatePasswordDto,
-  Enable2FADto,
-  Disable2FADto,
-} from "./management.dto";
+import { UserSecurityController } from "./security.controller";
+import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "../user.dto";
 
 describe("User: SecurityController", () => {
-  let usersService: UsersService;
-  let controller: SecurityController;
+  let usersService: UserService;
+  let controller: UserSecurityController;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
-        UsersModule,
+        UserModule,
         SessionModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
       ],
-      controllers: [SecurityController],
+      controllers: [UserSecurityController],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -55,8 +49,8 @@ describe("User: SecurityController", () => {
       .useValue({})
       .compile();
 
-    usersService = moduleRef.get<UsersService>(UsersService);
-    controller = moduleRef.get<SecurityController>(SecurityController);
+    usersService = moduleRef.get<UserService>(UserService);
+    controller = moduleRef.get<UserSecurityController>(UserSecurityController);
   });
 
   it("updatePasswordHandler", async () => {

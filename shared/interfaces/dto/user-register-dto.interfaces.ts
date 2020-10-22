@@ -1,4 +1,4 @@
-export interface ISignUpDto {
+export interface IUserRegisterDto {
   firstName: string;
   lastName: string;
   cpf: string;
@@ -7,7 +7,7 @@ export interface ISignUpDto {
   password?: string;
 }
 
-export interface ISignUpSuccessResponseDto {
+export interface IUserRegisterSuccessDto {
   user: {
     id: string;
   };

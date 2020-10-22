@@ -25,16 +25,19 @@ import {
   Ip,
   Headers,
 } from "@nestjs/common";
-import { UsersService } from "../users.service";
+import { UserService } from "../user.service";
 import { SessionService } from "@app/session";
-import { SignUpDto } from "./signup.dto";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { ISignUpSuccessResponseDto } from "@shared/interfaces";
+import {
+  ContactDto,
+  ContactVerificationCheckDto,
+  UserRegisterDto,
+} from "../user.dto";
+import { IUserRegisterSuccessDto } from "@shared/interfaces";
 
-@Controller("sign-up")
-export class SignUpController {
+@Controller("user/register")
+export class UserRegisterController {
   constructor(
-    private usersService: UsersService,
+    private usersService: UserService,
     private sessionService: SessionService,
   ) {}
 
@@ -56,8 +59,8 @@ export class SignUpController {
   async signUp(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
-    @Body() body: SignUpDto,
-  ): Promise<ISignUpSuccessResponseDto> {
+    @Body() body: UserRegisterDto,
+  ): Promise<IUserRegisterSuccessDto> {
     const {
       contact,
       code,

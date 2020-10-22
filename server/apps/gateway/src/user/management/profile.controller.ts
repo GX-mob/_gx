@@ -18,19 +18,19 @@ import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { util } from "@app/helpers";
 import { PinoLogger } from "nestjs-pino";
-import { UserDto, UpdateProfileDto } from "./management.dto";
+import { UserDto, UpdateProfileDto } from "../user.dto";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
-import { UsersService } from "../users.service";
+import { UserService } from "../user.service";
 
-@Controller("account/profile")
+@Controller("user/profile")
 @UseGuards(AuthGuard)
-export class ProfileController {
+export class UserProfileController {
   constructor(
-    private usersService: UsersService,
+    private usersService: UserService,
     private storage: StorageService,
     private logger: PinoLogger,
   ) {
-    logger.setContext(ProfileController.name);
+    logger.setContext(UserProfileController.name);
   }
 
   @Get()

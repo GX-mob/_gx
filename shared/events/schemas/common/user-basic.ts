@@ -12,7 +12,7 @@ export type UserBasic = {
   /**
    * User internal id
    */
-  _id: string;
+  _id: any;
   /**
    * User public id
    */

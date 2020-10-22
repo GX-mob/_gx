@@ -4,13 +4,16 @@ import {
   WebSocketGateway,
   ConnectedSocket,
   OnGatewayDisconnect,
-  WsException,
 } from "@nestjs/websockets";
-import { DISTANCE_TOLERANCE_TO_START_RIDE, NAMESPACES } from "../constants";
-import { Common } from "./common";
-import { PendencieInterface, RideStatus, UserRoles } from "@shared/interfaces";
-import { PendencieRepository, RideRepository } from "@app/repositories";
+import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
+import { PendencieRepository, RideRepository } from "@app/repositories";
+import { CacheService } from "@app/cache";
+import { SessionService } from "@app/session";
+import { SocketService } from "@app/socket";
+import { geometry } from "@app/helpers";
+import { IPendencie, RideStatus, UserRoles } from "@shared/interfaces";
 import {
   EVENTS,
   EventsInterface,
@@ -26,18 +29,17 @@ import {
   StartRide,
   UserState,
 } from "@shared/events";
-import { CacheService } from "@app/cache";
-import { SessionService } from "@app/session";
-import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
-import { PinoLogger } from "nestjs-pino";
-import { ConfigService } from "@nestjs/config";
 import {
   UncancelableRideException,
   TooDistantOfExpectedException,
 } from "../exceptions";
-import { geometry } from "@app/helpers";
-import { DISTANCE_TOLERANCE_TO_FINISH_RIDE } from "../constants";
+import {
+  NAMESPACES,
+  DISTANCE_TOLERANCE_TO_FINISH_RIDE,
+  DISTANCE_TOLERANCE_TO_START_RIDE,
+} from "../constants";
+import { Common } from "./common";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common implements OnGatewayDisconnect {
@@ -172,7 +174,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
   ): Promise<{
     status: CanceledRide["status"] | "error";
     error?: string;
-    pendencie?: PendencieInterface["_id"];
+    pendencie?: IPendencie["_id"];
   }> {
     const now = Date.now();
     const ride = await super.getRide({ pid: ridePID });
@@ -189,7 +191,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     const { requesterSocketId, acceptTimestamp } = offer;
 
     this.stateService.updateDriver(client.id, { state: DriverState.SEARCHING });
-    super.updateRide({ pid: ridePID }, { driver: null });
+    super.updateRide({ pid: ridePID }, { driver: undefined });
 
     const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
 

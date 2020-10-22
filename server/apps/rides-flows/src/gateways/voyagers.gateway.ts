@@ -4,11 +4,14 @@ import {
   WebSocketGateway,
   ConnectedSocket,
 } from "@nestjs/websockets";
-import { NAMESPACES } from "../constants";
-import { Common } from "./common";
-import { RideStatus, RidePayMethods, UserRoles } from "@shared/interfaces";
-import { PendencieRepository, RideRepository } from "@app/repositories";
+import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
+import { PendencieRepository, RideRepository } from "@app/repositories";
+import { CacheService } from "@app/cache";
+import { SessionService } from "@app/session";
+import { SocketService } from "@app/socket";
+import { RideStatus, RidePayMethods, UserRoles } from "@shared/interfaces";
 import {
   EVENTS,
   EventsInterface,
@@ -19,13 +22,10 @@ import {
   CANCELATION_RESPONSE,
   DriverState,
 } from "@shared/events";
-import { CacheService } from "@app/cache";
-import { SessionService } from "@app/session";
-import { SocketService } from "@app/socket";
 import { StateService } from "../state.service";
-import { PinoLogger } from "nestjs-pino";
-import { ConfigService } from "@nestjs/config";
 import { UncancelableRideException } from "../exceptions";
+import { NAMESPACES } from "../constants";
+import { Common } from "./common";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {

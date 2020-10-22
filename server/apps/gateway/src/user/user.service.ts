@@ -30,7 +30,7 @@ import validator from "validator";
 type ContactTypes = "email" | "phone";
 
 @Injectable()
-export class UsersService {
+export class UserService {
   private securePassword = new SecurePassword();
 
   constructor(

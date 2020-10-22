@@ -6,13 +6,15 @@ import {
   OnGatewayConnection,
   ConnectedSocket,
 } from "@nestjs/websockets";
-import { SocketService } from "@app/socket";
+import { PinoLogger } from "nestjs-pino";
+import { ConfigService } from "@nestjs/config";
 import { Server, Socket } from "socket.io";
+import { auth, storageAdapters, unique } from "extensor";
+import { SocketService } from "@app/socket";
 import { SessionService } from "@app/session";
 import { CacheService } from "@app/cache";
-import { auth, storageAdapters, unique } from "extensor";
-import { StateService } from "../state.service";
-import { UserInterface, RideInterface, UserRoles } from "@shared/interfaces";
+import { retryUnderHood } from "@app/helpers/util";
+import { IUser, IRide, UserRoles } from "@shared/interfaces";
 import {
   PendencieRepository,
   RideRepository,
@@ -20,11 +22,9 @@ import {
   RideQueryInterface,
 } from "@app/repositories";
 import { EVENTS, State, Position, EventsInterface } from "@shared/events";
-import { retryUnderHood } from "@app/helpers/util";
 import { CANCELATION } from "../constants";
+import { StateService } from "../state.service";
 import { NotInRideException, RideNotFoundException } from "../exceptions";
-import { PinoLogger } from "nestjs-pino";
-import { ConfigService } from "@nestjs/config";
 
 export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
   public role!: UserRoles;
@@ -130,9 +130,9 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     issuer,
     affected,
   }: {
-    ride: RideInterface["_id"];
-    issuer: UserInterface["_id"];
-    affected: UserInterface["_id"];
+    ride: IRide["_id"];
+    issuer: IUser["_id"];
+    affected: IUser["_id"];
   }) {
     return retryUnderHood(
       () =>
@@ -147,7 +147,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     );
   }
 
-  async getRide(query: RideQueryInterface): Promise<RideInterface> {
+  async getRide(query: RideQueryInterface): Promise<IRide> {
     const ride = await this.rideRepository.get(query);
 
     if (!ride) {
@@ -157,7 +157,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     return ride;
   }
 
-  checkIfInRide(ride: RideInterface, _id: UserInterface["_id"]) {
+  checkIfInRide(ride: IRide, _id: IUser["_id"]) {
     if (ride.voyager._id !== _id && ride.driver?._id !== _id) {
       throw new NotInRideException(ride.pid, _id);
     }

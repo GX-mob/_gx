@@ -15,17 +15,20 @@ import {
   ContactVerificationModule,
   TwilioService,
 } from "@app/contact-verification";
-import { UsersModule } from "../users.module";
-import { UsersService } from "../users.service";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
+import { UserModule } from "../user.module";
+import { UserService } from "../user.service";
+import {
+  ContactDto,
+  ContactVerificationCheckDto,
+  UserRegisterDto,
+} from "../user.dto";
 import { mockUser, mockSession } from "@testing/testing";
 import faker from "faker";
-import { SignUpController } from "./signup.controller";
-import { SignUpDto } from "./signup.dto";
+import { UserRegisterController } from "./register.controller";
 
 describe("SignUpController", () => {
-  let controller: SignUpController;
-  let usersService: UsersService;
+  let controller: UserRegisterController;
+  let usersService: UserService;
   let sessionService: SessionService;
 
   beforeEach(async () => {
@@ -37,9 +40,9 @@ describe("SignUpController", () => {
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
-        UsersModule,
+        UserModule,
       ],
-      controllers: [SignUpController],
+      controllers: [UserRegisterController],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -52,8 +55,8 @@ describe("SignUpController", () => {
       .compile();
 
     sessionService = moduleRef.get<SessionService>(SessionService);
-    usersService = moduleRef.get<UsersService>(UsersService);
-    controller = moduleRef.get<SignUpController>(SignUpController);
+    usersService = moduleRef.get<UserService>(UserService);
+    controller = moduleRef.get<UserRegisterController>(UserRegisterController);
   });
 
   it("phoneVerificationRequest", async () => {
@@ -111,7 +114,7 @@ describe("SignUpController", () => {
       .spyOn(sessionService, "create")
       .mockImplementationOnce(async () => ({ session, token }));
 
-    const signUpDto = new SignUpDto();
+    const signUpDto = new UserRegisterDto();
     signUpDto.contact = user.phones[0];
     signUpDto.code = code;
     signUpDto.cpf = user.cpf;

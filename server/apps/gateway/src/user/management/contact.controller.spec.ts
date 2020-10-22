@@ -11,35 +11,35 @@ import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule, RepositoryService } from "@app/repositories";
-import { SessionModule, SessionService } from "@app/session";
+import { SessionModule } from "@app/session";
 import {
   ContactVerificationModule,
   TwilioService,
 } from "@app/contact-verification";
-import { UsersModule } from "../users.module";
-import { UsersService } from "../users.service";
+import { UserModule } from "../user.module";
+import { UserService } from "../user.service";
 import { mockUser, mockPhone } from "@testing/testing";
 
-import { ContactController } from "./contact.controller";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { RemoveContactDto } from "./management.dto";
+import { UserContactController } from "./contact.controller";
+import { ContactDto, ContactVerificationCheckDto } from "../user.dto";
+import { RemoveContactDto } from "../user.dto";
 
 describe("User: ContactController", () => {
-  let usersService: UsersService;
-  let controller: ContactController;
+  let usersService: UserService;
+  let controller: UserContactController;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
-        UsersModule,
+        UserModule,
         SessionModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
       ],
-      controllers: [ContactController],
+      controllers: [UserContactController],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -51,8 +51,8 @@ describe("User: ContactController", () => {
       .useValue({})
       .compile();
 
-    usersService = moduleRef.get<UsersService>(UsersService);
-    controller = moduleRef.get<ContactController>(ContactController);
+    usersService = moduleRef.get<UserService>(UserService);
+    controller = moduleRef.get<UserContactController>(UserContactController);
   });
 
   it("verifiContactRequest", async () => {

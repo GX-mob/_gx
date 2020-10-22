@@ -24,47 +24,46 @@ import {
   Ip,
   Headers,
 } from "@nestjs/common";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
-import { SignInPasswordDto, SignInCodeDto } from "./signin.dto";
 import {
-  SignInIdentify,
-  SignInPasswordResponse,
-  SignInCodeResponse,
+  ContactDto,
+  ContactVerificationCheckDto,
+  AuthPasswordDto,
+} from "../user.dto";
+import {
+  IAuthIdentifyResponse,
+  IAuthPasswordResponse,
+  IAuthCodeResponse,
 } from "@shared/interfaces";
 import { SessionService } from "@app/session";
-import { UsersService } from "../users.service";
+import { UserService } from "../user.service";
 
-@Controller("signin")
-export class SignInController {
+@Controller("user/auth")
+export class UserAuthController {
   constructor(
-    private usersService: UsersService,
+    private usersService: UserService,
     private sessionService: SessionService,
   ) {}
 
   @Get(":contact")
   async identifyHandler(
     @Param() { contact }: ContactDto,
-  ): Promise<SignInIdentify> {
-    const {
-      password,
-      firstName,
-      avatar,
-    } = await this.usersService.findByContact(contact);
+  ): Promise<IAuthIdentifyResponse> {
+    const { password } = await this.usersService.findByContact(contact);
 
     if (!password) {
       await this.usersService.requestContactVerify(contact);
-      return { next: "code", body: { firstName, avatar } };
+      return { next: "code" };
     }
 
-    return { next: "password", body: { firstName, avatar } };
+    return { next: "password" };
   }
 
   @Post()
   async passwordHandler(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
-    @Body() { contact, password }: SignInPasswordDto,
-  ): Promise<SignInPasswordResponse> {
+    @Body() { contact, password }: AuthPasswordDto,
+  ): Promise<IAuthPasswordResponse> {
     const user = await this.usersService.findByContact(contact);
 
     await this.usersService.assertPassword(user, password);
@@ -83,7 +82,7 @@ export class SignInController {
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
     @Body() { contact, code }: ContactVerificationCheckDto,
-  ): Promise<SignInCodeResponse> {
+  ): Promise<IAuthCodeResponse> {
     await this.usersService.verifyContact(contact, code);
 
     const user = await this.usersService.findByContact(contact);

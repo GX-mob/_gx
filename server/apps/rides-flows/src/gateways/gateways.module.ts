@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { SessionService } from "@app/session";
+import { SocketModule } from "@app/socket";
 import { VoyagersGateway } from "./voyagers.gateway";
 import { DriversGateway } from "./drivers.gateway";
 import { StateService } from "../state.service";
-import { SessionService } from "@app/session";
-import { SocketModule, SocketService } from "@app/socket";
 
 @Module({
   imports: [SocketModule],

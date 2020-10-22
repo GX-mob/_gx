@@ -8,7 +8,7 @@
       "remoteRoot": "/usr/src/app",
       "localRoot": "${workspaceFolder}",
       "protocol": "inspector",
-      "port": 9228,
+      "port": 9229,
       "restart": true,
       "address": "0.0.0.0",
       "skipFiles": ["<node_internals>/**"]

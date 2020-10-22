@@ -1,9 +1,9 @@
 /**
  * @group unit/controller
  * @group unit/gateway/controller
- * @group unit/gateway/users/controller
- * @group unit/gateway/users/auth
- * @group unit/gateway/users/auth/controller
+ * @group unit/gateway/user/controller
+ * @group unit/gateway/user/auth
+ * @group unit/gateway/user/auth/controller
  */
 import { Test } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";
@@ -16,22 +16,23 @@ import {
   TwilioService,
 } from "@app/contact-verification";
 import {
-  SignInIdentify,
-  SignInPasswordResponse,
-  SignInCodeResponse,
+  IAuthIdentifyResponse,
+  IAuthPasswordResponse,
+  IAuthCodeResponse,
   IUser,
 } from "@shared/interfaces";
-import { UsersModule } from "../users.module";
-import { UsersService } from "../users.service";
-import { ContactDto } from "../users.dto";
+import { UserModule } from "../user.module";
+import { UserService } from "../user.service";
+import { ContactDto } from "../user.dto";
 import { mockUser, mockSession, mockPhone } from "@testing/testing";
-import { SignInController } from "./signin.controller";
+import { UserAuthController } from "./auth.controller";
 import faker from "faker";
-import { SignInCodeDto, SignInPasswordDto } from "./signin.dto";
+import { ContactVerificationCheckDto } from "../user.dto";
+import { AuthPasswordDto } from "../user.dto";
 
 describe("SignInController", () => {
-  let controller: SignInController;
-  let usersService: UsersService;
+  let controller: UserAuthController;
+  let usersService: UserService;
   let sessionService: SessionService;
 
   beforeEach(async () => {
@@ -43,9 +44,9 @@ describe("SignInController", () => {
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
-        UsersModule,
+        UserModule,
       ],
-      controllers: [SignInController],
+      controllers: [UserAuthController],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -58,8 +59,8 @@ describe("SignInController", () => {
       .compile();
 
     sessionService = moduleRef.get<SessionService>(SessionService);
-    usersService = moduleRef.get<UsersService>(UsersService);
-    controller = moduleRef.get<SignInController>(SignInController);
+    usersService = moduleRef.get<UserService>(UserService);
+    controller = moduleRef.get<UserAuthController>(UserAuthController);
   });
 
   describe("identifyHandler", () => {
@@ -92,9 +93,8 @@ describe("SignInController", () => {
 
       expect(findByContact).toBeCalledWith(contact);
       expect(requestContactVerify).toBeCalledWith(contact);
-      expect(response).toStrictEqual<SignInIdentify>({
+      expect(response).toStrictEqual<IAuthIdentifyResponse>({
         next: "code",
-        body: { avatar: user.avatar, firstName: user.firstName },
       });
     });
 
@@ -110,9 +110,8 @@ describe("SignInController", () => {
 
       expect(findByContact).toBeCalledWith(contact);
       expect(requestContactVerify).not.toBeCalled();
-      expect(response).toStrictEqual<SignInIdentify>({
+      expect(response).toStrictEqual<IAuthIdentifyResponse>({
         next: "password",
-        body: { avatar: user.avatar, firstName: user.firstName },
       });
     });
   });
@@ -130,9 +129,9 @@ describe("SignInController", () => {
       } = user;
       const findByContact = jest.spyOn(usersService, "findByContact");
       const assertPassword = jest.spyOn(usersService, "assertPassword");
-      const signInPasswordDto = new SignInPasswordDto();
-      signInPasswordDto.contact = contact;
-      signInPasswordDto.password = user.password as string;
+      const authPasswordDto = new AuthPasswordDto();
+      authPasswordDto.contact = contact;
+      authPasswordDto.password = user.password as string;
 
       findByContact.mockResolvedValueOnce(user);
       assertPassword.mockResolvedValueOnce();
@@ -144,7 +143,7 @@ describe("SignInController", () => {
         contact,
         findByContact,
         assertPassword,
-        signInPasswordDto,
+        authPasswordDto,
       };
     }
 
@@ -158,7 +157,7 @@ describe("SignInController", () => {
         contact,
         findByContact,
         assertPassword,
-        signInPasswordDto,
+        authPasswordDto,
       } = makeMocks();
       const sessionCreate = jest.spyOn(sessionService, "create");
       sessionCreate.mockResolvedValue({ token, session });
@@ -166,12 +165,12 @@ describe("SignInController", () => {
       const result = await controller.passwordHandler(
         ip,
         userAgent,
-        signInPasswordDto,
+        authPasswordDto,
       );
 
       expect(findByContact).toBeCalledWith(contact);
       expect(assertPassword).toBeCalledWith(user, user.password);
-      expect(result).toStrictEqual<SignInPasswordResponse>({
+      expect(result).toStrictEqual<IAuthPasswordResponse>({
         next: "authorized",
         body: { token },
       });
@@ -188,7 +187,7 @@ describe("SignInController", () => {
         contact,
         findByContact,
         assertPassword,
-        signInPasswordDto,
+        authPasswordDto,
       } = makeMocks({ "2fa": phone });
       const sessionCreate = jest.spyOn(sessionService, "create");
       sessionCreate.mockResolvedValue({ token, session });
@@ -200,13 +199,13 @@ describe("SignInController", () => {
       const result = await controller.passwordHandler(
         ip,
         userAgent,
-        signInPasswordDto,
+        authPasswordDto,
       );
 
       expect(findByContact).toBeCalledWith(contact);
       expect(requestVerify).toBeCalledWith(phone);
-      expect(assertPassword).toBeCalledWith(user, signInPasswordDto.password);
-      expect(result).toStrictEqual<SignInPasswordResponse>({
+      expect(assertPassword).toBeCalledWith(user, authPasswordDto.password);
+      expect(result).toStrictEqual<IAuthPasswordResponse>({
         next: "code",
         body: { target: phone },
       });
@@ -222,9 +221,9 @@ describe("SignInController", () => {
       const userAgent = faker.internet.userAgent();
       const token = faker.random.alphaNumeric(12);
       const code = "000000";
-      const signInCodeDto = new SignInCodeDto();
-      signInCodeDto.contact = contact;
-      signInCodeDto.code = code;
+      const contactVerificationCheckDto = new ContactVerificationCheckDto();
+      contactVerificationCheckDto.contact = contact;
+      contactVerificationCheckDto.code = code;
 
       const verifyContact = jest
         .spyOn(usersService, "verifyContact")
@@ -239,10 +238,10 @@ describe("SignInController", () => {
       const response = await controller.codeHandler(
         ip,
         userAgent,
-        signInCodeDto,
+        contactVerificationCheckDto,
       );
 
-      expect(response).toStrictEqual<SignInCodeResponse>({
+      expect(response).toStrictEqual<IAuthCodeResponse>({
         next: "authorized",
         body: { token },
       });

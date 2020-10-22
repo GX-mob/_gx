@@ -1,17 +1,13 @@
 import { Controller, UseGuards, Patch, Body } from "@nestjs/common";
-import { UsersService } from "../users.service";
+import { UserService } from "../user.service";
 import { AuthGuard, User } from "@app/auth";
-import {
-  UpdatePasswordDto,
-  Enable2FADto,
-  Disable2FADto,
-} from "./management.dto";
+import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "../user.dto";
 import { IUser } from "@shared/interfaces";
 
-@Controller("account/secutiry")
+@Controller("user/secutiry")
 @UseGuards(AuthGuard)
-export class SecurityController {
-  constructor(private usersService: UsersService) {}
+export class UserSecurityController {
+  constructor(private usersService: UserService) {}
 
   @Patch("password")
   async updatePasswordHandler(

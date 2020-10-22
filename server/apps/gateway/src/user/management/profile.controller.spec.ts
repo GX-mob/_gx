@@ -17,8 +17,8 @@ import {
   ContactVerificationModule,
   TwilioService,
 } from "@app/contact-verification";
-import { UsersModule } from "../users.module";
-import { UsersService } from "../users.service";
+import { UserModule } from "../user.module";
+import { UserService } from "../user.service";
 import { mockUser, mockSession } from "@testing/testing";
 import { readFileSync } from "fs";
 import { resolve } from "path";
@@ -26,8 +26,8 @@ import { resolve } from "path";
 import { ReadableStreamBuffer } from "stream-buffers";
 import { Readable } from "stream";
 import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../../constants";
-import { ProfileController } from "./profile.controller";
-import { UpdateProfileDto, UserDto } from "./management.dto";
+import { UserProfileController } from "./profile.controller";
+import { UserDto, UpdateProfileDto } from "../user.dto";
 import {
   InternalServerErrorException,
   NotAcceptableException,
@@ -35,27 +35,27 @@ import {
 import { IUser } from "@shared/interfaces";
 
 describe("User: ProfileController", () => {
-  let usersService: UsersService;
+  let usersService: UserService;
   let storageService: StorageService;
   let pinoLogger: PinoLogger = {
     setContext: jest.fn(),
     error: jest.fn(),
   } as any;
-  let controller: ProfileController;
+  let controller: UserProfileController;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot({ pinoHttp: {} }),
-        UsersModule,
+        UserModule,
         SessionModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
         StorageModule,
       ],
-      controllers: [ProfileController],
+      controllers: [UserProfileController],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -69,9 +69,9 @@ describe("User: ProfileController", () => {
       .useValue(pinoLogger)
       .compile();
 
-    usersService = moduleRef.get<UsersService>(UsersService);
+    usersService = moduleRef.get<UserService>(UserService);
     storageService = moduleRef.get<StorageService>(StorageService);
-    controller = moduleRef.get<ProfileController>(ProfileController);
+    controller = moduleRef.get<UserProfileController>(UserProfileController);
   });
 
   it("getProfileHandler", async () => {

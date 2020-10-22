@@ -10,7 +10,7 @@ import { StateService } from "./state.service";
 import EventEmitter from "eventemitter3";
 import shortid from "shortid";
 import {
-  RideInterface,
+  IRide,
   RidePayMethods,
   RideTypes,
   UserRoles,
@@ -866,7 +866,7 @@ describe("StateService", () => {
     });
 
     it(`should get a ${EVENTS.OFFER_GOT_TOO_LONG}`, async () => {
-      const ride: Partial<RideInterface> = {
+      const ride: Partial<IRide> = {
         pid: faker.random.alphaNumeric(12),
       };
 
@@ -880,7 +880,7 @@ describe("StateService", () => {
         offerResponseTimeout: null,
       };
 
-      await service.offerRide(offerObject, ride as RideInterface);
+      await service.offerRide(offerObject, ride as IRide);
 
       const [tooLongEvent] = socketService.emit.mock.calls;
 
