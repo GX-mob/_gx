@@ -15,7 +15,6 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { ISession, IUser } from "@shared/interfaces";
-import { SessionRepository } from "@app/repositories";
 import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { logger, util } from "@app/helpers";
@@ -30,7 +29,6 @@ export class ProfileController {
   logger: Logger = logger;
   constructor(
     private usersService: UsersService,
-    readonly sessionRepository: SessionRepository,
     readonly storage: StorageService,
   ) {}
 
@@ -39,18 +37,16 @@ export class ProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getHandler(@User() user: IUser): IUser {
+  getProfileHandler(@User() user: IUser): IUser {
     return new UserDto(user);
   }
 
   @Patch()
   async updateHandler(
-    @User() user: IUser,
     @Session() session: ISession,
     @Body() body: UpdateProfileDto,
   ) {
-    await this.usersService.updateById(user._id, body);
-    await this.sessionRepository.updateCache({ _id: session._id });
+    await this.usersService.updateById(session.user._id, body);
   }
 
   @Patch("avatar")

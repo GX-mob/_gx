@@ -23,7 +23,7 @@ import {
 } from "@shared/interfaces";
 import { UsersModule } from "../users.module";
 import { UsersService } from "../users.service";
-import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
+import { ContactDto } from "../users.dto";
 import { mockUser, mockSession, mockPhone } from "@testing/testing";
 import { SignInController } from "./signin.controller";
 import faker from "faker";
@@ -89,11 +89,9 @@ describe("SignInController", () => {
         requestContactVerify,
       } = makeMocks();
       const response = await controller.identifyHandler(contactDto);
-      const [[findByContactArg0]] = findByContact.mock.calls;
-      const [[requestContactVerifyArg0]] = requestContactVerify.mock.calls;
 
-      expect(findByContactArg0).toBe(contact);
-      expect(requestContactVerifyArg0).toBe(contact);
+      expect(findByContact).toBeCalledWith(contact);
+      expect(requestContactVerify).toBeCalledWith(contact);
       expect(response).toStrictEqual<SignInIdentify>({
         next: "code",
         body: { avatar: user.avatar, firstName: user.firstName },
@@ -109,9 +107,8 @@ describe("SignInController", () => {
         requestContactVerify,
       } = makeMocks({ password: faker.internet.password() });
       const response = await controller.identifyHandler(contactDto);
-      const [[findByContactArg0]] = findByContact.mock.calls;
 
-      expect(findByContactArg0).toBe(contact);
+      expect(findByContact).toBeCalledWith(contact);
       expect(requestContactVerify).not.toBeCalled();
       expect(response).toStrictEqual<SignInIdentify>({
         next: "password",
@@ -171,14 +168,9 @@ describe("SignInController", () => {
         userAgent,
         signInPasswordDto,
       );
-      const [[findByContactArg0]] = findByContact.mock.calls;
-      const [
-        [assertPasswordArg0, assertPasswordArg1],
-      ] = assertPassword.mock.calls;
 
-      expect(findByContactArg0).toBe(contact);
-      expect(assertPasswordArg0).toStrictEqual(user);
-      expect(assertPasswordArg1).toStrictEqual(user.password);
+      expect(findByContact).toBeCalledWith(contact);
+      expect(assertPassword).toBeCalledWith(user, user.password);
       expect(result).toStrictEqual<SignInPasswordResponse>({
         next: "authorized",
         body: { token },
@@ -210,16 +202,10 @@ describe("SignInController", () => {
         userAgent,
         signInPasswordDto,
       );
-      const [[findByContactArg0]] = findByContact.mock.calls;
-      const [
-        [assertPasswordArg0, assertPasswordArg1],
-      ] = assertPassword.mock.calls;
-      const [[requestVerifyArg0]] = requestVerify.mock.calls;
 
-      expect(findByContactArg0).toBe(contact);
-      expect(assertPasswordArg0).toStrictEqual(user);
-      expect(assertPasswordArg1).toStrictEqual(user.password);
-      expect(requestVerifyArg0).toBe(phone);
+      expect(findByContact).toBeCalledWith(contact);
+      expect(requestVerify).toBeCalledWith(phone);
+      expect(assertPassword).toBeCalledWith(user, signInPasswordDto.password);
       expect(result).toStrictEqual<SignInPasswordResponse>({
         next: "code",
         body: { target: phone },
@@ -255,23 +241,14 @@ describe("SignInController", () => {
         userAgent,
         signInCodeDto,
       );
-      const [[verifyContactArg0, verifyContactArg1]] = verifyContact.mock.calls;
-      const [[findByContactArg0]] = findByContact.mock.calls;
-      const [
-        [sessionCreateArg0, sessionCreateArg1, sessionCreateArg2],
-      ] = sessionCreate.mock.calls;
 
       expect(response).toStrictEqual<SignInCodeResponse>({
         next: "authorized",
         body: { token },
       });
-      expect(verifyContactArg0).toBe(contact);
-      expect(verifyContactArg1).toBe(code);
-      expect(findByContactArg0).toBe(contact);
-
-      expect(sessionCreateArg0).toStrictEqual(user);
-      expect(sessionCreateArg1).toBe(userAgent);
-      expect(sessionCreateArg2).toBe(ip);
+      expect(verifyContact).toBeCalledWith(contact, code);
+      expect(findByContact).toBeCalledWith(contact);
+      expect(sessionCreate).toBeCalledWith(user, userAgent, ip);
     });
   });
 });

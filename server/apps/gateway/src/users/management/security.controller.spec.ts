@@ -1,265 +1,106 @@
 /**
- * Sign-in Controller
- *
- * @group unit/controllers/security
+ * @group unit/controller
+ * @group unit/gateway/controller
+ * @group unit/gateway/user/controller
+ * @group unit/gateway/user/security
+ * @group unit/gateway/user/security/controller
  */
-import { Types } from "mongoose";
-import { UnprocessableEntityException } from "@nestjs/common";
-import { UserInterface, UserRoles } from "@shared/interfaces";
-import { util } from "@app/helpers";
-import { AccountSecurityController } from "./security.controller";
+import { Test } from "@nestjs/testing";
+import faker from "faker";
+import { LoggerModule } from "nestjs-pino";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
+import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { SessionModule } from "@app/session";
+import {
+  ContactVerificationModule,
+  TwilioService,
+} from "@app/contact-verification";
+import { UsersModule } from "../users.module";
+import { UsersService } from "../users.service";
+import { mockUser } from "@testing/testing";
+
+import { SecurityController } from "./security.controller";
+
 import {
   UpdatePasswordDto,
   Enable2FADto,
   Disable2FADto,
 } from "./management.dto";
-import shortid from "shortid";
-import faker from "faker";
-import { EXCEPTIONS_MESSAGES } from "../constants";
 
-describe("AccountProfileController", () => {
-  let securityController: AccountSecurityController;
+describe("User: SecurityController", () => {
+  let usersService: UsersService;
+  let controller: SecurityController;
 
-  const userRepositoryMock = {
-    get: jest.fn(),
-    update: jest.fn(),
-    model: {
-      updateOne: jest.fn(),
-    },
-  };
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        UsersModule,
+        SessionModule,
+        CacheModule,
+        RepositoryModule,
+        ContactVerificationModule,
+      ],
+      controllers: [SecurityController],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({ get() {} })
+      .overrideProvider(CacheService)
+      .useValue({})
+      .overrideProvider(RepositoryService)
+      .useValue({})
+      .overrideProvider(TwilioService)
+      .useValue({})
+      .compile();
 
-  let fastifyRequestMock: any = {
-    headers: {
-      "user-agent": "foo",
-    },
-    raw: { headers: { "x-client-ip": "127.0.0.1" } },
-    session: { user: {} },
-  };
-
-  const fastifyResponseMock = {
-    code: jest.fn(),
-    send: jest.fn(),
-  };
-
-  function mockUser(): UserInterface {
-    return {
-      _id: new Types.ObjectId(),
-      pid: shortid.generate(),
-      firstName: "First",
-      lastName: "Last",
-      cpf: "123.456.789-09",
-      phones: ["+5582988888888"],
-      emails: ["valid@email.com"],
-      birth: new Date("06/13/1994"),
-      averageEvaluation: 5.0,
-      roles: [UserRoles.VOYAGER],
-    };
-  }
-  beforeEach(() => {
-    securityController = new AccountSecurityController(
-      userRepositoryMock as any,
-    );
+    usersService = moduleRef.get<UsersService>(UsersService);
+    controller = moduleRef.get<SecurityController>(SecurityController);
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
-    fastifyRequestMock = {
-      headers: {
-        "user-agent": "foo",
-      },
-      raw: { headers: { "x-client-ip": "127.0.0.1" } },
-      session: { user: {} },
-    };
+  it("updatePasswordHandler", async () => {
+    const user = mockUser({ password: faker.random.alphaNumeric(12) });
+    const intended = faker.random.alphaNumeric(12);
+    const updatePasswordDto = new UpdatePasswordDto();
+    updatePasswordDto.current = user.password as string;
+    updatePasswordDto.intended = intended;
+
+    const updatePassword = jest
+      .spyOn(usersService, "updatePassword")
+      .mockResolvedValue();
+
+    await controller.updatePasswordHandler(user, updatePasswordDto);
+
+    expect(updatePassword).toBeCalledWith(user, user.password, intended);
   });
 
-  describe("updatePassword", () => {
-    it("should create a password", async () => {
-      const user = mockUser();
-      const newPassword = faker.internet.password();
+  it("enable2FAHander", async () => {
+    const user = mockUser({ password: faker.random.alphaNumeric(12) });
+    const [contact] = user.phones;
+    const enable2FADto = new Enable2FADto();
+    enable2FADto.contact = contact;
 
-      fastifyRequestMock.session.user = user;
-      const requestBody = new UpdatePasswordDto();
+    const enable2FA = jest.spyOn(usersService, "enable2FA").mockResolvedValue();
 
-      requestBody.current = "";
-      requestBody.new = newPassword;
+    await controller.enable2FAHander(user, enable2FADto);
 
-      await securityController.updatePassword(fastifyRequestMock, requestBody);
-
-      const mockCalls = userRepositoryMock.model.updateOne.mock.calls;
-
-      const newPasswordHash = mockCalls[0][1].password;
-
-      expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
-      expect(newPasswordHash instanceof Buffer).toBeTruthy();
-      expect(util.assertPassword(newPassword, newPasswordHash)).toBeTruthy();
-    });
-
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}")`, async () => {
-      const user = mockUser();
-      const currentPassword = faker.internet.password();
-      const newPassword = faker.internet.password();
-      user.password = (await util.hashPassword(currentPassword)).toString(
-        "base64",
-      );
-
-      fastifyRequestMock.session.user = user;
-      const requestBody = new UpdatePasswordDto();
-
-      requestBody.current = "wrong";
-      requestBody.new = newPassword;
-
-      await expect(
-        securityController.updatePassword(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
-      );
-    });
-
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.UNCHANGED_DATA}")`, async () => {
-      const user = mockUser();
-      const currentPassword = faker.internet.password();
-      const newPassword = currentPassword;
-      user.password = (await util.hashPassword(currentPassword)).toString(
-        "base64",
-      );
-
-      fastifyRequestMock.session.user = user;
-      const requestBody = new UpdatePasswordDto();
-
-      requestBody.current = currentPassword;
-      requestBody.new = newPassword;
-
-      await expect(
-        securityController.updatePassword(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.UNCHANGED_DATA),
-      );
-    });
-
-    it("should update password", async () => {
-      const user = mockUser();
-      const currentPassword = faker.internet.password();
-      const newPassword = faker.internet.password();
-      user.password = (await util.hashPassword(currentPassword)).toString(
-        "base64",
-      );
-
-      fastifyRequestMock.session.user = user;
-      const requestBody = new UpdatePasswordDto();
-
-      requestBody.current = currentPassword;
-      requestBody.new = newPassword;
-
-      await securityController.updatePassword(fastifyRequestMock, requestBody);
-
-      const mockCalls = userRepositoryMock.model.updateOne.mock.calls;
-      const newPasswordHash = mockCalls[0][1].password;
-
-      expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
-      expect(newPasswordHash instanceof Buffer).toBeTruthy();
-      expect(util.assertPassword(newPassword, newPasswordHash)).toBeTruthy();
-    });
+    expect(enable2FA).toBeCalledWith(user, contact);
   });
 
-  describe("enable2FA", () => {
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED}")`, async () => {
-      const user = mockUser();
-      fastifyRequestMock.session.user = user;
+  it("disable2FAHandler", async () => {
+    const user = mockUser({ password: faker.random.alphaNumeric(12) });
+    const [contact] = user.phones;
+    const password = user.password as string;
+    const disable2FADto = new Disable2FADto();
+    disable2FADto.password = password;
 
-      const requestBody = new Enable2FADto();
-      requestBody.target = user.phones[0];
+    const disable2FA = jest
+      .spyOn(usersService, "disable2FA")
+      .mockResolvedValue();
 
-      await expect(
-        securityController.enable2FA(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED),
-      );
-    });
+    await controller.disable2FAHandler(user, disable2FADto);
 
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT}")`, async () => {
-      const user = mockUser();
-      const password = faker.internet.password();
-      user.password = (await util.hashPassword(password)).toString("base64");
-
-      fastifyRequestMock.session.user = user;
-
-      const requestBody = new Enable2FADto();
-      requestBody.target = "awaysvalid@email.com";
-
-      await expect(
-        securityController.enable2FA(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT),
-      );
-    });
-
-    it(`should enable`, async () => {
-      const user = mockUser();
-      const password = faker.internet.password();
-      user.password = (await util.hashPassword(password)).toString("base64");
-
-      fastifyRequestMock.session.user = user;
-
-      const requestBody = new Enable2FADto();
-      requestBody.target = user.phones[0];
-
-      await securityController.enable2FA(fastifyRequestMock, requestBody);
-
-      const mockCalls = userRepositoryMock.update.mock.calls;
-
-      expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
-      expect(mockCalls[0][1]).toStrictEqual({ "2fa": user.phones[0] });
-    });
-  });
-
-  describe("disable2FA", () => {
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED}")`, async () => {
-      const user = mockUser();
-      fastifyRequestMock.session.user = user;
-
-      const requestBody = new Disable2FADto();
-      requestBody.password = "";
-
-      await expect(
-        securityController.disable2FA(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED),
-      );
-    });
-
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.WRONG_PASSWORD}")`, async () => {
-      const user = mockUser();
-      const password = faker.internet.password();
-      user.password = (await util.hashPassword(password)).toString("base64");
-
-      fastifyRequestMock.session.user = user;
-
-      const requestBody = new Disable2FADto();
-      requestBody.password = "";
-
-      await expect(
-        securityController.disable2FA(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_PASSWORD),
-      );
-    });
-
-    it(`should disable`, async () => {
-      const user = mockUser();
-      const password = faker.internet.password();
-      user.password = (await util.hashPassword(password)).toString("base64");
-
-      fastifyRequestMock.session.user = user;
-
-      const requestBody = new Disable2FADto();
-      requestBody.password = password;
-
-      await securityController.disable2FA(fastifyRequestMock, requestBody);
-
-      const mockCalls = userRepositoryMock.update.mock.calls;
-
-      expect(mockCalls[0][0]).toStrictEqual({ _id: user._id });
-      expect(mockCalls[0][1]).toStrictEqual({ "2fa": "" });
-    });
+    expect(disable2FA).toBeCalledWith(user, password);
   });
 });

@@ -1,27 +1,95 @@
 /**
- * Sign-in Controller
- *
- * @group unit/controllers/profile
+ * @group unit/controller
+ * @group unit/gateway/controller
+ * @group unit/gateway/user/controller
+ * @group unit/gateway/user/profile
+ * @group unit/gateway/user/profile/controller
  */
-import { Types } from "mongoose";
-import {
-  NotAcceptableException,
-  InternalServerErrorException,
-} from "@nestjs/common";
-import { IUser, UserRoles } from "@shared/interfaces";
-import { ProfileController } from "./profile.controller";
-import { UpdateProfileDto } from "./management.dto";
-import { UserEntity } from "./entities/user.entity";
-import shortid from "shortid";
+import { Test } from "@nestjs/testing";
 import faker from "faker";
-import { Logger } from "pino";
+import { LoggerModule } from "nestjs-pino";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
+import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { SessionModule } from "@app/session";
+import { StorageModule } from "@app/storage";
+import {
+  ContactVerificationModule,
+  TwilioService,
+} from "@app/contact-verification";
+import { UsersModule } from "../users.module";
+import { UsersService } from "../users.service";
+import { mockUser, mockSession } from "@testing/testing";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 //@ts-ignore
 import { ReadableStreamBuffer, WritableStreamBuffer } from "stream-buffers";
 import { Readable } from "stream";
-import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../constants";
+import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../../constants";
 
+import { ProfileController } from "./profile.controller";
+import { UpdateProfileDto, UserDto } from "./management.dto";
+
+describe("User: ProfileController", () => {
+  let usersService: UsersService;
+  let controller: ProfileController;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        UsersModule,
+        SessionModule,
+        CacheModule,
+        RepositoryModule,
+        ContactVerificationModule,
+        StorageModule,
+      ],
+      controllers: [ProfileController],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({ get() {} })
+      .overrideProvider(CacheService)
+      .useValue({})
+      .overrideProvider(RepositoryService)
+      .useValue({})
+      .overrideProvider(TwilioService)
+      .useValue({})
+      .compile();
+
+    usersService = moduleRef.get<UsersService>(UsersService);
+    controller = moduleRef.get<ProfileController>(ProfileController);
+  });
+
+  it("getProfileHandler", async () => {
+    const user = mockUser();
+    const userDto = new UserDto(user);
+
+    const response = await controller.getProfileHandler(user);
+
+    expect(response).toStrictEqual(userDto);
+  });
+
+  it("updateHandler", async () => {
+    const session = mockSession();
+    const newFirstName = faker.name.firstName();
+    const updateProfileDto = new UpdateProfileDto();
+    updateProfileDto.firstName = newFirstName;
+
+    const updateById = jest
+      .spyOn(usersService, "updateById")
+      .mockResolvedValue();
+
+    await controller.updateHandler(session, updateProfileDto);
+
+    expect(updateById).toBeCalledWith(session.user._id, {
+      firstName: newFirstName,
+    });
+  });
+});
+
+/*
 describe("AccountProfileController", () => {
   let profileController: AccountProfileController;
 
@@ -279,3 +347,4 @@ describe("AccountProfileController", () => {
     });
   });
 });
+*/

@@ -1,10 +1,6 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumberString,
-  ValidateIf,
-} from "class-validator";
+import { IsNotEmpty, IsString, ValidateIf } from "class-validator";
 import { Exclude } from "class-transformer";
+import { ContactDto } from "../users.dto";
 import { IUser, UserRoles } from "@shared/interfaces";
 
 export class UserDto implements IUser {
@@ -40,44 +36,25 @@ export class UpdateProfileDto {
   lastName?: string;
 }
 
-export class ContactVerifyRequestDto {
-  @IsNotEmpty()
-  @IsString()
-  contact!: string;
-}
-
-export class ConfirmContactVerificationDto {
-  @IsNotEmpty()
-  @IsString()
-  contact!: string;
-
-  @IsNotEmpty()
-  @IsNumberString()
-  code!: string;
-}
-
-export class RemoveContactDto {
-  @IsNotEmpty()
-  @IsString()
-  contact!: string;
-}
 export class UpdatePasswordDto {
   @IsNotEmpty()
   @IsString()
   current!: string;
 
   @IsNotEmpty()
-  @IsNumberString()
-  new!: string;
+  @IsString()
+  intended!: string;
 }
 
-export class Enable2FADto {
-  @IsNotEmpty()
-  @IsString()
-  target!: string;
-}
+export class Enable2FADto extends ContactDto {}
 
 export class Disable2FADto {
+  @IsNotEmpty()
+  @IsString()
+  password!: string;
+}
+
+export class RemoveContactDto extends ContactDto {
   @IsNotEmpty()
   @IsString()
   password!: string;

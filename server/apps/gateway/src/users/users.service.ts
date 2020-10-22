@@ -5,6 +5,7 @@ import {
   UserRepository,
   UserCreateInterface,
   UserUpdateInterface,
+  SessionRepository,
 } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
 import {
@@ -34,6 +35,7 @@ export class UsersService {
 
   constructor(
     private userRepository: UserRepository,
+    private sessionRepository: SessionRepository,
     private contactVerificationService: ContactVerificationService,
   ) {}
 
@@ -144,8 +146,9 @@ export class UsersService {
     return this.userRepository.create(user);
   }
 
-  updateById(id: IUser["_id"], data: UserUpdateInterface) {
-    return this.userRepository.update({ _id: id }, data);
+  async updateById(id: IUser["_id"], data: UserUpdateInterface) {
+    await this.userRepository.update({ _id: id }, data);
+    return this.sessionRepository.updateCache({ user: id });
   }
 
   async updatePassword(user: IUser, current: string, newPassword: string) {
@@ -240,7 +243,9 @@ export class UsersService {
     await this.userRepository.update({ _id: user._id }, update);
   }
 
-  async removeContact(user: IUser, contact: string) {
+  async removeContact(user: IUser, contact: string, password: string) {
+    await this.assertPassword(user, password);
+
     const type = this.validateContact(contact);
     const field = this.getContactFieldName(type);
 

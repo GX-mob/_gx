@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumberString } from "class-validator";
+import { IsNotEmpty, IsString } from "class-validator";
 import { IContactDto, IContactVerificationCheckDto } from "@shared/interfaces";
 
 export class ContactDto implements IContactDto {
@@ -11,6 +11,6 @@ export class ContactVerificationCheckDto
   extends ContactDto
   implements IContactVerificationCheckDto {
   @IsNotEmpty()
-  @IsNumberString()
+  @IsString()
   code!: string;
 }

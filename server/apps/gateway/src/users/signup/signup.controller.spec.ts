@@ -58,10 +58,10 @@ describe("SignUpController", () => {
 
   it("phoneVerificationRequest", async () => {
     const [contact] = mockUser().phones;
-    const checkInUseContactSpy = jest
+    const checkInUseContact = jest
       .spyOn(usersService, "checkInUseContact")
       .mockImplementationOnce(async () => {});
-    const requestContactVerifySpy = jest
+    const requestContactVerify = jest
       .spyOn(usersService, "requestContactVerify")
       .mockImplementationOnce(async () => "");
 
@@ -70,17 +70,14 @@ describe("SignUpController", () => {
 
     await controller.phoneVerificationRequest(contactDto);
 
-    const [[checkCallArg0]] = checkInUseContactSpy.mock.calls;
-    const [[requestVerifyCallArg0]] = requestContactVerifySpy.mock.calls;
-
-    expect(checkCallArg0).toBe(contact);
-    expect(requestVerifyCallArg0).toBe(contact);
+    expect(checkInUseContact).toBeCalledWith(contactDto.contact);
+    expect(requestContactVerify).toBeCalledWith(contactDto.contact);
   });
 
   it("contactVerificationCheck", async () => {
     const [contact] = mockUser().phones;
     const code = "000000";
-    const verifyContactSpy = jest
+    const verifyContact = jest
       .spyOn(usersService, "verifyContact")
       .mockImplementationOnce(async () => "phone");
 
@@ -90,10 +87,7 @@ describe("SignUpController", () => {
 
     await controller.contactVerificationCheck(contactVerificationCheckDto);
 
-    const [[verifyCallArg0, verifyCallArg1]] = verifyContactSpy.mock.calls;
-
-    expect(verifyCallArg0).toBe(contact);
-    expect(verifyCallArg1).toBe(code);
+    expect(verifyContact).toBeCalledWith(contact, code);
   });
 
   it("signUp", async () => {
@@ -104,16 +98,16 @@ describe("SignUpController", () => {
     const ip = faker.internet.ip();
     const code = "000000";
 
-    const checkInUseContactSpy = jest
+    const checkInUseContact = jest
       .spyOn(usersService, "checkInUseContact")
       .mockImplementationOnce(async () => {});
-    const verifyContactSpy = jest
+    const verifyContact = jest
       .spyOn(usersService, "verifyContact")
       .mockImplementationOnce(async () => "phone");
-    const userCreateSpy = jest
+    const userCreate = jest
       .spyOn(usersService, "create")
       .mockImplementationOnce(async () => user);
-    const sessionCreateSpy = jest
+    const sessionCreate = jest
       .spyOn(sessionService, "create")
       .mockImplementationOnce(async () => ({ session, token }));
 
@@ -128,32 +122,24 @@ describe("SignUpController", () => {
 
     const response = await controller.signUp(ip, userAgent, signUpDto);
 
-    const [[checkCallArg0]] = checkInUseContactSpy.mock.calls;
-    const [[verifyCallArg0, verifyCallArg1]] = verifyContactSpy.mock.calls;
-    const [[createUserCallArg0, createUserCallArg1]] = userCreateSpy.mock.calls;
-    const [
-      [sessionCreateCallArg0, sessionCreateCallArg1, sessionCreateCallArg2],
-    ] = sessionCreateSpy.mock.calls;
-
     // Security ensures calls
-    expect(checkCallArg0).toBe(user.phones[0]);
-    expect(verifyCallArg0).toBe(user.phones[0]);
-    expect(verifyCallArg1).toBe(code);
+    expect(checkInUseContact).toBeCalledWith(signUpDto.contact);
+    expect(verifyContact).toBeCalledWith(signUpDto.contact, signUpDto.code);
 
     // User create calls
-    expect(createUserCallArg1).toBeTruthy();
-    expect(createUserCallArg0).toStrictEqual({
-      phones: user.phones[0],
-      firstName: user.firstName,
-      lastName: user.lastName,
-      cpf: user.cpf,
-      birth: new Date(user.birth.toUTCString()),
-    });
+    expect(userCreate).toBeCalledWith(
+      {
+        phones: user.phones[0],
+        firstName: user.firstName,
+        lastName: user.lastName,
+        cpf: user.cpf,
+        birth: new Date(user.birth.toUTCString()),
+      },
+      true,
+    );
 
     // Session calls
-    expect(sessionCreateCallArg0).toStrictEqual(user);
-    expect(sessionCreateCallArg1).toBe(userAgent);
-    expect(sessionCreateCallArg2).toBe(ip);
+    expect(sessionCreate).toBeCalledWith(user, userAgent, ip);
 
     expect(response).toStrictEqual({
       user: {

@@ -24,7 +24,7 @@ import {
   Ip,
   Headers,
 } from "@nestjs/common";
-import { ContactDto } from "../users.dto";
+import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
 import { SignInPasswordDto, SignInCodeDto } from "./signin.dto";
 import {
   SignInIdentify,
@@ -82,7 +82,7 @@ export class SignInController {
   async codeHandler(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
-    @Body() { contact, code }: SignInCodeDto,
+    @Body() { contact, code }: ContactVerificationCheckDto,
   ): Promise<SignInCodeResponse> {
     await this.usersService.verifyContact(contact, code);
 

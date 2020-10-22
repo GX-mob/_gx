@@ -106,14 +106,13 @@ describe("RideService", () => {
   describe("getRideByPid", () => {
     it("should call rideRepository", async () => {
       const pid = faker.random.alphaNumeric(12);
-      const rideRepositoryGetSpy = jest
+      const rideRepositoryGet = jest
         .spyOn(rideRepository, "get")
         .mockResolvedValue(null);
 
       await ridesService.getRideByPid(pid);
 
-      const [[query]] = rideRepositoryGetSpy.mock.calls;
-      expect(query).toStrictEqual({ pid });
+      expect(rideRepositoryGet).toBeCalledWith({ pid });
     });
   });
 

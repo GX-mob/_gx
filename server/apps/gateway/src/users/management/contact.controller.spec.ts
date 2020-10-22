@@ -1,298 +1,107 @@
 /**
- * Sign-in Controller
- *
- * @group unit/controllers/contact
+ * @group unit/controller
+ * @group unit/gateway/controller
+ * @group unit/gateway/users/controller
+ * @group unit/gateway/users/contact
+ * @group unit/gateway/users/contact/controller
  */
-import { Types } from "mongoose";
-import { UnprocessableEntityException } from "@nestjs/common";
-import { AccountContactController } from "./contact.controller";
+import { Test } from "@nestjs/testing";
+import faker from "faker";
+import { LoggerModule } from "nestjs-pino";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { CacheModule, CacheService } from "@app/cache";
+import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { SessionModule, SessionService } from "@app/session";
 import {
-  ContactVerifyRequestDto,
-  ConfirmContactVerificationDto,
-  RemoveContactDto,
-} from "./management.dto";
-import SecurePassword from "secure-password";
-import { EXCEPTIONS_MESSAGES } from "../constants";
+  ContactVerificationModule,
+  TwilioService,
+} from "@app/contact-verification";
+import { UsersModule } from "../users.module";
+import { UsersService } from "../users.service";
+import { mockUser, mockPhone } from "@testing/testing";
 
-describe("AccountContactController", () => {
-  const securePassword = new SecurePassword();
+import { ContactController } from "./contact.controller";
+import { ContactDto, ContactVerificationCheckDto } from "../users.dto";
+import { RemoveContactDto } from "./management.dto";
 
-  let contactController: AccountContactController;
+describe("User: ContactController", () => {
+  let usersService: UsersService;
+  let controller: ContactController;
 
-  const userRepositoryMock = {
-    get: jest.fn(),
-    update: jest.fn(),
-  };
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        UsersModule,
+        SessionModule,
+        CacheModule,
+        RepositoryModule,
+        ContactVerificationModule,
+      ],
+      controllers: [ContactController],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({ get() {} })
+      .overrideProvider(CacheService)
+      .useValue({})
+      .overrideProvider(RepositoryService)
+      .useValue({})
+      .overrideProvider(TwilioService)
+      .useValue({})
+      .compile();
 
-  const verifyServiceMock = {
-    request: jest.fn(),
-    verify: jest.fn(),
-  };
-
-  let fastifyRequestMock: any = {
-    headers: {
-      "user-agent": "foo",
-    },
-    raw: { headers: { "x-client-ip": "127.0.0.1" } },
-    session: { user: {} },
-  };
-
-  beforeEach(() => {
-    contactController = new AccountContactController(
-      userRepositoryMock as any,
-      verifyServiceMock as any,
-    );
+    usersService = moduleRef.get<UsersService>(UsersService);
+    controller = moduleRef.get<ContactController>(ContactController);
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
-    fastifyRequestMock = {
-      headers: {
-        "user-agent": "foo",
-      },
-      raw: { headers: { "x-client-ip": "127.0.0.1" } },
-      session: { user: {} },
-    };
+  it("verifiContactRequest", async () => {
+    const contact = mockPhone();
+    const contactDto = new ContactDto();
+    contactDto.contact = contact;
+
+    const checkInUseContact = jest
+      .spyOn(usersService, "checkInUseContact")
+      .mockResolvedValue();
+    const requestContactVerify = jest
+      .spyOn(usersService, "requestContactVerify")
+      .mockResolvedValue("");
+
+    await controller.verifyContactRequest(contactDto);
+
+    expect(checkInUseContact).toBeCalledWith(contact);
+    expect(requestContactVerify).toBeCalledWith(contact);
   });
 
-  describe("verifiContactRequest", () => {
-    it("should create phone verification", async () => {
-      const requestBody = new ContactVerifyRequestDto();
+  it("addContact", async () => {
+    const user = mockUser();
+    const [contact] = user.phones;
+    const code = "000000";
+    const addContact = jest
+      .spyOn(usersService, "addContact")
+      .mockResolvedValue();
+    const contactVerificationCheckDto = new ContactVerificationCheckDto();
+    contactVerificationCheckDto.contact = contact;
+    contactVerificationCheckDto.code = "000000";
 
-      requestBody.contact = "+5582988444444";
+    await controller.addContact(user, contactVerificationCheckDto);
 
-      contactController.verifiContactRequest(requestBody);
-    });
-
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED}")`, async () => {
-      const requestBody = new ContactVerifyRequestDto();
-
-      requestBody.contact = "+5582988444444";
-      userRepositoryMock.get.mockResolvedValue({});
-
-      await expect(
-        contactController.verifiContactRequest(requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(
-          EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED,
-        ),
-      );
-    });
+    expect(addContact).toBeCalledWith(user, contact, code);
   });
 
-  describe("addContact", () => {
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.WRONG_CODE}")`, async () => {
-      const requestBody = new ConfirmContactVerificationDto();
-      requestBody.contact = "+5582988444444";
-      requestBody.code = "000000";
+  it("removeContact", async () => {
+    const password = faker.random.alphaNumeric(12);
+    const user = mockUser();
+    const [contact] = user.phones;
+    const removeContact = jest
+      .spyOn(usersService, "removeContact")
+      .mockResolvedValue();
+    const contactVerificationCheckDto = new RemoveContactDto();
+    contactVerificationCheckDto.contact = contact;
+    contactVerificationCheckDto.password = password;
 
-      verifyServiceMock.verify.mockResolvedValue(false);
+    await controller.removeContact(user, contactVerificationCheckDto);
 
-      await expect(
-        contactController.addContact(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(EXCEPTIONS_MESSAGES.WRONG_CODE),
-      );
-    });
-
-    it(`should add a phone number`, async () => {
-      const requestBody = new ConfirmContactVerificationDto();
-      requestBody.contact = "+5582988444444";
-      requestBody.code = "000000";
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-
-      requestMock.session.user._id = _id;
-
-      verifyServiceMock.verify.mockResolvedValue(true);
-
-      await contactController.addContact(fastifyRequestMock, requestBody);
-
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        phones: [requestBody.contact],
-      });
-    });
-
-    it(`should append a phone number`, async () => {
-      const requestBody = new ConfirmContactVerificationDto();
-      requestBody.contact = "+5582988444444";
-      requestBody.code = "000000";
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.phones = ["+5582988884444"];
-
-      verifyServiceMock.verify.mockResolvedValue(true);
-
-      await contactController.addContact(fastifyRequestMock, requestBody);
-
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        phones: [requestMock.session.user.phones[0], requestBody.contact],
-      });
-    });
-
-    it(`should add an email`, async () => {
-      const requestBody = new ConfirmContactVerificationDto();
-      requestBody.contact = "valid@email.com";
-      requestBody.code = "000000";
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-
-      requestMock.session.user._id = _id;
-
-      verifyServiceMock.verify.mockResolvedValue(true);
-
-      await contactController.addContact(fastifyRequestMock, requestBody);
-
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        emails: [requestBody.contact],
-      });
-    });
-
-    it(`should append an email`, async () => {
-      const requestBody = new ConfirmContactVerificationDto();
-      requestBody.contact = "valid@email.com";
-      requestBody.code = "000000";
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.emails = ["current@email.com"];
-
-      verifyServiceMock.verify.mockResolvedValue(true);
-
-      await contactController.addContact(fastifyRequestMock, requestBody);
-
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        emails: [requestMock.session.user.emails[0], requestBody.contact],
-      });
-    });
-  });
-
-  describe("removeContact", () => {
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED}") due to removing last contact`, async () => {
-      const password = "test";
-      const passwordHashBuffer = await securePassword.hash(
-        Buffer.from(password),
-      );
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-      const currentPhone = "+5582988444444";
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.phones = [currentPhone];
-      requestMock.session.user.emails = [];
-      requestMock.session.user.password = passwordHashBuffer;
-
-      const requestBody = new RemoveContactDto();
-      requestBody.contact = currentPhone;
-
-      await expect(
-        contactController.removeContact(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(
-          EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED,
-        ),
-      );
-    });
-
-    it(`should throw UnprocessableEntityException("${EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED}") due to removing 2FA`, async () => {
-      const password = "test";
-      const passwordHashBuffer = await securePassword.hash(
-        Buffer.from(password),
-      );
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-      const currentPhone = "+5582988444444";
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.phones = [currentPhone];
-      requestMock.session.user.emails = [];
-      requestMock.session.user.password = passwordHashBuffer;
-
-      const requestBody = new RemoveContactDto();
-      requestBody.contact = currentPhone;
-
-      await expect(
-        contactController.removeContact(fastifyRequestMock, requestBody),
-      ).rejects.toStrictEqual(
-        new UnprocessableEntityException(
-          EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED,
-        ),
-      );
-    });
-
-    it(`should remove a phone number`, async () => {
-      const password = "test";
-      const passwordHashBuffer = await securePassword.hash(
-        Buffer.from(password),
-      );
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-      const toRemove = "+5582988444444";
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.phones = [toRemove];
-      requestMock.session.user.emails = ["valid@email.com"];
-      requestMock.session.user.password = passwordHashBuffer;
-
-      const requestBody = new RemoveContactDto();
-      requestBody.contact = toRemove;
-
-      await contactController.removeContact(fastifyRequestMock, requestBody);
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        phones: [],
-      });
-    });
-
-    it(`should remove an email `, async () => {
-      const password = "test";
-      const passwordHashBuffer = await securePassword.hash(
-        Buffer.from(password),
-      );
-      const requestMock = { ...fastifyRequestMock };
-
-      const _id = new Types.ObjectId();
-      const toRemove = "valid@email.com";
-
-      requestMock.session.user._id = _id;
-      requestMock.session.user.phones = ["+5582988444444"];
-      requestMock.session.user.emails = [toRemove];
-      requestMock.session.user.password = passwordHashBuffer;
-
-      const requestBody = new RemoveContactDto();
-      requestBody.contact = toRemove;
-
-      await contactController.removeContact(fastifyRequestMock, requestBody);
-      expect(userRepositoryMock.update.mock.calls[0][0]).toStrictEqual({
-        _id,
-      });
-      expect(userRepositoryMock.update.mock.calls[0][1]).toStrictEqual({
-        emails: [],
-      });
-    });
+    expect(removeContact).toBeCalledWith(user, contact, password);
   });
 });
