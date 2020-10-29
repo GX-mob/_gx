@@ -22,6 +22,9 @@ export type setOptions = {
 
 @Injectable()
 export class CacheService {
+  static KeySeparator = SEPARATOR;
+  static KeyLinkPrefix = LINK_PREFIX;
+
   private defaultLifetime = String(DEFAULT_TTL);
   readonly redis: Redis;
 
@@ -96,16 +99,23 @@ export class CacheService {
       return this.execute("set", autoReTry, parentKey, value, "PX", expiration);
     }
 
-    return this.execute("multi", autoReTry, [
-      // Set the parent key, that have the value
-      ["set", parentKey, value, "PX", expiration],
-      // And linked keys
-      ...link.map((childKey) => [
-        "set",
-        this.key(ns, childKey),
-        `${LINK_PREFIX}${parentKey}`,
-      ]),
-    ]).exec();
+    return util.retry(
+      () =>
+        this.redisService
+          .multi([
+            // Set the parent key, that have the value
+            ["set", parentKey, value, "PX", expiration],
+            // And linked keys
+            ...link.map((childKey) => [
+              "set",
+              this.key(ns, childKey),
+              `${LINK_PREFIX}${parentKey}`,
+            ]),
+          ])
+          .exec(),
+      options?.autoReTry ? AUTO_RETRY_ATTEMPS : 0,
+      AUTO_RETRY_INTERVAL_MS,
+    );
   }
 
   /**
@@ -131,11 +141,11 @@ export class CacheService {
     const command = this.redisService[cmd] as any;
     return retry
       ? util.retry(
-          () => command(...args),
+          () => command.apply(this.redisService, args),
           AUTO_RETRY_ATTEMPS,
           AUTO_RETRY_INTERVAL_MS,
         )
-      : command(...args);
+      : command.apply(this.redisService, args);
   }
 
   /*

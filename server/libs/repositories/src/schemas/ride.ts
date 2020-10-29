@@ -18,7 +18,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import shortid from "shortid";
 import { util } from "@app/helpers";
-import Connections from "../connections";
+import { Operational } from "../connections";
 import {
   IRide,
   RideStatus,
@@ -121,7 +121,4 @@ export const RideSchema: Schema = new Schema(
   { collection: "rides" },
 );
 
-export const RideModel = Connections.Operation.model<RideDocument>(
-  "Ride",
-  RideSchema,
-);
+export const RideModel = Operational.model<RideDocument>("Ride", RideSchema);

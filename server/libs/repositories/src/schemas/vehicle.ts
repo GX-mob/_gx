@@ -1,6 +1,6 @@
 import { IVehicle } from "@shared/interfaces";
 import { Document, Schema, Types } from "mongoose";
-import Connections from "../connections";
+import { Entities } from "../connections";
 import { UserModel } from "./user";
 import { VehicleMetadataModel } from "./vehicle-metadata";
 
@@ -26,7 +26,7 @@ export const VehicleSchema = new Schema(
   { collection: "vehicles" },
 );
 
-export const VehicleModel = Connections.Entities.model<VehicleDocument>(
+export const VehicleModel = Entities.model<VehicleDocument>(
   "Vehicle",
   VehicleSchema,
 );

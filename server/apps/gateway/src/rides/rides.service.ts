@@ -8,7 +8,11 @@ import {
   IRideTypeConfiguration,
   RideTypes,
 } from "@shared/interfaces";
-import { RepositoryService, RideRepository } from "@app/repositories";
+import {
+  RideRepository,
+  PendencieRepository,
+  RideAreaConfigurationRepository,
+} from "@app/repositories";
 import { util } from "@app/helpers";
 import { CreateRideDto } from "./rides.dto";
 import {
@@ -39,19 +43,20 @@ export class RidesService {
   readonly areas: { [area: string]: IRideAreaConfiguration } = {};
 
   constructor(
-    private repositoryService: RepositoryService,
     private rideRepository: RideRepository,
+    private pendencieRepository: PendencieRepository,
+    private rideAreaConfigurationRepository: RideAreaConfigurationRepository,
   ) {
     this.init();
   }
 
   private async init() {
-    const { rideAreaConfigurationModel } = this.repositoryService;
-
     /**
      * Get and store all rides types and prices
      */
-    const prices = await rideAreaConfigurationModel.find().lean();
+    const prices: any[] = await this.rideAreaConfigurationRepository.model
+      .find()
+      .lean();
 
     if (!prices.length) {
       // throw new Error("Empty rides types list");
@@ -70,8 +75,9 @@ export class RidesService {
     /**
      * Get user pendencies
      */
-    const { pendencieModel } = this.repositoryService;
-    const pendencies = await pendencieModel.find({ issuer: userId });
+    const pendencies: any[] = await this.pendencieRepository.model
+      .find({ issuer: userId })
+      .lean();
     const { route, type, payMethod, country, area, subArea } = data;
 
     /**

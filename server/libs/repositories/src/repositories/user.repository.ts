@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { RepositoryFactory } from "../repository-factory";
+import { RepositoryFactory } from "../repository.factory";
 import { IUser } from "@shared/interfaces";
-import { UserModel } from "../models/user";
+import { UserModel } from "../schemas/user";
 
 export interface UserQueryInterface
   extends Partial<Pick<IUser, "_id" | "pid" | "phones" | "emails" | "cpf">> {}
@@ -25,7 +25,7 @@ export class UserRepository extends RepositoryFactory<
 > {
   constructor(private cacheService: CacheService) {
     super(cacheService, UserModel, {
-      namespace: "users",
+      namespace: UserRepository.name,
       linkingKeys: ["pid", "phones", "emails", "cpf"],
     });
   }

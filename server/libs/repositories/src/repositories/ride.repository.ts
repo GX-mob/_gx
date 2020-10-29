@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { RepositoryFactory } from "../repository-factory";
+import { RepositoryFactory } from "../repository.factory";
 import { IRide } from "@shared/interfaces";
-import { RideModel } from "../models/ride";
+import { RideModel } from "../schemas/ride";
 
 export interface RideQueryInterface
   extends Partial<Pick<IRide, "_id" | "pid">> {}
@@ -22,7 +22,7 @@ export class RideRepository extends RepositoryFactory<
 > {
   constructor(private cacheService: CacheService) {
     super(cacheService, RideModel, {
-      namespace: "rides",
+      namespace: RideRepository.name,
       linkingKeys: ["pid"],
       autoPopulate: ["voyager", "driver", "pendencies"],
     });

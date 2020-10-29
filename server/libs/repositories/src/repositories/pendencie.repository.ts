@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { RepositoryFactory } from "../repository-factory";
+import { RepositoryFactory } from "../repository.factory";
 import { IPendencie } from "@shared/interfaces";
-import { PendencieModel } from "../models/pendencie";
+import { PendencieModel } from "../schemas/pendencie";
 
 export interface PendencieQueryInterface
   extends Partial<Pick<IPendencie, "affected" | "issuer" | "_id" | "ride">> {}
@@ -22,7 +22,7 @@ export class PendencieRepository extends RepositoryFactory<
 > {
   constructor(private cacheService: CacheService) {
     super(cacheService, PendencieModel, {
-      namespace: "pendencies",
+      namespace: PendencieRepository.name,
       linkingKeys: ["issuer", "affected"],
     });
   }

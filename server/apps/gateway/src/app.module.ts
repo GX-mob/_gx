@@ -1,9 +1,10 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { RepositoryModule } from "@app/repositories";
 import { UserHttpModule } from "./user/user-http.module";
 import { RidesModule } from "./rides/rides.module";
 import { LoggerModule } from "nestjs-pino";
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -21,6 +22,5 @@ import { LoggerModule } from "nestjs-pino";
     UserHttpModule,
     RidesModule,
   ],
-  providers: [ConfigService],
 })
 export class AppModule {}

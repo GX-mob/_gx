@@ -10,8 +10,9 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import {
   RepositoryModule,
-  RepositoryService,
   RideRepository,
+  PendencieRepository,
+  RideAreaConfigurationRepository,
 } from "@app/repositories";
 import { SessionModule, SessionService } from "@app/session";
 import { parseISO } from "date-fns";
@@ -28,6 +29,7 @@ import {
   UnsupportedAreaException,
 } from "./exceptions";
 import { CreateRideDto } from "./rides.dto";
+import { UserService } from "../user/user.service";
 
 describe("RideService", () => {
   let ridesService: RidesService;
@@ -50,9 +52,12 @@ describe("RideService", () => {
     }),
   ];
 
-  const repositoryServiceMock = {
-    pendencieModel: { find: jest.fn() },
-    rideAreaConfigurationModel: {
+  const pendencieRepositoryMock = {
+    model: { find: jest.fn() },
+  };
+
+  const rideAreaConfigurationRepositoryMock = {
+    model: {
       find: () => ({
         lean: async (): Promise<IRideAreaConfiguration[]> => [...prices],
       }),
@@ -74,8 +79,10 @@ describe("RideService", () => {
       .useValue({ get() {} })
       .overrideProvider(CacheService)
       .useValue({})
-      .overrideProvider(RepositoryService)
-      .useValue(repositoryServiceMock)
+      .overrideProvider(PendencieRepository)
+      .useValue(pendencieRepositoryMock)
+      .overrideProvider(RideAreaConfigurationRepository)
+      .useValue(rideAreaConfigurationRepositoryMock)
       .compile();
 
     ridesService = moduleRef.get<RidesService>(RidesService);
@@ -91,7 +98,7 @@ describe("RideService", () => {
   });
 
   it("should has rides types loaded", async () => {
-    const prices = await repositoryServiceMock.rideAreaConfigurationModel
+    const prices = await rideAreaConfigurationRepositoryMock.model
       .find()
       .lean();
     const areas: { [area: string]: IRideAreaConfiguration } = {};
@@ -214,7 +221,10 @@ describe("RideService", () => {
       rideRepositoryCreateSpy.mockImplementation(
         async (input) => input as IRide,
       );
-      repositoryServiceMock.pendencieModel.find.mockResolvedValue([]);
+
+      pendencieRepositoryMock.model.find.mockImplementation(() => ({
+        lean: jest.fn().mockResolvedValue([]),
+      }));
 
       await ridesService.create(ride.voyager._id, createRideDto);
 
@@ -236,8 +246,10 @@ describe("RideService", () => {
       rideRepositoryCreateSpy.mockImplementation(
         async (input) => input as IRide,
       );
-      repositoryServiceMock.pendencieModel.find.mockResolvedValue([pendencie]);
 
+      pendencieRepositoryMock.model.find.mockImplementation(() => ({
+        lean: jest.fn().mockResolvedValue([pendencie]),
+      }));
       await ridesService.create(ride.voyager._id, createRideDto);
 
       const expectBaseCosts = ridesService.getRideCosts(ride);

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { RepositoryFactory } from "../repository-factory";
+import { RepositoryFactory } from "../repository.factory";
 import { IVehicle } from "@shared/interfaces";
-import { VehicleModel } from "../models/vehicle";
+import { VehicleModel } from "../schemas/vehicle";
 
 export interface VehicleQueryInterface
   extends Partial<Pick<IVehicle, "_id" | "plate">> {}
@@ -22,7 +22,7 @@ export class VehicleRepository extends RepositoryFactory<
 > {
   constructor(private cacheService: CacheService) {
     super(cacheService, VehicleModel, {
-      namespace: "vehicles",
+      namespace: VehicleRepository.name,
       autoPopulate: ["metadata"],
     });
   }

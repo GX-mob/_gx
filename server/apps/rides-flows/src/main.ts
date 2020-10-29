@@ -46,7 +46,7 @@ async function bootstrap() {
 
 bootstrap().then((app) => {
   if (module === require.main) {
-    app.listen(process.env.PORT || 3001, process.env.HOST || "");
+    app.listen(process.env.PORT || 3001, process.env.HOST || "0.0.0.0");
   }
 });
 

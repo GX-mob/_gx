@@ -1,7 +1,7 @@
 /**
  * Data Service
  *
- * @group unit/services/socket
+ * @group integration/services/socket
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";

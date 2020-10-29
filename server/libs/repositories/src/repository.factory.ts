@@ -2,11 +2,11 @@ import mongoose, { DocumentQuery, Document } from "mongoose";
 import { CacheService } from "@app/cache";
 import { util } from "@app/helpers";
 
-export type Settings<Model> = {
+export interface Settings<Model> {
   namespace: string;
   linkingKeys?: Array<keyof Model>;
   autoPopulate?: Array<keyof Model>;
-};
+}
 
 export interface ConfigurationInterface<Model> {
   Create: Partial<Model>;
@@ -39,6 +39,7 @@ export class RepositoryFactory<
       return cache;
     }
 
+    // const data = await this.persistenceLayer.makeQuery(query);
     const data = await this.makeQuery(query);
     if (!data) {
       return null;

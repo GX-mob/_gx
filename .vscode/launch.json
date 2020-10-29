@@ -4,7 +4,19 @@
     {
       "type": "node",
       "request": "attach",
-      "name": "Debug: gx-web-services",
+      "name": "Debug: gx-gateway",
+      "remoteRoot": "/usr/src/app",
+      "localRoot": "${workspaceFolder}",
+      "protocol": "inspector",
+      "port": 9228,
+      "restart": true,
+      "address": "0.0.0.0",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Debug: gx-rides-flows",
       "remoteRoot": "/usr/src/app",
       "localRoot": "${workspaceFolder}",
       "protocol": "inspector",

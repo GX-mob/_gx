@@ -9,7 +9,7 @@ import { Test } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
-import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { RepositoryModule } from "@app/repositories";
 import { SessionModule, SessionService } from "@app/session";
 import {
   ContactVerificationModule,
@@ -47,8 +47,6 @@ describe("SignUpController", () => {
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
       .overrideProvider(CacheService)
-      .useValue({})
-      .overrideProvider(RepositoryService)
       .useValue({})
       .overrideProvider(TwilioService)
       .useValue({})

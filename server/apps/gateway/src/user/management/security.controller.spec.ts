@@ -10,7 +10,7 @@ import faker from "faker";
 import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
-import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { RepositoryModule } from "@app/repositories";
 import { SessionModule } from "@app/session";
 import {
   ContactVerificationModule,
@@ -42,8 +42,6 @@ describe("User: SecurityController", () => {
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
       .overrideProvider(CacheService)
-      .useValue({})
-      .overrideProvider(RepositoryService)
       .useValue({})
       .overrideProvider(TwilioService)
       .useValue({})

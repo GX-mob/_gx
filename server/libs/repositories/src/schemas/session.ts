@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { Document, Schema } from "mongoose";
-import Connections from "../connections";
+import { Sessions } from "../connections";
 import { ISession } from "@shared/interfaces";
 import { UserModel } from "./user";
 
@@ -33,7 +33,7 @@ export const SessionSchema: Schema = new Schema(
   { collection: "sessions" },
 );
 
-export const SessionModel = Connections.Sessions.model<SessionDocument>(
+export const SessionModel = Sessions.model<SessionDocument>(
   "Session",
   SessionSchema,
 );

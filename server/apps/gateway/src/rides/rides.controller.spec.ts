@@ -7,7 +7,7 @@ import { Test } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
-import { RepositoryModule, RepositoryService } from "@app/repositories";
+import { RepositoryModule } from "@app/repositories";
 import { SessionModule, SessionService } from "@app/session";
 import { IRideAreaConfiguration, ISession } from "@shared/interfaces";
 import { mockRide, mockSession, mockAreaConfiguration } from "@testing/testing";
@@ -26,14 +26,6 @@ describe("RidesController", () => {
   let ridesController: RidesController;
   let sessionService: SessionService;
 
-  const repositoryServiceMock = {
-    rideAreaConfigurationModel: {
-      find: () => ({
-        lean: async (): Promise<IRideAreaConfiguration[]> => [],
-      }),
-    },
-  };
-
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
@@ -50,8 +42,6 @@ describe("RidesController", () => {
       .useValue({ get() {} })
       .overrideProvider(CacheService)
       .useValue({})
-      .overrideProvider(RepositoryService)
-      .useValue(repositoryServiceMock)
       .compile();
 
     sessionService = moduleRef.get<SessionService>(SessionService);

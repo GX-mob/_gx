@@ -1,6 +1,6 @@
 import { IVehicleMetadata, VehicleTypes } from "@shared/interfaces";
 import { Document, Schema } from "mongoose";
-import Connections from "../connections";
+import { Entities } from "../connections";
 
 export interface VehicleMetadataDocument extends IVehicleMetadata, Document {}
 
@@ -13,6 +13,7 @@ export const VehicleMetadataSchema = new Schema(
   { collection: "vehicles_models" },
 );
 
-export const VehicleMetadataModel = Connections.Entities.model<
-  VehicleMetadataDocument
->("VehicleModel", VehicleMetadataSchema);
+export const VehicleMetadataModel = Entities.model<VehicleMetadataDocument>(
+  "VehicleModel",
+  VehicleMetadataSchema,
+);

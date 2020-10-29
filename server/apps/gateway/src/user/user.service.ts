@@ -176,7 +176,10 @@ export class UserService {
 
     const password = await this.hashPassword(newPassword);
 
-    await this.userRepository.model.updateOne({ _id: user._id }, { password });
+    await this.userRepository.model.updateOne(
+      { _id: user._id },
+      { password: password.toString("base64") },
+    );
   }
 
   enable2FA(user: IUser, target: string) {

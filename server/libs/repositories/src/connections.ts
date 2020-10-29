@@ -1,18 +1,26 @@
-import { createConnection, Connection } from "mongoose";
+import mongoose from "mongoose";
+import { DATABASES } from "./constants";
 
-function makeConnection(database: string, connPool?: Connection): Connection {
-  const connection = connPool ? connPool.useDb(database) : createConnection();
+mongoose.set("useCreateIndex", true);
+
+function makeConnection(
+  database: string,
+  connPool?: mongoose.Connection,
+): mongoose.Connection {
+  const connection = connPool
+    ? connPool.useDb(database)
+    : mongoose.createConnection();
   return connection;
 }
 
-const Configuration = makeConnection("configuration");
-const Entities = makeConnection("users", Configuration);
-const Operation = makeConnection("rides", Configuration);
-const Sessions = makeConnection("sessions", Configuration);
+export const Configuration = makeConnection(DATABASES.CONFIGURATION);
+export const Entities = makeConnection(DATABASES.ENTITIES, Configuration);
+export const Operational = makeConnection(DATABASES.OPERATIONAL, Configuration);
+export const Sessions = makeConnection(DATABASES.AUTHORIZATIONS, Configuration);
 
-export default {
+export const Connections = {
   Configuration,
   Entities,
-  Operation,
+  Operational,
   Sessions,
 };

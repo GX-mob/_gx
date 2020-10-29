@@ -3,7 +3,6 @@
  *
  * @group unit/models/prices
  */
-import { Types } from "mongoose";
 import { IRideTypeConfiguration } from "@shared/interfaces";
 import { RideAreaConfigurationModel } from "./ride-area-configuration";
 

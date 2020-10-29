@@ -22,7 +22,7 @@ fastifyInstance.register(fastifyCompress, { encodings: ["gzip", "deflate"] });
 fastifyInstance.decorateRequest("session", {});
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
+  const app = await NestFactory.create(AppModule, new FastifyAdapter());
   const cacheService = app.get(CacheService);
 
   fastifyInstance.register(fastifyRateLimit, {
@@ -37,7 +37,7 @@ async function bootstrap() {
 
 bootstrap().then((app) => {
   if (module === require.main) {
-    app.listen(process.env.PORT || 3000);
+    app.listen(process.env.PORT || 3000, process.env.HOST || "0.0.0.0");
   }
 });
 

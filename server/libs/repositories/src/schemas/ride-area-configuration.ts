@@ -1,5 +1,5 @@
 import { Document, Schema } from "mongoose";
-import Connections from "../connections";
+import { Configuration } from "../connections";
 import { IRideAreaConfiguration, RideTypes } from "@shared/interfaces";
 
 export interface RideAreaConfigurationDocument
@@ -43,6 +43,6 @@ export const RideAreaConfigurationSchema = new Schema(
   { collection: "ride_areas_configurations" },
 );
 
-export const RideAreaConfigurationModel = Connections.Configuration.model<
+export const RideAreaConfigurationModel = Configuration.model<
   RideAreaConfigurationDocument
 >("RideAreaConfiruation", RideAreaConfigurationSchema);

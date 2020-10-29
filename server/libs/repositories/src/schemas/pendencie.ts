@@ -1,6 +1,6 @@
 import { Document, Schema } from "mongoose";
 import { IPendencie } from "@shared/interfaces";
-import Connections from "../connections";
+import { Operational } from "../connections";
 import { UserModel } from "./user";
 
 export interface PendencieDocument extends IPendencie, Document {}
@@ -16,7 +16,7 @@ export const PendencieSchema: Schema = new Schema(
   { collection: "pendencies" },
 );
 
-export const PendencieModel = Connections.Operation.model<PendencieDocument>(
+export const PendencieModel = Operational.model<PendencieDocument>(
   "Pendencie",
   PendencieSchema,
 );

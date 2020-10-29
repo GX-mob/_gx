@@ -1,53 +1,31 @@
 /**
- * @group e2e/repositories/repository-factory
+ * @group integration/repositories/repository-factory
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
-import { UserInterface, SessionInterface, UserRoles } from "@shared/interfaces";
+import { IUser, ISession } from "@shared/interfaces";
 import {
   RepositoryModule,
-  RepositoryService,
   UserModel,
   UserRepository,
   SessionRepository,
 } from "@app/repositories";
 import { CacheModule, CacheService } from "@app/cache";
 import mongoose from "mongoose";
-import { generate } from "shortid";
+import { mockUser, mockSession } from "@testing/testing";
 
 describe("RepositoryFactory", () => {
-  let repositoryService: RepositoryService;
+  let module: TestingModule;
   let userRepository: UserRepository;
   let sessionRepository: SessionRepository;
   let cacheService: CacheService;
 
-  const mockUser = {
-    firstName: "First",
-    lastName: "Last",
-    cpf: "123.456.789-09",
-    phones: ["+5582988888888", "+5582988444445"],
-    emails: [],
-    birth: new Date("06/13/1994"),
-    roles: [UserRoles.VOYAGER],
-  };
-
-  const mockSession = {
-    userAgent: "test",
-    ips: ["127.0.0.1"],
-  };
-
-  let cached: any;
+  let userCached: any;
   let session: any;
 
-  afterAll(async () => {
-    await Promise.all(
-      repositoryService.connections.map((connection) => connection.close()),
-    );
-  });
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
@@ -60,10 +38,15 @@ describe("RepositoryFactory", () => {
       providers: [ConfigService, UserRepository, SessionRepository],
     }).compile();
 
-    repositoryService = module.get<RepositoryService>(RepositoryService);
     userRepository = module.get<UserRepository>(UserRepository);
     sessionRepository = module.get<SessionRepository>(SessionRepository);
     cacheService = module.get<CacheService>(CacheService);
+
+    await module.init();
+  });
+
+  afterAll(async () => {
+    await module.close();
   });
 
   it("should be defined", () => {
@@ -72,84 +55,79 @@ describe("RepositoryFactory", () => {
   });
 
   it("should create", async () => {
-    cached = await userRepository.create(mockUser);
+    const { _id, ...user } = mockUser();
+    userCached = await userRepository.create(user);
 
-    expect(cached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
+    expect(userCached._id instanceof mongoose.Types.ObjectId).toBeTruthy();
 
-    const persistent = (await userRepository.get({
-      _id: cached._id,
-    })) as UserInterface;
-    const fromCache = (await cacheService.get("users", {
-      _id: cached._id,
-    })) as UserInterface;
+    const [persistent] = ((await userRepository.model.find({
+      _id: userCached._id,
+    })) as unknown) as IUser[];
+    const fromCache = (await cacheService.get(UserRepository.name, {
+      _id: userCached._id,
+    })) as IUser;
 
-    expect(persistent.firstName).toBe(cached.firstName);
-    expect(fromCache.firstName).toBe(cached.firstName);
+    expect(persistent.firstName).toBe(userCached.firstName);
+    expect(fromCache.firstName).toBe(userCached.firstName);
     expect(fromCache).toMatchObject({
       ...mockUser,
-      birth: mockUser.birth.toISOString(),
+      birth: user.birth.toISOString(),
     });
   });
 
   it("should create and return populated", async () => {
+    const { _id, ...sessionMock } = mockSession({ user: userCached._id });
     session = await sessionRepository.create(
       {
-        ...mockSession,
-        user: cached._id,
+        ...sessionMock,
       },
       { cache: false },
     );
 
-    expect(session.userAgent).toBe(mockSession.userAgent);
-    expect(session.user._id.toString()).toBe(cached._id.toString());
+    expect(session.userAgent).toBe(sessionMock.userAgent);
+    expect(session.user._id.toString()).toBe(userCached._id.toString());
   });
 
-  it("should get cached record", async () => {
+  it("should get record from cache", async () => {
     const user = (await userRepository.get({
-      _id: cached._id,
-    })) as UserInterface;
+      _id: userCached._id,
+    })) as IUser;
 
-    expect(user.cpf).toBe(cached.cpf);
+    expect(user.cpf).toBe(userCached.cpf);
   });
 
   it("should get non-cached record", async () => {
-    const nonCached = await UserModel.create({
-      ...mockUser,
-      phones: ["+5582988444444"],
-      cpf: "649.688.734-92",
-      pid: generate(),
-      averageEvaluation: 4.5,
-    });
+    const nonCached = await UserModel.create(mockUser());
 
     const user = (await userRepository.get({
       _id: nonCached._id,
-    })) as UserInterface;
+    })) as IUser;
 
     expect(user.cpf).toBe(nonCached.cpf);
 
-    const fromCache = (await cacheService.get("users", {
+    const fromCache = (await cacheService.get(UserRepository.name, {
       _id: nonCached._id,
-    })) as UserInterface;
+    })) as IUser;
 
     expect(user.cpf).toBe(fromCache.cpf);
   });
 
   it("get by a linking key", async () => {
     const user2 = (await userRepository.get({
-      phones: mockUser.phones[0],
-    })) as UserInterface;
+      phones: userCached.phones[0],
+    })) as IUser;
 
-    expect(user2.firstName).toBe(mockUser.firstName);
-    expect(user2.cpf).toBe(mockUser.cpf);
+    expect(user2.firstName).toBe(userCached.firstName);
+    expect(user2.cpf).toBe(userCached.cpf);
   });
 
   it("should update in both storages", async () => {
-    const query = { _id: cached._id };
+    const query = { _id: userCached._id };
 
     await userRepository.update(query, { firstName: "Second" });
 
-    const persistent = (await UserModel.findOne(query)) as UserInterface;
-    const fromCache = await cacheService.get("users", query);
+    const persistent = (await UserModel.findOne(query)) as IUser;
+    const fromCache = await cacheService.get(UserRepository.name, query);
 
     expect(persistent.firstName).toBe("Second");
     expect(fromCache.firstName).toBe("Second");
@@ -158,13 +136,15 @@ describe("RepositoryFactory", () => {
   it("should do auto populate", async () => {
     const sessionPopulated = (await sessionRepository.get({
       _id: session._id,
-    })) as SessionInterface;
+    })) as ISession;
 
-    expect(sessionPopulated.user._id.toString()).toBe(cached._id.toString());
+    expect(sessionPopulated.user._id.toString()).toBe(
+      userCached._id.toString(),
+    );
   });
 
   it("should remove in both storages", async () => {
-    const query = { _id: cached._id };
+    const query = { _id: userCached._id };
 
     await userRepository.remove(query);
 

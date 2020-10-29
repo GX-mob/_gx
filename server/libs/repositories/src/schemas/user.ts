@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { Document, Schema } from "mongoose";
-import Connections from "../connections";
+import { Entities } from "../connections";
 import { IUser, UserRoles } from "@shared/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import shortid from "shortid";
@@ -87,7 +87,6 @@ UserSchema.pre<UserDocument>("updateOne", function () {
   this.set({ updatedAt: new Date() });
 });
 
-export const UserModel = Connections.Entities.model<UserDocument>(
-  "Users",
-  UserSchema,
-);
+export class User {}
+
+export const UserModel = Entities.model<UserDocument>("Users", UserSchema);

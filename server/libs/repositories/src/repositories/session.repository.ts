@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
-import { RepositoryFactory } from "../repository-factory";
+import { RepositoryFactory } from "../repository.factory";
 import { ISession } from "@shared/interfaces";
-import { SessionModel } from "../models/session";
+import { SessionModel } from "../schemas/session";
 
 export interface SessionQueryInterface
   extends Partial<Pick<ISession, "_id" | "user">> {}
@@ -22,7 +22,7 @@ export class SessionRepository extends RepositoryFactory<
 > {
   constructor(private cacheService: CacheService) {
     super(cacheService, SessionModel, {
-      namespace: "sessions",
+      namespace: SessionRepository.name,
       autoPopulate: ["user"],
     });
   }
