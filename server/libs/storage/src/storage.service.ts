@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Storage, Bucket, File } from "@google-cloud/storage";
-import { Readable, Writable, Duplex } from "stream";
+import { Readable, Writable } from "stream";
 import { PassThrough } from "stream";
 import FileType from "file-type";
 import { GoogleStorageService } from "./google-storage.service";
@@ -27,7 +27,7 @@ export type UploadStreamOptions = {
    * To catch internal stream errors.
    * @param {Error} error
    */
-  errorHandler(error: Error): void;
+  streamErrorHandler(error: Error): void;
 };
 
 @Injectable()
@@ -49,9 +49,9 @@ export class StorageService {
     options: UploadStreamOptions,
   ) {
     const bucket = this.client.bucket(bucket_name);
-    const { filename, errorHandler, acceptMIME } = options;
+    const { filename, streamErrorHandler, acceptMIME } = options;
 
-    readable.on("error", errorHandler);
+    readable.on("error", streamErrorHandler);
 
     const [saveReadable, mimeDetectReadable] = this.cloneReadable(readable);
 
@@ -69,7 +69,7 @@ export class StorageService {
       resumable: false,
     });
 
-    storageWritableStream.on("error", errorHandler);
+    storageWritableStream.on("error", streamErrorHandler);
 
     const response = {
       bucketFile,

@@ -10,7 +10,7 @@ import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule } from "@app/repositories";
-import { SessionModule, SessionService } from "@app/session";
+import { AuthModule, AuthService } from "@app/auth";
 import {
   ContactVerificationModule,
   TwilioService,
@@ -29,14 +29,14 @@ import { UserRegisterController } from "./register.controller";
 describe("SignUpController", () => {
   let controller: UserRegisterController;
   let usersService: UserService;
-  let sessionService: SessionService;
+  let sessionService: AuthService;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
-        SessionModule,
+        AuthModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
@@ -52,7 +52,7 @@ describe("SignUpController", () => {
       .useValue({})
       .compile();
 
-    sessionService = moduleRef.get<SessionService>(SessionService);
+    sessionService = moduleRef.get<AuthService>(AuthService);
     usersService = moduleRef.get<UserService>(UserService);
     controller = moduleRef.get<UserRegisterController>(UserRegisterController);
   });

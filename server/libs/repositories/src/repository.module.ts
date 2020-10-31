@@ -45,7 +45,7 @@ export class RepositoryModule implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     const databaseUri = this.configService.get("DATABASE_URI") as string;
 
-    if (process.env.NODE_ENV === "production") this.initConnLogs();
+    this.initConnLogs();
 
     Connections.Configuration.openUri(databaseUri, CONNECTION_OPTIONS);
   }

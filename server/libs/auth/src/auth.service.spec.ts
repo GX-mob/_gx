@@ -1,19 +1,16 @@
 /**
- * Data Service
- *
- * @group unit/services/session
+ * @group unit/services/auth
  */
 import { Types } from "mongoose";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
-import { SessionService } from "./session.service";
-import { UserRoles, SessionInterface } from "@shared/interfaces";
+import { AuthService } from "./auth.service";
+import { UserRoles, ISession } from "@shared/interfaces";
 import {
   SessionRepository,
   RepositoryModule,
-  RepositoryService,
   UserModel,
 } from "@app/repositories";
 import {
@@ -21,8 +18,8 @@ import {
   SessionDeactivatedException,
 } from "./exceptions";
 
-describe("SessionService", () => {
-  let service: SessionService;
+describe("AuthService", () => {
+  let service: AuthService;
 
   const mockUser = {
     firstName: "First",
@@ -59,27 +56,27 @@ describe("SessionService", () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: ".development.env",
+          envFilePath: [
+            `.env.${process.env.NODE_ENV || ""}.local`,
+            `.env.${process.env.NODE_ENV || ""}`,
+            ".env",
+          ],
         }),
         LoggerModule.forRoot(),
         RepositoryModule,
         CacheModule,
       ],
-      providers: [SessionService],
+      providers: [AuthService],
     })
-      .overrideProvider(RepositoryService)
-      .useValue({})
       .overrideProvider(RedisService)
       .useValue({})
       .overrideProvider(SessionRepository)
       .useValue(sessionRepositoryMock)
       .overrideProvider(CacheService)
       .useValue(cacheService)
-      .overrideProvider(RepositoryService)
-      .useValue({})
       .compile();
 
-    service = module.get<SessionService>(SessionService);
+    service = module.get<AuthService>(AuthService);
   });
 
   afterEach(() => jest.restoreAllMocks());
@@ -102,16 +99,16 @@ describe("SessionService", () => {
     await service.update(sid, { active: false });
     const updated = await service.get(sid);
 
-    expect((updated as SessionInterface).active).toBe(false);
+    expect((updated as ISession).active).toBe(false);
   });
 
   it("should check permission", () => {
     const session1 = ({
       user: { roles: [UserRoles.VOYAGER] },
-    } as unknown) as SessionInterface;
+    } as unknown) as ISession;
     const session2 = ({
       user: { roles: [UserRoles.VOYAGER, UserRoles.DRIVER] },
-    } as unknown) as SessionInterface;
+    } as unknown) as ISession;
     const group1 = [UserRoles.VOYAGER];
     const group2 = [UserRoles.DRIVER];
     const group3 = [UserRoles.DRIVER, "admin"] as UserRoles[];

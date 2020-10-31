@@ -22,7 +22,7 @@ fastifyInstance.register(fastifyCompress, { encodings: ["gzip", "deflate"] });
 fastifyInstance.decorateRequest("session", {});
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new FastifyAdapter());
+  const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
   const cacheService = app.get(CacheService);
 
   fastifyInstance.register(fastifyRateLimit, {

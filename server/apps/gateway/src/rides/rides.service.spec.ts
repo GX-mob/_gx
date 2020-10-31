@@ -14,7 +14,7 @@ import {
   PendencieRepository,
   RideAreaConfigurationRepository,
 } from "@app/repositories";
-import { SessionModule, SessionService } from "@app/session";
+import { AuthModule, AuthService } from "@app/auth";
 import { parseISO } from "date-fns";
 import { IRide, RideTypes, IRideAreaConfiguration } from "@shared/interfaces";
 import { RidesService } from "./rides.service";
@@ -69,11 +69,11 @@ describe("RideService", () => {
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
-        SessionModule,
+        AuthModule,
         CacheModule,
         RepositoryModule,
       ],
-      providers: [SessionService, RidesService],
+      providers: [AuthService, RidesService],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })

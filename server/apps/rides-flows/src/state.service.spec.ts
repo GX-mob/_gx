@@ -1,5 +1,5 @@
 /**
- * @group unit/services/run-state
+ * @group integration/services/run-state
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
@@ -20,7 +20,6 @@ import {
   RideRepository,
   VehicleRepository,
   RepositoryModule,
-  RepositoryService,
 } from "@app/repositories";
 import {
   Setup,
@@ -68,6 +67,7 @@ describe("StateService", () => {
   const socketServiceMockFactory = () => {
     const nodeId = shortid.generate();
     const nodesEmitter = new EventEmitter();
+    const serviceEvents = new EventEmitter();
     const nodes = {
       emit: jest.fn(),
       on: (event: any, handler: any) => {
@@ -82,6 +82,7 @@ describe("StateService", () => {
     return {
       nodeId,
       nodesEmitter,
+      serviceEvents,
       nodes,
       emit,
       emitter,
@@ -223,8 +224,6 @@ describe("StateService", () => {
       ],
       providers: [StateService],
     })
-      .overrideProvider(RepositoryService)
-      .useValue({})
       .overrideProvider(CacheService)
       .useValue(cacheMock)
       .overrideProvider(RideRepository)
@@ -564,11 +563,11 @@ describe("StateService", () => {
         driverConnectionData as any,
       );
 
-      expect(socketService.emit.mock.calls[0][0]).toBe(socketId);
-      expect(socketService.emit.mock.calls[0][1]).toBe(
+      expect(socketService.emit).toBeCalledWith(
+        socketId,
         EVENTS.DELAYED_OFFER_RESPONSE,
+        true,
       );
-      expect(socketService.emit.mock.calls[0][2]).toBe(true);
     });
 
     it("should handle a negative response", async () => {
@@ -664,10 +663,10 @@ describe("StateService", () => {
       expect(typeof cacheCalls[0][2].acceptTimestamp).toBe("number");
       expect(cacheCalls[0][3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
 
-      const rideDataCalls = rideRepository.update.mock.calls;
-
-      expect(rideDataCalls[0][0]).toStrictEqual({ pid: offer.ridePID });
-      expect(rideDataCalls[0][1]).toStrictEqual({ driver: driverID });
+      expect(rideRepository.update).toBeCalledWith(
+        { pid: offer.ridePID },
+        { driver: driverID },
+      );
 
       const [driverEmit, voyagerEmit] = socketService.emit.mock.calls;
 
@@ -755,9 +754,7 @@ describe("StateService", () => {
         service.createOffer(offerRequest, {} as any),
       ).rejects.toStrictEqual(new RideNotFoundException());
 
-      const [getCalls] = rideRepository.get.mock.calls;
-
-      expect(getCalls[0]).toStrictEqual({ pid: ridePID });
+      expect(rideRepository.get).toBeCalledWith({ pid: ridePID });
     });
 
     it("should create an offer", async () => {
@@ -773,13 +770,12 @@ describe("StateService", () => {
 
       expect(offer).toBeDefined();
       expect(socket.data.rides.includes(ridePID)).toBeTruthy();
-
-      const [cacheSetCall] = cacheMock.set.mock.calls;
-
-      expect(cacheSetCall[0]).toBe(CACHE_NAMESPACES.OFFERS);
-      expect(cacheSetCall[1]).toBe(ridePID);
-      expect(cacheSetCall[2]).toStrictEqual(offer);
-      expect(cacheSetCall[3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
+      expect(cacheMock.set).toBeCalledWith(
+        CACHE_NAMESPACES.OFFERS,
+        ridePID,
+        offer,
+        { ex: CACHE_TTL.OFFERS },
+      );
     });
   });
 
@@ -882,11 +878,11 @@ describe("StateService", () => {
 
       await service.offerRide(offerObject, ride as IRide);
 
-      const [tooLongEvent] = socketService.emit.mock.calls;
-
-      expect(tooLongEvent[0]).toBe(voyagerSocketId);
-      expect(tooLongEvent[1]).toBe(EVENTS.OFFER_GOT_TOO_LONG);
-      expect(tooLongEvent[2]).toBe(true);
+      expect(socketService.emit).toBeCalledWith(
+        voyagerSocketId,
+        EVENTS.OFFER_GOT_TOO_LONG,
+        true,
+      );
     });
 
     it("should get a match driver and pass through all conditionals", async () => {
@@ -997,15 +993,14 @@ describe("StateService", () => {
 
       await service.setOfferData(ridePID, offerObject);
 
-      const [cacheSetCalls] = cacheMock.set.mock.calls;
-
-      expect(cacheMock.get).toHaveBeenCalledTimes(1);
-      expect(cacheSetCalls[0]).toBe(CACHE_NAMESPACES.OFFERS);
-      expect(cacheSetCalls[1]).toBe(ridePID);
-      expect(cacheSetCalls[2]).toStrictEqual(offerObject);
-      expect(cacheSetCalls[3]).toStrictEqual({
-        ex: CACHE_TTL.OFFERS,
-      });
+      expect(cacheMock.get).toBeCalledWith(
+        CACHE_NAMESPACES,
+        ridePID,
+        offerObject,
+        {
+          ex: CACHE_TTL.OFFERS,
+        },
+      );
     });
 
     it("should update the value", async () => {
@@ -1031,18 +1026,17 @@ describe("StateService", () => {
 
       await service.setOfferData(ridePID, offerObject);
 
-      const [cacheSetCalls] = cacheMock.set.mock.calls;
-
-      expect(cacheMock.get).toHaveBeenCalledTimes(1);
-      expect(cacheSetCalls[0]).toBe(CACHE_NAMESPACES.OFFERS);
-      expect(cacheSetCalls[1]).toBe(ridePID);
-      expect(cacheSetCalls[2]).toStrictEqual({
-        ...offerObject,
-        ignoreds: ["currentIgnored"],
-      });
-      expect(cacheSetCalls[3]).toStrictEqual({
-        ex: CACHE_TTL.OFFERS,
-      });
+      expect(cacheMock.get).toBeCalledWith(
+        CACHE_NAMESPACES,
+        ridePID,
+        {
+          ...offerObject,
+          ignoreds: ["currentIgnored"],
+        },
+        {
+          ex: CACHE_TTL.OFFERS,
+        },
+      );
     });
   });
 
@@ -1116,14 +1110,13 @@ describe("StateService", () => {
       service.updateDriver(driverState.socketId, updateTo);
 
       expect(service.drivers[0].state).toBe(DriverState.IDLE);
-
-      const [nodesEmitCalls] = socketService.nodes.emit.mock.calls;
-
-      expect(nodesEmitCalls[0]).toBe(NODES_EVENTS.UPDATE_DRIVER_STATE);
-      expect(nodesEmitCalls[1]).toStrictEqual({
-        socketId: driverState.socketId,
-        state: updateTo,
-      });
+      expect(socketService.nodes.emit).toBeCalledWith(
+        NODES_EVENTS.UPDATE_DRIVER_STATE,
+        {
+          socketId: driverState.socketId,
+          state: updateTo,
+        },
+      );
     });
   });
 });

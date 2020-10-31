@@ -34,14 +34,14 @@ import {
   IAuthPasswordResponse,
   IAuthCodeResponse,
 } from "@shared/interfaces";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import { UserService } from "../user.service";
 
 @Controller("user/auth")
 export class UserAuthController {
   constructor(
     private usersService: UserService,
-    private sessionService: SessionService,
+    private sessionService: AuthService,
   ) {}
 
   @Get(":contact")

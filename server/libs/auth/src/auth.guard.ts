@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { SessionService } from "@app/session";
+import { AuthService } from "./auth.service";
 import { getClientIp } from "request-ip";
 import { FastifyRequest } from "fastify";
 import { UserRoles } from "@shared/interfaces";
@@ -15,7 +15,7 @@ import { ROLES_METATADA_KEY } from "./constants";
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private sessionService: SessionService,
+    private sessionService: AuthService,
     private reflector: Reflector,
   ) {}
 

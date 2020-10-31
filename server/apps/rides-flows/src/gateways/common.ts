@@ -11,7 +11,7 @@ import { ConfigService } from "@nestjs/config";
 import { Server, Socket } from "socket.io";
 import { auth, storageAdapters, unique } from "extensor";
 import { SocketService } from "@app/socket";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import { CacheService } from "@app/cache";
 import { retryUnderHood } from "@app/helpers/util";
 import { IUser, IRide, UserRoles } from "@shared/interfaces";
@@ -34,7 +34,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
-    readonly sessionService: SessionService,
+    readonly sessionService: AuthService,
     readonly stateService: StateService,
     readonly cacheService: CacheService,
     readonly logger: PinoLogger,

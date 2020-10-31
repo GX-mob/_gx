@@ -20,8 +20,6 @@
       "@app/repositories/*": ["libs/repositories/src/*"],
       "@app/storage": ["libs/storage/src"],
       "@app/storage/*": ["libs/storage/src/*"],
-      "@app/session": ["libs/session/src"],
-      "@app/session/*": ["libs/session/src/*"],
       "@app/helpers": ["libs/helpers/src"],
       "@app/helpers/*": ["libs/helpers/src/*"],
       "@app/contact-verification": ["libs/contact-verification/src"],

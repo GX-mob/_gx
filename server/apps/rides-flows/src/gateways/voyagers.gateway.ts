@@ -9,7 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
 import { PendencieRepository, RideRepository } from "@app/repositories";
 import { CacheService } from "@app/cache";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import { SocketService } from "@app/socket";
 import { RideStatus, RidePayMethods, UserRoles } from "@shared/interfaces";
 import {
@@ -35,7 +35,7 @@ export class VoyagersGateway extends Common {
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
-    readonly sessionService: SessionService,
+    readonly sessionService: AuthService,
     readonly stateService: StateService,
     readonly cacheService: CacheService,
     readonly logger: PinoLogger,
@@ -81,11 +81,11 @@ export class VoyagersGateway extends Common {
     @ConnectedSocket() socket: Socket,
   ): Promise<{ status: CanceledRide["status"] | "error"; error?: string }> {
     const now = Date.now();
-    const ride = await super.getRide({ pid: ridePID });
+    const ride = await this.getRide({ pid: ridePID });
 
     const { _id, rides } = socket.data;
 
-    super.checkIfInRide(ride, _id);
+    this.checkIfInRide(ride, _id);
 
     // block cancel running ride
     if (ride.status === RideStatus.RUNNING) {
@@ -115,7 +115,7 @@ export class VoyagersGateway extends Common {
       ridePID,
       status,
     });
-    super.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
+    this.updateRide({ pid: ridePID }, { status: RideStatus.CANCELED });
 
     switch (status) {
       case CANCELATION_RESPONSE.CHARGE_REQUESTED:

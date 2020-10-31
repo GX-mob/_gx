@@ -2,8 +2,7 @@
  * Quick & Dirty Google Cloud Storage emulator for tests.
  * from @https://gist.github.com/nfarina/90ba99a5187113900c86289e67586aaa
  */
-//@ts-ignore
-import { WritableStreamBuffer, ReadableStreamBuffer } from "stream-buffers";
+import { Readable, PassThrough } from "stream";
 
 export default class MockStorage {
   buckets: { [name: string]: MockBucket };
@@ -33,9 +32,9 @@ export class MockBucket {
 
 export class MockFile {
   path: string;
-  contents: Buffer;
+  contents = Buffer.alloc(0);
   metadata: any;
-  writable: typeof WritableStreamBuffer;
+  writable!: PassThrough;
 
   constructor(path: string) {
     this.path = path;
@@ -53,17 +52,16 @@ export class MockFile {
   }
 
   createReadStream() {
-    const readable = new ReadableStreamBuffer();
-    readable.put(this.contents);
-    readable.stop();
+    const readable = new Readable();
+    readable.push(this.contents);
     return readable;
   }
 
   createWriteStream({ metadata }: any) {
     this.setMetadata(metadata);
-    this.writable = new WritableStreamBuffer();
-    this.writable.on("finish", () => {
-      this.contents = this.writable.getContents();
+    this.writable = new PassThrough();
+    this.writable.on("data", (chunk: any) => {
+      this.contents = Buffer.concat([this.contents, chunk]);
     });
     return this.writable;
   }

@@ -5,6 +5,7 @@
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
+import { LoggerModule } from "nestjs-pino";
 import { CacheModule, CacheService } from "@app/cache";
 import { ContactVerificationService } from "./contact-verification.service";
 import { TwilioService } from "./twilio.service";
@@ -28,7 +29,11 @@ describe("ContactVerificationService", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), CacheModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot(),
+        CacheModule,
+      ],
       providers: [TwilioService, ContactVerificationService],
     })
       .overrideProvider(TwilioService)

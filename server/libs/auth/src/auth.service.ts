@@ -21,7 +21,7 @@ const sign = promisify<string | Buffer | object, Secret, SignOptions, string>(
 );
 
 @Injectable()
-export class SessionService {
+export class AuthService {
   private tokenNamespace = "token";
   private keyid: string;
   private publicKey: string;
@@ -33,7 +33,7 @@ export class SessionService {
     private cache: CacheService,
     readonly logger: PinoLogger,
   ) {
-    logger.setContext(SessionService.name);
+    logger.setContext(AuthService.name);
 
     this.keyid = this.configService.get("AUTH_KID") as string;
     this.publicKey = this.configService.get("AUTH_PUBLIC_KEY") as string;

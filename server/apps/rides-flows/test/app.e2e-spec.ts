@@ -1,9 +1,11 @@
 /**
- * @group e2e/api/websocket
+ * @group e2e/rides-flows
+ * @group e2e/api/rides-flows
  */
 import { Server as HttpServer } from "http";
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
+import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { PinoLogger } from "nestjs-pino";
 import { AppModule } from "../src/app.module";
 import IOClient from "socket.io-client";
@@ -21,46 +23,43 @@ import {
 import { NAMESPACES } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
 import {
-  RideInterface,
+  IRide,
   RidePayMethods,
   RideTypes,
-  UserInterface,
+  IUser,
   UserRoles,
-  VehicleInterface,
+  IVehicle,
   VehicleTypes,
 } from "@shared/interfaces";
-import {
-  RepositoryService,
-  RideRepository,
-  VehicleRepository,
-} from "@app/repositories";
+import { RideRepository, VehicleRepository } from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import { BROADCASTED_EVENTS } from "../src/constants";
 import { UserRepository } from "@app/repositories";
 import { AddressInfo } from "net";
-import { createReplSetServer, mockUser, mockRide } from "@testing/testing";
+import { mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
+import { CacheService } from "@app/cache";
 import ms from "ms";
 import { EXCEPTIONS } from "../src/constants";
 //@ts-ignore
 const polyline = require("google-polyline");
 
 describe("RidesWSService (e2e)", () => {
+  let cacheService: CacheService;
   const appsNodes: {
     httpServer: HttpServer;
     app: INestApplication;
     userRepository: UserRepository;
     rideRepository: RideRepository;
-    sessionService: SessionService;
-    repositoryService: RepositoryService;
+    sessionService: AuthService;
     vehicleRepository: VehicleRepository;
   }[] = [];
   // Voyager, Voyager, Driver, Driver
-  let users: UserInterface[] = [];
+  let users: IUser[] = [];
   // Driver1, Driver2
-  let vehicles: VehicleInterface[];
+  let vehicles: IVehicle[] = [];
 
   const parser = parsers.schemapack(serverEventsSchemas as any);
 
@@ -98,9 +97,11 @@ describe("RidesWSService (e2e)", () => {
 
     const app = moduleFixture.createNestApplication();
 
+    cacheService = app.get(CacheService);
+
     const redis = {
-      pubClient: new IORedis(process.env.REDIS_HOST),
-      subClient: new IORedis(process.env.REDIS_HOST),
+      pubClient: cacheService.redis.duplicate(),
+      subClient: cacheService.redis.duplicate(),
     };
 
     app.useWebSocketAdapter(
@@ -114,17 +115,15 @@ describe("RidesWSService (e2e)", () => {
     await app.init();
 
     const httpServer = app.getHttpServer();
-    const repositoryService = app.get(RepositoryService);
     // Repositories
     const userRepository = app.get(UserRepository);
     const rideRepository = app.get(RideRepository);
     const vehicleRepository = app.get(VehicleRepository);
     // Services
-    const sessionService = app.get(SessionService);
+    const sessionService = app.get(AuthService);
     const appIdx = appsNodes.push({
       app,
       httpServer,
-      repositoryService,
       userRepository,
       rideRepository,
       sessionService,
@@ -137,48 +136,57 @@ describe("RidesWSService (e2e)", () => {
   }
 
   async function createMockUsers() {
-    const [
-      { userRepository, repositoryService, vehicleRepository },
-    ] = appsNodes;
+    const [{ userRepository, vehicleRepository }] = appsNodes;
 
-    const voyager1 = mockUser();
-    const voyager2 = mockUser();
-    const driver1 = mockUser({
+    const { _id: idv1, ...voyager1 } = mockUser();
+    const { _id: idv2, ...voyager2 } = mockUser();
+    const { _id: idd1, ...driver1 } = mockUser({
       roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
     });
-    const driver2 = mockUser({
+    const { _id: idd2, ...driver2 } = mockUser({
       roles: [UserRoles.VOYAGER, UserRoles.DRIVER],
     });
 
-    users = await Promise.all([
-      userRepository.create(voyager1),
-      userRepository.create(voyager2),
-      userRepository.create(driver1),
-      userRepository.create(driver2),
-    ]);
+    async function findOrCreateUser(data: Omit<IUser, "_id">) {
+      return (
+        (await userRepository.get({ phones: data.phones[0] })) ||
+        userRepository.create(data)
+      );
+    }
+
+    users[0] = await findOrCreateUser(voyager1);
+    users[1] = await findOrCreateUser(voyager2);
+    users[2] = await findOrCreateUser(driver1);
+    users[3] = await findOrCreateUser(driver2);
 
     // Vehicles
-    const { vehicleMetadataModel, vehicleModel } = repositoryService;
-    const { _id } = await vehicleMetadataModel.create({
-      name: "Vehicle name",
-      manufacturer: "Vehicle Manufacturer",
-      type: VehicleTypes.HATCH,
-    });
+    const { vehicleMetadataModel } = vehicleRepository;
 
-    vehicles = await Promise.all([
-      vehicleRepository.create({
+    const { _id } =
+      (await vehicleMetadataModel.find({ name: "Vehicle name" }))[0] ||
+      (await vehicleMetadataModel.create({
+        name: "Vehicle name",
+        manufacturer: "Vehicle Manufacturer",
+        type: VehicleTypes.HATCH,
+      }));
+
+    vehicles[0] =
+      (await vehicleRepository.get({ plate: "ABCD-1234" })) ||
+      (await vehicleRepository.create({
         plate: "ABCD-1234",
         year: 2012,
         metadata: _id,
-        owner: driver1._id,
-      }),
-      vehicleRepository.create({
+        owner: users[2]._id,
+      }));
+
+    vehicles[1] =
+      (await vehicleRepository.get({ plate: "ABCD-1235" })) ||
+      (await vehicleRepository.create({
         plate: "ABCD-1235",
         year: 2012,
         metadata: _id,
-        owner: driver2._id,
-      }),
-    ]);
+        owner: users[3]._id,
+      }));
   }
 
   beforeAll(async () => {
@@ -195,7 +203,7 @@ describe("RidesWSService (e2e)", () => {
 
   function createUserSocket(
     appNodeIndex: number,
-    user: UserInterface,
+    user: IUser,
     namespace?: NAMESPACES,
     options: SocketIOClient.ConnectOpts = {},
   ) {
@@ -216,7 +224,7 @@ describe("RidesWSService (e2e)", () => {
   async function authorizeClient(
     appNodeIdx: number,
     socket: SocketIOClient.Socket,
-    user: UserInterface | string,
+    user: IUser | string,
   ) {
     const { sessionService } = appsNodes[appNodeIdx];
     const token =
@@ -236,7 +244,7 @@ describe("RidesWSService (e2e)", () => {
   }
 
   afterAll(async () => {
-    await Promise.all(appsNodes.map(({ app }) => app.close()));
+    // await Promise.all(appsNodes.map(({ app }) => app.close()));
   });
 
   let voyager1Token: string;
@@ -277,7 +285,7 @@ describe("RidesWSService (e2e)", () => {
 
   describe("Ride workflows", () => {
     async function standardOfferNAccept(overrides?: {
-      rideOverride: Partial<RideInterface>;
+      rideOverride: Partial<IRide>;
     }) {
       const [voyager, , driver] = users;
       const voyagerSocket = createUserSocket(0, voyager);
@@ -455,7 +463,7 @@ describe("RidesWSService (e2e)", () => {
       ).resolves.toBe(true);
       voyagerSocket.disconnect();
       driverSocket.disconnect();
-    }, 15000);
+    }, 20000);
 
     describe("Cancelations", () => {
       it("Handle voyager safe cancelation", async () => {
@@ -482,7 +490,7 @@ describe("RidesWSService (e2e)", () => {
 
         voyagerSocket.disconnect();
         driverSocket.disconnect();
-      }, 15000);
+      }, 20000);
 
       it("Handle voyager no-safe cancelation money pay method", async () => {
         const {
@@ -510,7 +518,7 @@ describe("RidesWSService (e2e)", () => {
 
         voyagerSocket.disconnect();
         driverSocket.disconnect();
-      }, 15000);
+      }, 20000);
 
       it("Handle voyager no-safe cancelation credit card pay method", async () => {
         const {
@@ -540,7 +548,7 @@ describe("RidesWSService (e2e)", () => {
 
         voyagerSocket.disconnect();
         driverSocket.disconnect();
-      }, 15000);
+      }, 20000);
     });
   });
 });

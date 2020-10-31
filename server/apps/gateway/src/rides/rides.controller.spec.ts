@@ -8,7 +8,7 @@ import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule } from "@app/repositories";
-import { SessionModule, SessionService } from "@app/session";
+import { AuthModule, AuthService } from "@app/auth";
 import { IRideAreaConfiguration, ISession } from "@shared/interfaces";
 import { mockRide, mockSession, mockAreaConfiguration } from "@testing/testing";
 import { RidesController } from "./rides.controller";
@@ -24,19 +24,19 @@ import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 describe("RidesController", () => {
   let ridesService: RidesService;
   let ridesController: RidesController;
-  let sessionService: SessionService;
+  let sessionService: AuthService;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
-        SessionModule,
+        AuthModule,
         CacheModule,
         RepositoryModule,
       ],
       controllers: [RidesController],
-      providers: [SessionService, RidesService],
+      providers: [AuthService, RidesService],
     })
       .overrideProvider(ConfigService)
       .useValue({ get() {} })
@@ -44,7 +44,7 @@ describe("RidesController", () => {
       .useValue({})
       .compile();
 
-    sessionService = moduleRef.get<SessionService>(SessionService);
+    sessionService = moduleRef.get<AuthService>(AuthService);
     ridesService = moduleRef.get<RidesService>(RidesService);
     ridesController = moduleRef.get<RidesController>(RidesController);
   });

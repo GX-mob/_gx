@@ -3,9 +3,6 @@
  * @group unit/rides-flows/gateways
  * @group unit/rides-flows/gateways/common
  */
-import { Server as HttpServer } from "http";
-import IOServer, { Server } from "socket.io";
-import IOClient from "socket.io-client";
 import faker from "faker";
 import { Common } from "../common";
 import { RideStatus } from "@shared/interfaces";
@@ -17,9 +14,6 @@ import { mockSocket, expectObservableFor } from "./util";
 
 describe("CommonsGateway", () => {
   let gateway: Common;
-  let httpServer: HttpServer;
-  let ioServer: Server;
-
   const configServiceMock = {
     get: jest.fn(),
   };
@@ -43,25 +37,6 @@ describe("CommonsGateway", () => {
     redis: new IORedisMock(),
   };
 
-  function mockServer() {
-    httpServer = new HttpServer();
-    ioServer = IOServer(httpServer);
-
-    return {
-      async listen() {
-        await new Promise((resolve) => httpServer.listen(resolve));
-
-        const httpServerAddr = httpServer.address() as any;
-
-        const clientSocket = IOClient("ws://localhost:" + httpServerAddr.port, {
-          autoConnect: false,
-        });
-
-        return clientSocket;
-      },
-    };
-  }
-
   beforeEach(() => {
     gateway = new Common(
       configServiceMock as any,
@@ -77,8 +52,6 @@ describe("CommonsGateway", () => {
 
   afterEach((done) => {
     jest.resetAllMocks();
-
-    if (ioServer) return ioServer.close(done);
     done();
   });
 
@@ -88,8 +61,8 @@ describe("CommonsGateway", () => {
       const eventBody = { state: 1 };
 
       gateway.stateEventHandler(eventBody as any, socketMock as any);
-      expect(socketMock.state).toBe(1);
 
+      expect(socketMock.state).toBe(1);
       expectObservableFor(
         socketMock,
         EVENTS.STATE,
@@ -122,30 +95,23 @@ describe("CommonsGateway", () => {
   describe("updateRide", () => {
     it("should set a update", () => {
       const _id = faker.random.alphaNumeric(12);
-
       const updateQuery = { _id };
       const updateData = { status: RideStatus.CANCELED };
 
       gateway.updateRide(updateQuery, updateData);
 
-      const [repositoryCall] = rideRepositoryMock.update.mock.calls;
-
-      expect(repositoryCall[0]).toStrictEqual(updateQuery);
-      expect(repositoryCall[1]).toStrictEqual(updateData);
+      expect(rideRepositoryMock.update).toBeCalledWith(updateQuery, updateData);
     });
   });
   describe("createPendencie", () => {
     it("should set a create", () => {
       const ride = { _id: faker.random.alphaNumeric(12) } as any;
-
       const issuer = faker.random.alphaNumeric(12);
       const affected = faker.random.alphaNumeric(12);
 
       gateway.createPendencie({ ride: ride._id, issuer, affected });
 
-      const [repositoryCall] = pendencieRepositoryMock.create.mock.calls;
-
-      expect(repositoryCall[0]).toStrictEqual({
+      expect(pendencieRepositoryMock.create).toBeCalledWith({
         ride: ride._id,
         issuer,
         affected,

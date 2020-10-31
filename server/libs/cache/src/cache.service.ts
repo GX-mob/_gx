@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Redis, Commands, Pipeline } from "ioredis";
+import { Redis } from "ioredis";
 import {
   DEFAULT_TTL,
   LINK_PREFIX,

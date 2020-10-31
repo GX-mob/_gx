@@ -4,9 +4,6 @@
  * @group unit/helpers/util
  */
 import * as util from "./util";
-import faker from "faker";
-import SecurePassword from "secure-password";
-import { UnprocessableEntityException } from "@nestjs/common";
 
 const defer = (): {
   promise: Promise<unknown>;
@@ -38,88 +35,6 @@ describe("Helper: util", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(logger.error.mock.calls[0][0]).toStrictEqual(error);
-  });
-
-  describe("isValidContact", () => {
-    it("validate contacts", () => {
-      const email = faker.internet.email();
-      const mobilePhone = "+5582988888888";
-
-      expect(util.isValidContact(email)).toStrictEqual({
-        field: "emails",
-        value: email,
-      });
-      expect(util.isValidContact(mobilePhone)).toStrictEqual({
-        field: "phones",
-        value: mobilePhone,
-      });
-    });
-
-    it('should throw UnprocessableEntityException("invalid-contact")', () => {
-      const invalidMobilePhone = "+5588888";
-      const invalidEmail = "âd@.com";
-
-      expect(() => util.isValidContact(invalidMobilePhone)).toThrow(
-        new UnprocessableEntityException("invalid-contact"),
-      );
-
-      expect(() => util.isValidContact(invalidEmail)).toThrow(
-        new UnprocessableEntityException("invalid-contact"),
-      );
-    });
-  });
-
-  describe("hashPassword", () => {
-    it("hash string", async () => {
-      expect((await util.hashPassword("foo")) instanceof Buffer).toBeTruthy();
-    });
-
-    it("hash buffer", async () => {
-      expect(
-        (await util.hashPassword(Buffer.from("foo"))) instanceof Buffer,
-      ).toBeTruthy();
-    });
-  });
-
-  describe("assertPassword", () => {
-    it("verify a valid password", async () => {
-      const plainPassword = faker.internet.password();
-      const hashedPassword = (await util.hashPassword(plainPassword)).toString(
-        "base64",
-      );
-
-      expect(
-        await util.assertPassword(plainPassword, hashedPassword),
-      ).toBeTruthy();
-    });
-
-    it("verify a invalid password", async () => {
-      const plainPassword = faker.internet.password();
-      const diferentPassword = faker.internet.password();
-      const hashedPassword = (await util.hashPassword(plainPassword)).toString(
-        "base64",
-      );
-
-      expect(
-        await util.assertPassword(diferentPassword, hashedPassword),
-      ).toBeFalsy();
-    });
-
-    it("return password hehashed", async () => {
-      const weakSecurePasswordInstance = new SecurePassword({
-        memlimit: SecurePassword.MEMLIMIT_DEFAULT / 2,
-        opslimit: SecurePassword.OPSLIMIT_DEFAULT / 2,
-      });
-
-      const plainPassword = faker.internet.password();
-      const weakHash = (
-        await weakSecurePasswordInstance.hash(Buffer.from(plainPassword))
-      ).toString("base64");
-
-      expect(
-        (await util.assertPassword(plainPassword, weakHash)) instanceof Buffer,
-      ).toBeTruthy();
-    }, 100000);
   });
 
   describe("retry", () => {

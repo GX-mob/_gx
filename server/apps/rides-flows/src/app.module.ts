@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { GatewaysModule } from "./gateways/gateways.module";
 import { LoggerModule } from "nestjs-pino";
 import { RepositoryModule } from "@app/repositories";
 import { CacheModule } from "@app/cache";
-import { SessionModule } from "@app/session";
+import { AuthModule } from "@app/auth";
 import { SocketModule } from "@app/socket";
+import { GatewaysModule } from "./gateways/gateways.module";
 
 @Module({
   imports: [
@@ -23,7 +23,7 @@ import { SocketModule } from "@app/socket";
     }),
     RepositoryModule,
     SocketModule,
-    SessionModule,
+    AuthModule,
     GatewaysModule,
   ],
 })

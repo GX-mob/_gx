@@ -1,7 +1,7 @@
 /**
  * Cache Service
  *
- * @group unit/services/cache
+ * @group integration/services/cache
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule } from "@nestjs/config";
@@ -10,8 +10,6 @@ import { RedisService } from "./redis.service";
 
 describe("CacheService", () => {
   let service: CacheService;
-
-  const mockObject = { foo: "bar", bar: 12 };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -37,11 +35,17 @@ describe("CacheService", () => {
     }, 2);
   });
 
-  it("should make keys linkings", async () => {
+  it("should do linking keys", async () => {
     const storeValue = "linking";
-    await service.set("foo", "foobar", storeValue, { link: ["raboof"] });
+    const namespace = "foo";
+    const parentKey = "foobar";
+    const referenceLinkKey = "barfor";
 
-    const linked = await service.get("foo", "raboof");
+    await service.set(namespace, parentKey, storeValue, {
+      link: [referenceLinkKey],
+    });
+
+    const linked = await service.get(namespace, referenceLinkKey);
 
     expect(linked).toBe(storeValue);
   });

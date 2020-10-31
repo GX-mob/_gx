@@ -5,14 +5,19 @@
  * @group unit/gateway/user/profile
  * @group unit/gateway/user/profile/controller
  */
+import { createReadStream } from "fs";
 import { Test } from "@nestjs/testing";
 import faker from "faker";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule } from "@app/repositories";
-import { SessionModule } from "@app/session";
-import { StorageModule, StorageService } from "@app/storage";
+import { AuthModule } from "@app/auth";
+import {
+  StorageModule,
+  StorageService,
+  UploadStreamOptions,
+} from "@app/storage";
 import {
   ContactVerificationModule,
   TwilioService,
@@ -20,10 +25,7 @@ import {
 import { UserModule } from "../user.module";
 import { UserService } from "../user.service";
 import { mockUser, mockSession } from "@testing/testing";
-import { readFileSync } from "fs";
 import { resolve } from "path";
-//@ts-ignore
-import { ReadableStreamBuffer } from "stream-buffers";
 import { Readable } from "stream";
 import { STORAGE_PREFIX_URLS, STORAGE_BUCKETS } from "../../constants";
 import { UserProfileController } from "./profile.controller";
@@ -49,7 +51,7 @@ describe("User: ProfileController", () => {
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot({ pinoHttp: {} }),
         UserModule,
-        SessionModule,
+        AuthModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,
@@ -104,19 +106,11 @@ describe("User: ProfileController", () => {
       multipart: jest.fn(),
     };
 
-    const jpegBuffer = readFileSync(
-      resolve(__dirname, "../../../../../libs/storage/src/mock", "mock.jpeg"),
+    const jpegPath = resolve(
+      __dirname,
+      "../../../../../libs/storage/src/mock",
+      "mock.jpeg",
     );
-    const pngBuffer = readFileSync(
-      resolve(__dirname, "../../../../../libs/storage/src/mock", "mock.png"),
-    );
-
-    function createReadableFrom(buffer: Buffer) {
-      const readable = new ReadableStreamBuffer();
-      readable.put(buffer);
-      readable.stop();
-      return readable;
-    }
 
     beforeEach(() => {
       user = mockUser();
@@ -135,7 +129,7 @@ describe("User: ProfileController", () => {
 
     it("should catch storage service upload error", async (done) => {
       const error = new Error("internal");
-      const readable = createReadableFrom(pngBuffer);
+      const readable = createReadStream(jpegPath);
 
       request.isMultipart.mockReturnValue(true);
       jest.spyOn(storageService, "uploadStream").mockRejectedValue(error);
@@ -157,15 +151,15 @@ describe("User: ProfileController", () => {
 
     it("should catch stream error", async (done) => {
       const error = new Error("internal");
-      const readable = createReadableFrom(pngBuffer);
+      const readable = createReadStream(jpegPath);
 
       readable.destroy(error);
       request.isMultipart.mockReturnValue(true);
       jest
         .spyOn(storageService, "uploadStream")
         .mockImplementation(
-          (bucket: string, readable: Readable, config: any) => {
-            readable.on("error", config.errorHandler);
+          (bucket: string, readable: Readable, config: UploadStreamOptions) => {
+            readable.on("error", config.streamErrorHandler);
 
             return Promise.resolve() as any;
           },
@@ -189,8 +183,8 @@ describe("User: ProfileController", () => {
     });
 
     it("should handle a unique file", async (done) => {
-      const readable = createReadableFrom(pngBuffer);
-      const readable2 = createReadableFrom(jpegBuffer);
+      const readable = createReadStream(jpegPath);
+      const readable2 = createReadStream(jpegPath);
 
       request.isMultipart.mockReturnValue(true);
       const uploatStream = jest
@@ -218,7 +212,7 @@ describe("User: ProfileController", () => {
     it("should delete current avatar", async (done) => {
       const avatar = `http://${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/current.jpeg`;
       const user = mockUser({ avatar });
-      const readable = createReadableFrom(pngBuffer);
+      const readable = createReadStream(jpegPath);
 
       request.isMultipart.mockReturnValue(true);
       const uploatStream = jest

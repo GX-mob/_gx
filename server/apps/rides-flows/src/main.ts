@@ -1,15 +1,15 @@
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import { SocketAdapter } from "@app/socket";
-import { parsers } from "extensor";
-import { serverEventsSchemas } from "@shared/events";
-import { logger } from "@app/helpers";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import fastifyHelmet from "fastify-helmet";
 import fastifyCompress from "fastify-compress";
 import fastifyRateLimit from "fastify-rate-limit";
-import { BROADCASTED_EVENTS } from "./constants";
+import { parsers } from "extensor";
+import { SocketAdapter } from "@app/socket";
+import { serverEventsSchemas } from "@shared/events";
+import { logger } from "@app/helpers";
 import { CacheService } from "@app/cache";
+import { AppModule } from "./app.module";
+import { BROADCASTED_EVENTS } from "./constants";
 
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
@@ -25,7 +25,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, FastifyAdapterInstance);
   const cacheService = app.get(CacheService);
   const parser = parsers.schemapack(serverEventsSchemas as any);
-  const redis = process.env.REDIS_URI as string;
 
   app.enableCors();
 
@@ -36,7 +35,10 @@ async function bootstrap() {
   app.useWebSocketAdapter(
     new SocketAdapter(app, {
       parser,
-      redis,
+      redis: {
+        pubClient: cacheService.redis.duplicate(),
+        subClient: cacheService.redis.duplicate(),
+      },
       broadcastedEvents: BROADCASTED_EVENTS,
     }),
   );

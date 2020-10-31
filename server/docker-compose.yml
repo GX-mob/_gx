@@ -11,7 +11,7 @@ x-gxweb-dev: &gxweb-dev
   environment:
     NODE_ENV: development
     DATABASE_URI: mongodb://gx-mongo:27017/
-    REDIS_URI: redis://gx-redis:6379/0
+    REDIS_URI: redis://gx-redis:6379/
 
 services:
   gx-webservices:
@@ -19,7 +19,7 @@ services:
     depends_on:
       - gx-mongo
       - gx-redis
-    #      - gx-ridesflows
+      - gx-ridesflows
     container_name: webservices
     command: npm run start:gateway:debug
     ports:
@@ -53,9 +53,13 @@ services:
     networks:
       - gxnet
 
-#  e2e-testing:
-#    <<: *standard-webservice
-#    command: npm run test -- --group="e2e"
+  test:
+    <<: *gxweb-dev
+    container_name: gx-testing
+    depends_on:
+      - gx-mongo
+      - gx-redis
+    command: npm run test -- --group=integration --force-exit --bail
 
 volumes:
   mongo:

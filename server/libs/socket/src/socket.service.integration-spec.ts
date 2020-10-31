@@ -1,7 +1,7 @@
 /**
  * Data Service
  *
- * @group integration/services/socket
+ * @group ignore-integration/services/socket
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { LoggerModule } from "nestjs-pino";
@@ -42,7 +42,7 @@ describe("SocketService", () => {
     ioServer2 = IOServer(httpServer2);
     ioServer3 = IOServer(httpServer3);
 
-    const redisHost = process.env.REDIS_HOST || "127.0.0.1";
+    const redisHost = process.env.REDIS_URI;
 
     const redis1 = {
       pubClient: new IORedis(redisHost),

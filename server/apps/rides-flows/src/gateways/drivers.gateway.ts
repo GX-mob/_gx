@@ -10,7 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { Socket } from "socket.io";
 import { PendencieRepository, RideRepository } from "@app/repositories";
 import { CacheService } from "@app/cache";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
 import { IPendencie, RideStatus, UserRoles } from "@shared/interfaces";
@@ -50,7 +50,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     readonly socketService: SocketService<EventsInterface>,
     readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
-    readonly sessionService: SessionService,
+    readonly sessionService: AuthService,
     readonly stateService: StateService,
     readonly cacheService: CacheService,
     readonly logger: PinoLogger,
@@ -109,7 +109,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await super.getRide({ pid: pickingUp.ridePID });
-    super.checkIfInRide(ride, client.data._id);
+    this.checkIfInRide(ride, client.data._id);
 
     const { requesterSocketId } = await this.stateService.setOfferData(
       pickingUp.ridePID,
@@ -131,7 +131,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await super.getRide({ pid: ridePID });
-    super.checkIfInRide(ride, client.data._id);
+    this.checkIfInRide(ride, client.data._id);
 
     if (
       geometry.distance.calculate(latLng, ride.route.start.coord) >
@@ -140,7 +140,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
       throw new TooDistantOfExpectedException("start");
     }
 
-    super.updateRide({ pid: ridePID }, { status: RideStatus.RUNNING });
+    this.updateRide({ pid: ridePID }, { status: RideStatus.RUNNING });
     this.stateService.updateDriver(client.id, { state: UserState.RUNNING });
 
     return true;
@@ -152,7 +152,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await super.getRide({ pid: ridePID });
-    super.checkIfInRide(ride, client.data._id);
+    this.checkIfInRide(ride, client.data._id);
 
     if (
       geometry.distance.calculate(latLng, ride.route.end.coord) >
@@ -161,7 +161,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
       throw new TooDistantOfExpectedException("end");
     }
 
-    super.updateRide({ pid: ridePID }, { status: RideStatus.COMPLETED });
+    this.updateRide({ pid: ridePID }, { status: RideStatus.COMPLETED });
     this.stateService.updateDriver(client.id, { state: UserState.IDLE });
 
     return true;
@@ -180,7 +180,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     const ride = await super.getRide({ pid: ridePID });
     const { _id } = client.data;
 
-    super.checkIfInRide(ride, _id);
+    this.checkIfInRide(ride, _id);
 
     // block cancel running ride
     if (ride.status === RideStatus.RUNNING) {
@@ -191,7 +191,7 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     const { requesterSocketId, acceptTimestamp } = offer;
 
     this.stateService.updateDriver(client.id, { state: DriverState.SEARCHING });
-    super.updateRide({ pid: ridePID }, { driver: undefined });
+    this.updateRide({ pid: ridePID }, { driver: undefined });
 
     const isSafeCancel = this.isSafeCancel(acceptTimestamp as number, now);
 

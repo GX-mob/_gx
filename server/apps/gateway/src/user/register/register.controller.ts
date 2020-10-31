@@ -26,7 +26,7 @@ import {
   Headers,
 } from "@nestjs/common";
 import { UserService } from "../user.service";
-import { SessionService } from "@app/session";
+import { AuthService } from "@app/auth";
 import {
   ContactDto,
   ContactVerificationCheckDto,
@@ -38,7 +38,7 @@ import { IUserRegisterSuccessDto } from "@shared/interfaces";
 export class UserRegisterController {
   constructor(
     private usersService: UserService,
-    private sessionService: SessionService,
+    private sessionService: AuthService,
   ) {}
 
   @HttpCode(202)

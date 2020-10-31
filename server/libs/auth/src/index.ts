@@ -1,11 +1,5 @@
-import { FastifyRequest } from "fastify";
-import { ISession } from "@shared/interfaces";
-
+export * from "./auth.module";
+export * from "./auth.service";
 export * from "./auth.guard";
-export * from "./auth.decorator";
-export * from "./session.decorator";
-export * from "./user.decorator";
-
-export interface AuthorizedRequest extends FastifyRequest {
-  session: ISession;
-}
+export * from "./decorators";
+// TODO: Rename the session library to 'auth' and move all authentication guards and decorators

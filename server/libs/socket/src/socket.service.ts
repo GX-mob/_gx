@@ -128,7 +128,7 @@ export class SocketService<
           return this.handleDispatchedSocketEvent(content, cb);
         case SERVER_EVENTS.SOCKET_NODE_EVENT:
           const acknowledgmentTimeout = setTimeout(() => {
-            cb(true);
+            cb(null);
           }, 3000);
           this.nodeListener.emit(content.event, {
             data: content.data,

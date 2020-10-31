@@ -62,15 +62,6 @@
         "tsConfigPath": "libs/storage/tsconfig.lib.json"
       }
     },
-    "session": {
-      "type": "library",
-      "root": "libs/session",
-      "entryFile": "index",
-      "sourceRoot": "libs/session/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/session/tsconfig.lib.json"
-      }
-    },
     "helpers": {
       "type": "library",
       "root": "libs/helpers",

@@ -85,7 +85,7 @@ export class UserProfileController {
             acceptMIME: ["image/jpeg", "image/png"],
             // Due to upload works under the hood, this is for log purpose only,
             // don't letting user wait any internal stream error alert.
-            errorHandler: (err) => {
+            streamErrorHandler: (err) => {
               this.logger.error(err);
             },
           },

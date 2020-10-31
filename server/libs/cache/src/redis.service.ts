@@ -1,3 +1,4 @@
+// TODO: Move to own module for connection separation
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import IORedis, { Redis } from "ioredis";
@@ -8,7 +9,7 @@ export class RedisService {
   constructor(private configService: ConfigService<{ REDIS_URI: string }>) {
     const redis_uri = this.configService.get("REDIS_URI");
 
-    this.client = new IORedis(redis_uri);
+    this.client = new IORedis(redis_uri, { lazyConnect: true });
   }
 
   public multi(commands: string[][]) {

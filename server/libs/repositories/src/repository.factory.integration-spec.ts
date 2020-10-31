@@ -29,7 +29,6 @@ describe("RepositoryFactory", () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: ".development.env",
         }),
         LoggerModule.forRoot(),
         RepositoryModule,

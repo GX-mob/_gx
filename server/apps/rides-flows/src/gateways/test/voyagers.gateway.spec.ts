@@ -1,11 +1,8 @@
 /**
  * @group unit/rides-flows
- * @group unit/rides-flows/voyagers
- * @group unit/rides-flows/voyagers/drivers
+ * @group unit/rides-flows/gateways
+ * @group unit/rides-flows/gateways/voyagers
  */
-import { Server as HttpServer } from "http";
-import IOServer, { Server } from "socket.io";
-import IOClient from "socket.io-client";
 import faker from "faker";
 import { VoyagersGateway } from "../voyagers.gateway";
 import { RideStatus, RidePayMethods } from "@shared/interfaces";
@@ -24,11 +21,7 @@ import ms from "ms";
 
 describe("VoyagersGateway", () => {
   let gateway: VoyagersGateway;
-  let httpServer: HttpServer;
-  let ioServer: Server;
-
   let configServiceMock;
-
   const socketServiceMock = {
     emit: jest.fn(),
   };
@@ -54,25 +47,6 @@ describe("VoyagersGateway", () => {
     redis: new IORedisMock(),
   };
 
-  function mockServer() {
-    httpServer = new HttpServer();
-    ioServer = IOServer(httpServer);
-
-    return {
-      async listen() {
-        await new Promise((resolve) => httpServer.listen(resolve));
-
-        const httpServerAddr = httpServer.address() as any;
-
-        const clientSocket = IOClient("ws://localhost:" + httpServerAddr.port, {
-          autoConnect: false,
-        });
-
-        return clientSocket;
-      },
-    };
-  }
-
   beforeEach(() => {
     configServiceMock = {
       get: jest.fn().mockImplementation((key: string) => {
@@ -96,8 +70,6 @@ describe("VoyagersGateway", () => {
 
   afterEach((done) => {
     jest.resetAllMocks();
-
-    if (ioServer) return ioServer.close(done);
     done();
   });
 
@@ -130,17 +102,16 @@ describe("VoyagersGateway", () => {
   describe("offerEventHandler", () => {
     it("should call stateService.createOffer", () => {
       const socketMock = mockSocket();
-
       const eventBody: OfferRequest = {
         ridePID: faker.random.alphaNumeric(12),
       };
 
       gateway.offerEventHandler(eventBody, socketMock as any);
 
-      const [createOfferCall] = stateServiceMock.createOffer.mock.calls;
-
-      expect(createOfferCall[0]).toStrictEqual(eventBody);
-      expect(createOfferCall[1]).toStrictEqual(socketMock);
+      expect(stateServiceMock.createOffer).toBeCalledWith(
+        eventBody,
+        socketMock,
+      );
     });
   });
 
@@ -162,7 +133,6 @@ describe("VoyagersGateway", () => {
       rideOverride: any = {},
     ) {
       const ride = mockRide(rideOverride);
-
       const socketMock = mockSocket({
         data: { rides: [ride.pid] },
       });
@@ -193,32 +163,22 @@ describe("VoyagersGateway", () => {
       status: any,
     ) {
       expect(ackResponse).toStrictEqual({ status });
-
-      const [updateDriverCall] = stateServiceMock.updateDriver.mock.calls;
-
-      expect(updateDriverCall[0]).toBe(socketMock.id);
-      expect(updateDriverCall[1]).toStrictEqual({
+      expect(stateServiceMock.updateDriver).toBeCalledWith(socketMock.id, {
         state: DriverState.SEARCHING,
       });
-
-      const [rideUpdateCall] = rideRepositoryMock.update.mock.calls;
-
-      expect(rideUpdateCall[0]).toStrictEqual({ pid: ride.pid });
-      expect(rideUpdateCall[1]).toStrictEqual({ status: RideStatus.CANCELED });
-
-      const [socketServiceEmitCall] = socketServiceMock.emit.mock.calls;
-
-      expect(socketServiceEmitCall[0]).toBe(driverSocketId);
-      expect(socketServiceEmitCall[1]).toBe(EVENTS.CANCELED_RIDE);
-      expect(socketServiceEmitCall[2]).toStrictEqual({
-        ridePID: ride.pid,
-        status,
-      });
+      expect(rideRepositoryMock.update).toBeCalledWith(
+        { pid: ride.pid },
+        { status: RideStatus.CANCELED },
+      );
+      expect(socketServiceMock.emit).toBeCalledWith(
+        driverSocketId,
+        EVENTS.CANCELED_RIDE,
+        { ridePID: ride.pid, status },
+      );
     }
 
     it("should handle a safe cancel", async () => {
       const { socketMock, ride, driverSocketId } = mockCancelFor();
-
       const ackResponse = await gateway.cancelRideEventHandler(
         ride.pid,
         socketMock as any,
@@ -237,7 +197,6 @@ describe("VoyagersGateway", () => {
       const { socketMock, ride, driverSocketId } = mockCancelFor(
         Date.now() - CANCELATION.SAFE_TIME_MS,
       );
-
       const ackResponse = await gateway.cancelRideEventHandler(
         ride.pid,
         socketMock as any,
@@ -251,9 +210,7 @@ describe("VoyagersGateway", () => {
         CANCELATION_RESPONSE.PENDENCIE_ISSUED,
       );
 
-      const [pendencieCreateCall] = pendencieRepositoryMock.create.mock.calls;
-
-      expect(pendencieCreateCall[0]).toStrictEqual({
+      expect(pendencieRepositoryMock.create).toBeCalledWith({
         issuer: ride.voyager,
         affected: ride.driver,
         ride: ride._id,
@@ -266,7 +223,6 @@ describe("VoyagersGateway", () => {
         Date.now() - CANCELATION.SAFE_TIME_MS,
         { payMethod: RidePayMethods.CreditCard },
       );
-
       const ackResponse = await gateway.cancelRideEventHandler(
         ride.pid,
         socketMock as any,

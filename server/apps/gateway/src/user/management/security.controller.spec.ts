@@ -11,7 +11,7 @@ import { LoggerModule } from "nestjs-pino";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CacheModule, CacheService } from "@app/cache";
 import { RepositoryModule } from "@app/repositories";
-import { SessionModule } from "@app/session";
+import { AuthModule } from "@app/auth";
 import {
   ContactVerificationModule,
   TwilioService,
@@ -32,7 +32,7 @@ describe("User: SecurityController", () => {
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot(),
         UserModule,
-        SessionModule,
+        AuthModule,
         CacheModule,
         RepositoryModule,
         ContactVerificationModule,

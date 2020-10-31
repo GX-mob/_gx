@@ -3,6 +3,7 @@ import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { IVehicle } from "@shared/interfaces";
 import { VehicleModel } from "../schemas/vehicle";
+import { VehicleMetadataModel } from "../schemas/vehicle-metadata";
 
 export interface VehicleQueryInterface
   extends Partial<Pick<IVehicle, "_id" | "plate">> {}
@@ -20,6 +21,7 @@ export class VehicleRepository extends RepositoryFactory<
     Create: VehicleCreateInterface;
   }
 > {
+  vehicleMetadataModel = VehicleMetadataModel;
   constructor(private cacheService: CacheService) {
     super(cacheService, VehicleModel, {
       namespace: VehicleRepository.name,
