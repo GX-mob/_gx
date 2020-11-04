@@ -2,7 +2,7 @@ import React, { FC } from "react";
 import { View, ViewProps } from "react-native";
 import { observer } from "mobx-react-lite";
 import Svg, { Path } from "react-native-svg";
-import { UIStore } from "@/stores";
+import { UIStore } from "@/states";
 
 const Logo: FC<{
   width?: string;

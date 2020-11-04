@@ -23,15 +23,15 @@ export class UnchangedPasswordException extends ConflictException {
   }
 }
 
-export class WrongVerificationCodeException extends UnprocessableEntityException {
+export class ContactVerificationFailedException extends UnprocessableEntityException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE);
+    super(HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED);
   }
 }
 
 export class ContactRegistredException extends ConflictException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.PHONE_REGISTRED);
+    super(HTTP_EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED);
   }
 }
 

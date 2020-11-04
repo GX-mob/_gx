@@ -7,8 +7,8 @@ import { Animated, Easing } from "react-native";
 import { observer } from "mobx-react-lite";
 import { Dimensions } from "react-native";
 import Logo from "@/components/logo";
-import { LoginStore } from "@/stores";
-import { LoginScreen, CreateRideScreen } from "@/screens";
+import { AppState } from "@/states";
+import { AuthScreen, CreateRideScreen } from "@/screens";
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 const windowHeight = Dimensions.get("window").height;
@@ -35,14 +35,14 @@ function App() {
   };
 
   useEffect(() => {
-    if (!LoginStore.initializing) {
+    if (!AppState.initializing) {
       setValue(64);
     }
 
-    if (LoginStore.token) {
+    if (AppState.token) {
       setValue(-70);
     }
-  }, [LoginStore.initializing, LoginStore.token]);
+  }, [AppState.initializing, AppState.token]);
 
   return (
     <>
@@ -57,11 +57,11 @@ function App() {
       >
         <Logo width="78" height="79" />
       </Animated.View>
-      {!LoginStore.initializing ? (
-        LoginStore.token ? (
+      {!AppState.initializing ? (
+        AppState.token ? (
           <CreateRideScreen />
         ) : (
-          <LoginScreen />
+          <AuthScreen />
         )
       ) : null}
     </>

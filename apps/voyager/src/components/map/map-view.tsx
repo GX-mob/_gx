@@ -1,7 +1,7 @@
 import React, { FC, useRef, useEffect, RefCallback } from "react";
 import { observer } from "mobx-react-lite";
 import MapView, { MapViewProps } from "react-native-maps";
-import { UIStore } from "@/stores";
+import { UIStore } from "@/states";
 import { Position, DefaultCameraProps } from "@/types/map";
 
 export const MapViewComponent: FC<

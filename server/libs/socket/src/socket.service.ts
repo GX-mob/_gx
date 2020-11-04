@@ -11,8 +11,8 @@ import { SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
 
 @Injectable()
 export class SocketService<
-  Events = { [k: string]: any },
-  NodesEvents = { [k: string]: any }
+  Events = Record<string, any>,
+  NodesEvents = Record<string, any>
 > {
   /**
    * Self node id to used prevent handling self emitted events

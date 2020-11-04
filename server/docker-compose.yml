@@ -19,7 +19,6 @@ services:
     depends_on:
       - gx-mongo
       - gx-redis
-      - gx-ridesflows
     container_name: webservices
     command: npm run start:gateway:debug
     ports:
@@ -53,13 +52,13 @@ services:
     networks:
       - gxnet
 
-  test:
-    <<: *gxweb-dev
-    container_name: gx-testing
-    depends_on:
-      - gx-mongo
-      - gx-redis
-    command: npm run test -- --group=integration --force-exit --bail
+#  test:
+#    <<: *gxweb-dev
+#    container_name: gx-testing
+#    depends_on:
+#      - gx-mongo
+#      - gx-redis
+#    command: npm run test -- --force-exit --bail
 
 volumes:
   mongo:

@@ -1,82 +1,55 @@
-import SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-community/async-storage";
 import { observable, action } from "mobx";
 import { logInAsync } from "expo-google-app-auth";
-import { IdentifyResponseInterface } from "@shared/interfaces";
-import signIn from "@/api/signin";
+import login from "@/api/login";
 import { HttpException } from "@/api/exceptions";
 import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import {
-  TOKEN_STORAGE_KEY,
-  GOOGLE_OAUTH_WEB_ID,
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
   VERIFICATION_RESEND_TIMEOUT,
 } from "@/constants";
-import { SignInScreens } from "@/screens/signin/common";
+import { AppState } from "@/states";
 
-type HttpExceptions =
+type HttpExceptionsMessages =
   | HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND
   | HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD
-  | HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE;
+  | HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED;
 
 const ErrorMessages = {
   [HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND]:
     "Conta não encontrada, verifique o número.",
   [HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD]: "Senha errada",
-  [HTTP_EXCEPTIONS_MESSAGES.WRONG_CODE]: "Código errado",
+  [HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED]: "Código errado",
 };
 
 type Errors = { id?: string; credential?: string; code?: string };
 
-class LoginStore {
-  private secureStorageAvailable!: boolean;
-
-  @observable initializing = true;
+class LoginState {
   @observable loading = false;
-  @observable token = "";
   @observable errors: Errors = {};
   @observable indicateAccountCreation = false;
   @observable countryCode = "+55";
-  @observable profile?: IdentifyResponseInterface;
+  @observable codeTarget = "";
   @observable resendSecondsLeft = 60;
 
   public phone: string = "";
   public notFoundResponses = 0;
   public verificationIat?: number;
 
-  constructor() {
-    this.init();
-  }
-
-  @action
-  async init() {
-    try {
-      this.secureStorageAvailable = await SecureStore.isAvailableAsync();
-    } catch (e) {}
-
-    const token = await this.getToken();
-
-    if (token) {
-      this.token = token;
-    }
-
-    this.initializing = false;
-  }
-
-  private getFullPhoneNumber() {
+  public getFullPhoneNumber() {
     return `${this.countryCode}${this.phone}`;
   }
 
   private handleApiHttpException(error: Error, key: keyof Errors) {
     if (error instanceof HttpException) {
-      const message = error.message as HttpExceptions;
+      const message = error.message as HttpExceptionsMessages;
 
       if (message) {
         this.errors[key] = ErrorMessages[message];
       } else {
         console.log("TODO: bottom unknown error");
       }
+      return;
     }
   }
 
@@ -88,17 +61,14 @@ class LoginStore {
         this.verificationIat &&
         this.resendSecondsLeft > 0
       )
-        return SignInScreens.Code;
+        return "code";
 
       this.errors.id = "";
       this.loading = true;
       this.phone = phone;
+      const response = await login.identify(this.getFullPhoneNumber());
 
-      const response = await signIn.identify(this.getFullPhoneNumber());
-
-      this.profile = response.content;
-
-      if (response.next === SignInScreens.Code) {
+      if (response.next === "code") {
         this.initiateVerificationResendCounter();
       }
 
@@ -148,18 +118,18 @@ class LoginStore {
     try {
       this.errors.credential = "";
       this.loading = true;
-      const result = await signIn.password({
-        phone: this.getFullPhoneNumber(),
+      const result = await login.password({
+        contact: this.getFullPhoneNumber(),
         password,
       });
 
       switch (result.next) {
-        case SignInScreens.Code:
+        case "code":
+          this.codeTarget = result.body.target;
           this.initiateVerificationResendCounter();
           break;
-        case "Main":
-          await this.setToken(result.content.token);
-          this.token = result.content.token;
+        case "authorized":
+          await AppState.setToken(result.body.token);
           return;
       }
 
@@ -176,15 +146,12 @@ class LoginStore {
     try {
       this.errors.code = "";
       this.loading = true;
-      const result = await signIn.code({
-        phone: this.getFullPhoneNumber(),
+      const result = await login.code({
+        contact: this.getFullPhoneNumber(),
         code,
       });
 
-      if (result.next === "Main") {
-        await this.setToken(result.content.token);
-        this.token = result.content.token;
-      }
+      await AppState.setToken(result.body.token);
     } catch (error) {
       this.handleApiHttpException(error, "code");
     } finally {
@@ -196,7 +163,6 @@ class LoginStore {
   async loginWithGoogle() {
     try {
       const result = await logInAsync({
-        clientId: GOOGLE_OAUTH_WEB_ID,
         androidClientId: GOOGLE_OAUTH_ID,
         scopes: [
           "profile",
@@ -215,20 +181,6 @@ class LoginStore {
       return { error: true };
     }
   }
-
-  private async getToken() {
-    return this.secureStorageAvailable
-      ? SecureStore.getItemAsync(TOKEN_STORAGE_KEY)
-      : AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-  }
-
-  private setToken(token: any) {
-    if (this.secureStorageAvailable) {
-      return SecureStore.setItemAsync(TOKEN_STORAGE_KEY, token);
-    }
-
-    return AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-  }
 }
 
-export default new LoginStore();
+export default new LoginState();

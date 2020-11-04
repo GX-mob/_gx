@@ -1,20 +1,26 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore, LoginStore } from "@/stores";
+import { UIStore } from "@/states";
 import { Text, InputMask, Button, Divider } from "@/components/atoms";
-import { SignInButton } from "@/components/google";
+import { GButton } from "@/components/google";
 import validator from "validator";
-import { styles, NextButton, Error, Props } from "../common";
+import LoginState from "../login.state";
+import { NextButton, Error } from "../../components";
+import { styles } from "../../styles";
+import { LoginScreenProps } from "../../interfaces";
 
-export const IdentifyStep = observer<Props>(({ navigation }) => {
+export const IdentifyStep = observer<LoginScreenProps>(({ navigation }) => {
   const [phone, setPhone] = useState("");
   const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
-  const error = LoginStore.errors.id;
+  const error = LoginState.errors.id;
   const handleSubmit = async () => {
-    if (LoginStore.loading || !validator.isMobilePhone(`55${phone}`, "pt-BR"))
+    if (
+      LoginState.loading ||
+      !validator.isMobilePhone(LoginState.getFullPhoneNumber(), "pt-BR")
+    )
       return;
-    const next = await LoginStore.identify(phone);
+    const next = await LoginState.identify(phone);
     if (!next) return;
 
     navigation.navigate(next);
@@ -24,7 +30,7 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Entrar</Text>
       <Text style={styles.subTitle}>
-        Digite o DDD + o número do seu celular.
+        Digite o número do seu celular com ddd.
       </Text>
       <View style={{ width: "100%" }}>
         <InputMask
@@ -33,9 +39,8 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           placeholder="Digite aqui"
           keyboardType="phone-pad"
           value={phone}
-          onChangeText={(value) => {
-            value = value.replace(/\D/g, "");
-            setPhone(value);
+          onChangeText={(masked, raw) => {
+            setPhone(raw || "");
           }}
           onSubmitEditing={handleSubmit}
         />
@@ -48,7 +53,9 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
         />
         <Error error={error} />
       </View>
-      <SignInButton
+      <Text style={{ textAlign: "center", marginVertical: 10 }}>ou</Text>
+      <GButton
+        label="Entrar com Google"
         loading={googleSigInLoading}
         style={{ marginVertical: 6 }}
         onPress={async (event) => {
@@ -57,16 +64,17 @@ export const IdentifyStep = observer<Props>(({ navigation }) => {
           }
 
           setGoogleSigInLoading(true);
-          const result = await LoginStore.loginWithGoogle();
+          const result = await LoginState.loginWithGoogle();
           setGoogleSigInLoading(false);
         }}
       />
       <Divider />
       <Button
-        type="secondary"
+        type="primary"
         style={{ width: "100%" }}
         onPress={(event) => {
-          UIStore.toggle();
+          navigation.navigate("register");
+          //UIStore.toggle();
         }}
       >
         Criar conta

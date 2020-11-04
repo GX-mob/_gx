@@ -11,7 +11,7 @@ import { ContactVerificationService } from "@app/contact-verification";
 import {
   UserNotFoundException,
   WrongPasswordException,
-  WrongVerificationCodeException,
+  ContactVerificationFailedException,
   InvalidCPFException,
   CPFRegistredException,
   TermsNotAcceptedException,
@@ -107,7 +107,7 @@ export class UserService {
     const valid = await this.contactVerificationService.verify(target, code);
 
     if (!valid) {
-      throw new WrongVerificationCodeException();
+      throw new ContactVerificationFailedException();
     }
 
     return type;

@@ -9,7 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
 import App from "./App";
-import { UIStore } from "./stores";
+import { UIStore } from "./states";
 
 const height = Dimensions.get("window").height;
 

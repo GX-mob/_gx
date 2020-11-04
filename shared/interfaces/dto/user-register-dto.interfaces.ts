@@ -1,4 +1,11 @@
-export interface IUserRegisterDto {
+import {
+  IContactDto,
+  IContactVerificationCheckDto,
+} from "./common-dto.interfaces";
+
+export interface IUserRegisterDto
+  extends IContactDto,
+    IContactVerificationCheckDto {
   firstName: string;
   lastName: string;
   cpf: string;

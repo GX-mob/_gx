@@ -5,7 +5,7 @@ import { AnimatedSetup } from "@/components/general";
 import { Text } from "@/components/atoms";
 import { MapViewComponent, UserMark } from "@/components/map";
 import { View, ActivityIndicator } from "react-native";
-import { UIStore, CreateRideStore } from "@/stores";
+import { UIStore, CreateRideStore } from "@/states";
 
 export const CreateRideScreen = observer(() => {
   useEffect(() => {

@@ -12,9 +12,9 @@ export const styles = StyleSheet.create({
   },
   title: {
     alignSelf: "flex-start",
-    fontSize: 16,
+    fontSize: 36,
     marginVertical: 4,
-    fontWeight: "bold",
+    fontWeight: "100",
     textTransform: "uppercase",
   },
   subTitle: {

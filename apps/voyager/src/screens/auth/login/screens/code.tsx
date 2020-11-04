@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { LoginStore, UIStore } from "@/stores";
+import { AuthStore, UIStore } from "@/states";
 import { Text, Button, InputMask, Divider } from "@/components/atoms";
-import { styles, NextButton, Error } from "../common";
+import { NextButton, Error } from "../../components";
+import { styles } from "../../styles";
 
 export const CodeStep = observer(() => {
   const [code, setCode] = useState("");
-  const error = LoginStore.errors.code;
+  const error = AuthStore.errors.code;
   const handleSubmit = async () => {
     if (code.length !== 6) return;
-    await LoginStore.code(code);
+    await AuthStore.code(code);
   };
 
   return (
@@ -36,12 +37,11 @@ export const CodeStep = observer(() => {
           onSubmitEditing={handleSubmit}
         />
         <NextButton visible={code.length === 6} onPress={handleSubmit} />
-
         <Error error={error} />
       </View>
       <Divider />
       <Button
-        disabled={LoginStore.resendSecondsLeft > 0}
+        disabled={AuthStore.resendSecondsLeft > 0}
         type="secondary"
         style={{ width: "100%" }}
         onPress={() => {
@@ -54,8 +54,8 @@ export const CodeStep = observer(() => {
         }}
       >
         Reenviar
-        {LoginStore.resendSecondsLeft > 0
-          ? ` - ${LoginStore.resendSecondsLeft}`
+        {AuthStore.resendSecondsLeft > 0
+          ? ` - ${AuthStore.resendSecondsLeft}`
           : ""}
       </Button>
     </View>

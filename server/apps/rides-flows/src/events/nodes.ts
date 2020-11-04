@@ -27,7 +27,7 @@ export type TellMeYourDriversState = {
   drivers: Driver[];
 };
 
-export interface NodesEventsInterface {
+export interface INodesEvents {
   [NODES_EVENTS.UPDATE_DRIVER_STATE]: UpdateDriverState;
   [NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA]: UpdateLocalSocketData;
   [NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE]: TellMeYourDriversState;

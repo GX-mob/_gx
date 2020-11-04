@@ -1,19 +1,18 @@
 import React, { useRef, useEffect } from "react";
+import { Animated, Easing, Dimensions } from "react-native";
 import { observer } from "mobx-react-lite";
-import { Dimensions, Animated, Easing } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { UIStore } from "@/stores";
+import { UIStore } from "@/states";
+import { LoginScreen } from "./login";
+import { RegisterScreen } from "./register";
 import { Lines } from "@/components/general";
-import { SignInScreens } from "./common";
-import { IdentifyStep } from "./screens/identify";
-import { PasswordStep } from "./screens/password";
-import { CodeStep } from "./screens/code";
+import { AuthScreens } from "./interfaces";
 
-const { Navigator, Screen } = createStackNavigator();
 const windowWidth = Dimensions.get("window").width;
+const { Navigator, Screen } = createStackNavigator<Record<AuthScreens, any>>();
 
-export const LoginScreen = observer(() => {
+export const AuthScreen = observer(() => {
   const { theme } = UIStore;
   const navigatorTheme = {
     dark: theme.isDark,
@@ -53,10 +52,8 @@ export const LoginScreen = observer(() => {
             headerTransparent: true,
           }}
         >
-          <Screen name={SignInScreens.Identify} component={IdentifyStep} />
-          <Screen name={SignInScreens.Password} component={PasswordStep} />
-          <Screen name={SignInScreens.Code} component={CodeStep} />
-          <Screen name={SignInScreens.RecoveryPassword} component={CodeStep} />
+          <Screen name="login" component={LoginScreen} />
+          <Screen name="register" component={RegisterScreen} />
         </Navigator>
       </NavigationContainer>
     </Animated.View>

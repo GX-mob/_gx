@@ -3,7 +3,7 @@ import mapStyle from "./dark-theme.map.style.json";
 
 const theme: ThemeInterface = {
   name: "dark",
-  borderRadius: 30,
+  borderRadius: 2,
   isDark: true,
   statusBarStyle: "light",
   mapStyle,

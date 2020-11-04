@@ -1,5 +1,5 @@
 /**
- * @group integration/services/run-state
+ * @group integration/services/rides-flows-state
  */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
@@ -247,7 +247,6 @@ describe("StateService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
-    expect(loggerMock.setContext.mock.calls[0][0]).toBe(StateService.name);
   });
 
   describe("setupDriverEvent", () => {
@@ -398,7 +397,7 @@ describe("StateService", () => {
         },
       ];
 
-      expect(service.findDriver(connection.socketId)).toBeDefined();
+      expect(service.findDriverBySocketId(connection.socketId)).toBeDefined();
     });
 
     it("should don't find", () => {
@@ -414,7 +413,7 @@ describe("StateService", () => {
         },
       ];
 
-      expect(service.findDriver(shortid.generate())).toBeUndefined();
+      expect(service.findDriverBySocketId(shortid.generate())).toBeUndefined();
       expect(loggerMock.info).toBeCalledTimes(1);
     });
   });
@@ -477,7 +476,7 @@ describe("StateService", () => {
         ];
         service[functionName](connection.socketId, expected as any);
 
-        const driver = service.findDriver(connection.socketId) as any;
+        const driver = service.findDriverBySocketId(connection.socketId) as any;
 
         expect(driver).toBeDefined();
         expect(driver[field]).toStrictEqual(expected);
@@ -993,8 +992,9 @@ describe("StateService", () => {
 
       await service.setOfferData(ridePID, offerObject);
 
-      expect(cacheMock.get).toBeCalledWith(
-        CACHE_NAMESPACES,
+      expect(cacheMock.get).toBeCalledWith(CACHE_NAMESPACES.OFFERS, ridePID);
+      expect(cacheMock.set).toBeCalledWith(
+        CACHE_NAMESPACES.OFFERS,
         ridePID,
         offerObject,
         {
@@ -1026,8 +1026,8 @@ describe("StateService", () => {
 
       await service.setOfferData(ridePID, offerObject);
 
-      expect(cacheMock.get).toBeCalledWith(
-        CACHE_NAMESPACES,
+      expect(cacheMock.set).toBeCalledWith(
+        CACHE_NAMESPACES.OFFERS,
         ridePID,
         {
           ...offerObject,
@@ -1082,10 +1082,14 @@ describe("StateService", () => {
 
       expect(service.drivers[0].state).toBe(DriverState.IDLE);
 
-      socketService.nodesEmitter.emit(NODES_EVENTS.UPDATE_DRIVER_STATE, {
-        socketId: driverState.socketId,
-        state: { state: DriverState.SEARCHING },
-      });
+      socketService.nodesEmitter.emit(
+        NODES_EVENTS.UPDATE_DRIVER_STATE,
+        {
+          socketId: driverState.socketId,
+          state: { state: DriverState.SEARCHING },
+        },
+        () => {},
+      );
 
       await wait(100);
 

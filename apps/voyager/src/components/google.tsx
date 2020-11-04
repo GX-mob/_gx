@@ -29,38 +29,37 @@ export const Icon: FC<SvgProps> = (props) => (
   </Svg>
 );
 
-export const SignInButton: FC<PressableProps & { loading?: boolean }> = ({
-  style,
-  loading,
-  ...props
-}) => {
+export const GButton: FC<
+  PressableProps & { loading?: boolean; label: string }
+> = ({ style, loading, label, ...props }) => {
   return (
     <Pressable
-      style={{
-        width: 176,
-        backgroundColor: "#fff",
-        borderRadius: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        shadowColor: "#000",
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.41,
-        elevation: 2,
-        ...((style as object) || {}),
-      }}
       {...props}
+      style={[
+        {
+          backgroundColor: "#fff",
+          borderRadius: 4,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          shadowColor: "#000",
+          shadowOffset: {
+            width: 0,
+            height: 1,
+          },
+          shadowOpacity: 0.2,
+          shadowRadius: 1.41,
+          elevation: 2,
+        },
+        style as any,
+      ]}
     >
       <View style={{ flexDirection: "row" }}>
         {loading ? (
           <ActivityIndicator color="#333" style={{ marginRight: 18 }} />
         ) : (
-          <Icon style={{ width: 20, marginRight: 18 }} />
+          <Icon style={{ width: 20, marginRight: 10 }} />
         )}
-        <Text>Entrar com Google</Text>
+        <Text>{label}</Text>
       </View>
     </Pressable>
   );

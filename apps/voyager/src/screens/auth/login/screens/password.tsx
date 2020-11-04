@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore, LoginStore } from "@/stores";
-import { Text, Button, Input, Divider, Avatar } from "@/components/atoms";
-import { styles, NextButton, Props, Error } from "../common";
+import { UIStore, AuthStore } from "@/states";
+import { Button, Input, Divider } from "@/components/atoms";
+import { NextButton, Error } from "../../components";
+import { styles } from "../../styles";
+import { LoginScreenProps } from "../../interfaces";
 
-export const PasswordStep = observer<Props>(({ navigation }) => {
+export const PasswordStep = observer<LoginScreenProps>(({ navigation }) => {
   const [password, setPassword] = useState("");
 
-  const error = LoginStore.errors.credential;
+  const error = AuthStore.errors.credential;
 
   const handleSubmit = async () => {
     if (password.length < 6) return;
-    const next = await LoginStore.password(password);
+    const next = await AuthStore.password(password);
     if (!next) return;
 
     navigation.navigate(next);
@@ -20,19 +22,9 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Avatar
-        size={150}
-        uri={
-          LoginStore.profile?.avatar ||
-          `https://api.adorable.io/avatars/150/${LoginStore.phone}.png`
-        }
-      />
-      <Text style={[styles.subTitle, { marginTop: 12, alignSelf: "center" }]}>
-        {LoginStore.profile?.firstName}
-      </Text>
       <View style={{ width: "100%" }}>
         <Input
-          editable={!LoginStore.loading}
+          editable={!AuthStore.loading}
           status={error ? "error" : undefined}
           secureTextEntry={true}
           style={{ width: "100%" }}
@@ -40,7 +32,7 @@ export const PasswordStep = observer<Props>(({ navigation }) => {
           placeholder="Sua senha"
           textContentType="password"
           onChangeText={(value) => {
-            LoginStore.errors.credential = "";
+            AuthStore.errors.credential = "";
             setPassword(value);
           }}
           onSubmitEditing={handleSubmit}

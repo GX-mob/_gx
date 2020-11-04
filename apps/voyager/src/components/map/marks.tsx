@@ -8,7 +8,7 @@ import {
   AnimatedRegion,
   Circle,
 } from "react-native-maps";
-import { UIStore } from "@/stores";
+import { UIStore } from "@/states";
 import { Position, RoutePointLocation } from "@/types/map";
 import { Avatar } from "../atoms";
 

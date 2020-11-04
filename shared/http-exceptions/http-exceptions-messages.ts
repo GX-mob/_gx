@@ -1,8 +1,7 @@
 export enum HTTP_EXCEPTIONS_MESSAGES {
   USER_NOT_FOUND = "user-not-found",
   WRONG_PASSWORD = "wrong-password",
-  WRONG_CODE = "wrong-code",
-  PHONE_REGISTRED = "phone-already-registred",
+  CONTACT_VERIFICATION_FAILED = "contact-verification-failed",
   TERMS_NOT_ACCEPTED = "terms-not-accepted",
   PHONE_NOT_VERIFIED = "phone-not-verified",
   INVALID_CPF = "invalid-cpf",

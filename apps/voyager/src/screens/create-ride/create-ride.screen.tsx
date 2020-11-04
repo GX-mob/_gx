@@ -8,7 +8,7 @@ import {
   UserMark,
   RoutePointMark,
 } from "@/components/map";
-import { CreateRideStore } from "@/stores";
+import { CreateRideStore } from "@/states";
 import { Polyline } from "react-native-maps";
 
 export const CreateRideScreen = observer(() => {

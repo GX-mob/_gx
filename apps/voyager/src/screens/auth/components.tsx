@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, FC } from "react";
 import {
-  StyleSheet,
   Animated,
   Easing,
   PressableProps,
@@ -11,40 +10,7 @@ import {
 import { observer } from "mobx-react-lite";
 import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
 import { Button } from "@/components/atoms";
-import { StackScreenProps } from "@react-navigation/stack";
-import UIStore from "@/stores/ui.store";
-
-export enum SignInScreens {
-  Identify = "Identify",
-  Password = "Password",
-  Code = "Code",
-  RecoveryPassword = "RecoveryPassword",
-}
-
-export const styles = StyleSheet.create({
-  container: {
-    width: "80%",
-    height: "100%",
-    marginHorizontal: "10%",
-    alignItems: "center",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    paddingVertical: 12,
-  },
-  title: {
-    alignSelf: "flex-start",
-    fontSize: 16,
-    marginVertical: 4,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  subTitle: {
-    alignSelf: "flex-start",
-    fontSize: 20,
-    marginBottom: 8,
-    fontWeight: "100",
-  },
-});
+import UIStore from "@/states/ui.store";
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 
@@ -80,13 +46,13 @@ export const NextButton: FC<
         position: "absolute",
         top: 0,
         right: -4,
-        transform: [{ scaleY: buttonScale }, { translateX: buttonPosition }],
+        transform: [{ translateX: buttonPosition }],
       }}
     >
       <Button
         type="primary"
         style={{
-          width: 60,
+          width: 50,
           height: 40,
           paddingVertical: 8,
           backfaceVisibility: "visible",
@@ -102,12 +68,6 @@ export const NextButton: FC<
     </Animated.View>
   );
 };
-
-export type Props = StackScreenProps<{
-  [SignInScreens.Code]: undefined;
-  [SignInScreens.Password]: undefined;
-  [SignInScreens.RecoveryPassword]: undefined;
-}>;
 
 export const Error: FC<TextProps & { error?: string }> = observer(
   ({ style, error, ...props }) => {

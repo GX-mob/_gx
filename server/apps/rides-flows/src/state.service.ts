@@ -28,7 +28,7 @@ import {
 import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
 import {
   NODES_EVENTS,
-  NodesEventsInterface,
+  INodesEvents,
   TellMeYourDriversState,
   UpdateDriverState,
   UpdateLocalSocketData,
@@ -48,7 +48,7 @@ export class StateService {
   /**
    * Drivers list
    */
-  public drivers: Driver[] = [];
+  public drivers = new Map<string, Driver>();
   /**
    * Offers list
    */
@@ -57,10 +57,7 @@ export class StateService {
   constructor(
     readonly cacheService: CacheService,
     readonly rideRepository: RideRepository,
-    readonly socketService: SocketService<
-      EventsInterface,
-      NodesEventsInterface
-    >,
+    readonly socketService: SocketService<EventsInterface, INodesEvents>,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
     private vehicleRepository: VehicleRepository,
@@ -123,20 +120,20 @@ export class StateService {
     ) as number;
 
     setInterval(() => {
-      for (let index = 0; index < this.drivers.length; ++index) {
-        const { updatedAt } = this.drivers[index];
+      this.drivers.forEach((driver) => {
+        const { updatedAt } = driver;
         const expireTimestamp = updatedAt + driverObjectLifetime;
 
         if (expireTimestamp < Date.now()) {
-          this.drivers.splice(index, 1);
+          this.drivers.delete(driver.pid);
         }
-      }
+      });
     }, driversObjectListCleanUpInterval);
 
     this.socketService.nodes.on(
       NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
-      (data, ack) => {
-        ack({ drivers: this.drivers });
+      (_data, ack) => {
+        ack({ drivers: Array.from(this.drivers.values()) });
       },
     );
 
@@ -154,9 +151,24 @@ export class StateService {
       NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
       { drivers: [] },
       (replies) => {
-        this.drivers = replies.reduce((previousValue, item) => {
-          return item ? [...previousValue, ...item.drivers] : previousValue;
-        }, [] as Driver[]);
+        const filtredReplies = replies.filter(
+          (replie) => replie,
+        ) as TellMeYourDriversState[];
+        const responsesMerge = filtredReplies.reduce<Record<string, Driver>>(
+          (currentValue, { drivers }) => {
+            drivers.forEach((driver) => {
+              currentValue[driver.pid] = driver;
+            });
+
+            return currentValue;
+          },
+          {},
+        );
+
+        this.drivers = new Map([
+          ...this.drivers,
+          ...Object.entries(responsesMerge),
+        ]);
 
         console.log(this.drivers);
       },
@@ -183,7 +195,6 @@ export class StateService {
       throw new VehicleNotFoundException(setup.vehicleId);
     }
 
-    const driver = this.findDriver(socketId);
     const driverObject: Driver = {
       ...connectionData,
       socketId,
@@ -194,28 +205,27 @@ export class StateService {
       updatedAt: Date.now(),
     };
 
-    if (!driver) {
-      this.drivers.push(driverObject);
-      return;
-    }
-
-    const driverIndex = this.drivers.indexOf(driver);
-
-    this.drivers[driverIndex] = driverObject;
+    this.drivers.set(connectionData.pid, driverObject);
   }
 
-  findDriver(
+  findDriverBySocketId(
     socketId: string,
     logLevel: "error" | "info" | "warn" = "info",
   ): Driver | undefined {
-    const driver = this.drivers.find((driver) => socketId === driver.socketId);
+    let driver;
+
+    this.drivers.forEach((idriver) => {
+      if (idriver.socketId === socketId) {
+        driver = idriver;
+      }
+    });
 
     if (driver) {
       return driver;
     }
 
     this.logger[logLevel](
-      `Local connection object for socketId ${socketId} not found`,
+      `Local object for driver socketId ${socketId} not found`,
     );
   }
 
@@ -225,7 +235,7 @@ export class StateService {
    * @param {Position} position
    */
   positionEvent(socketId: string, position: Position) {
-    const driver = this.findDriver(socketId);
+    const driver = this.findDriverBySocketId(socketId);
     if (!driver) return;
 
     driver.position = position;
@@ -238,7 +248,7 @@ export class StateService {
    * @param {Configuration} config
    */
   setConfigurationEvent(socketId: string, config: Configuration) {
-    const driver = this.findDriver(socketId);
+    const driver = this.findDriverBySocketId(socketId);
     if (!driver) return;
 
     driver.config = config;
@@ -503,7 +513,7 @@ export class StateService {
   async match(
     offer: OfferServer,
     ride: IRide,
-    list: Driver[] = this.drivers,
+    list: Driver[] = Array.from(this.drivers.values()),
     runTimes = 0,
   ): Promise<Driver | null> {
     ++runTimes;
@@ -713,12 +723,11 @@ export class StateService {
     // To prevent recursive propagation of the event
     isNodeEvent = false,
   ) {
-    const driver = this.findDriver(socketId, "warn");
+    const driver = this.findDriverBySocketId(socketId, "warn");
     if (!driver) return;
 
-    const driverIndex = this.drivers.indexOf(driver);
-
-    this.drivers[driverIndex] = deepmerge(driver, {
+    this.drivers.set(driver.pid, {
+      ...driver,
       ...state,
       updatedAt: Date.now(),
     });

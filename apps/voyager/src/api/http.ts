@@ -1,6 +1,9 @@
 import { HttpException } from "./exceptions";
 
-export async function request(uri: string, options: RequestInit = {}) {
+export async function request<T = any>(
+  uri: string,
+  options: RequestInit = {},
+): Promise<{ response: Response; content: T }> {
   const response = await fetch(uri, options);
   const content = await response.json();
 
@@ -15,17 +18,21 @@ export function createAgent(prefix: string, options: RequestInit = {}) {
   const getUri = (endpoint: string) => `${prefix}${endpoint}`;
   const { headers: defaultHeaders, ...defaultOptions } = options;
   return {
-    async get(endpoint: string, options: RequestInit = {}) {
+    async get<T = any>(endpoint: string, options: RequestInit = {}) {
       const { headers, ...restOptions } = options;
-      return request(getUri(endpoint), {
+      return request<T>(getUri(endpoint), {
         ...defaultOptions,
         headers: { ...defaultHeaders, ...headers },
         ...restOptions,
       });
     },
-    async post(endpoint: string, body: any, options: RequestInit = {}) {
+    async post<T = any>(
+      endpoint: string,
+      body: any,
+      options: RequestInit = {},
+    ) {
       const { headers, ...restOptions } = options;
-      return request(getUri(endpoint), {
+      return request<T>(getUri(endpoint), {
         method: "POST",
         ...defaultOptions,
         headers: {

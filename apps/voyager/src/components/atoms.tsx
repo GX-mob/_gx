@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { observer } from "mobx-react-lite";
 import { ColorsThemeProperties } from "@/types";
-import UIStore from "@/stores/ui.store";
+import UIStore from "@/states/ui.store";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
 
 export type InputStatus = "error" | "warn";
@@ -72,6 +72,7 @@ export const InputMask = observer<TextInputMaskProps>(({ style, ...props }) => (
       marginVertical: 6,
       ...((style as object) || {}),
     }}
+    includeRawValueInChangeText={true}
     {...props}
   />
 ));
