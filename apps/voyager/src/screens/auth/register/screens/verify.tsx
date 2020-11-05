@@ -14,6 +14,8 @@ export const VerifyScreen = observer<AuthScreenProps>(({ navigation }) => {
   const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
   const error = RegisterState.errors.verify;
   const handleSubmit = async () => {
+    return navigation.navigate("check");
+
     if (
       RegisterState.loading ||
       !validator.isMobilePhone(`55${phone}`, "pt-BR")

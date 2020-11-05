@@ -4,6 +4,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Text } from "@/components/atoms";
 import { RegisterScreens } from "../interfaces";
 import { VerifyScreen } from "./screens/verify";
+import { CheckStep } from "./screens/check";
+import { CPFStep } from "./screens/cpf";
 
 const { Navigator, Screen } = createStackNavigator<
   Record<RegisterScreens, any>
@@ -26,9 +28,7 @@ export function RegisterScreen() {
           headerTransparent: true,
         }}
       >
-        <Screen name="verify" component={VerifyScreen} />
-        <Screen name="check" component={B} />
-        <Screen name="cpf" component={B} />
+        <Screen name="cpf" component={CPFStep} />
         <Screen name="profile" component={B} />
         <Screen name="password" component={B} />
         <Screen name="docs" component={B} />

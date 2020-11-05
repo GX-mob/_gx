@@ -6,9 +6,9 @@ import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import {
   GOOGLE_OAUTH_ID,
   NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION,
-  VERIFICATION_RESEND_TIMEOUT,
 } from "@/constants";
 import { AppState } from "@/states";
+import { AuthBaseState } from "../auth-base.state";
 
 type HttpExceptionsMessages =
   | HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND
@@ -24,17 +24,15 @@ const ErrorMessages = {
 
 type Errors = { id?: string; credential?: string; code?: string };
 
-class LoginState {
+class LoginState extends AuthBaseState {
   @observable loading = false;
   @observable errors: Errors = {};
   @observable indicateAccountCreation = false;
   @observable countryCode = "+55";
   @observable codeTarget = "";
-  @observable resendSecondsLeft = 60;
 
   public phone: string = "";
   public notFoundResponses = 0;
-  public verificationIat?: number;
 
   public getFullPhoneNumber() {
     return `${this.countryCode}${this.phone}`;
@@ -88,29 +86,6 @@ class LoginState {
     } finally {
       this.loading = false;
     }
-  }
-
-  private initiateVerificationResendCounter() {
-    this.verificationIat = Date.now();
-    this.resendSecondsLeft = this.calculateSecondsLeft(this.verificationIat);
-    setTimeout(() => this.calculateVerificationResend(), 1000);
-  }
-
-  private calculateSecondsLeft(iat: number) {
-    return (
-      Math.round(iat / 1000) +
-      VERIFICATION_RESEND_TIMEOUT -
-      Math.round(Date.now() / 1000)
-    );
-  }
-
-  private calculateVerificationResend() {
-    this.resendSecondsLeft = this.calculateSecondsLeft(
-      this.verificationIat as number,
-    );
-
-    this.resendSecondsLeft > 0 &&
-      setTimeout(() => this.calculateVerificationResend(), 1000);
   }
 
   @action

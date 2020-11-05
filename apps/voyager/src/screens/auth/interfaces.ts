@@ -26,6 +26,10 @@ export type RegisterScreens =
   | "docs"
   | "finish";
 
+export type RegisterScreenProps = StackScreenProps<
+  Record<RegisterScreens, undefined>
+>;
+
 export type AuthScreenProps = StackScreenProps<
   Record<RegisterScreens, undefined>
 >;

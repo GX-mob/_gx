@@ -60,22 +60,27 @@ export const Input = observer<TextInputProps & { status?: InputStatus }>(
   },
 );
 
-export const InputMask = observer<TextInputMaskProps>(({ style, ...props }) => (
-  <TextInputMask
-    placeholderTextColor={UIStore.theme.colors.onSurface}
-    style={{
-      height: 40,
-      paddingHorizontal: 20,
-      borderRadius: UIStore.theme.borderRadius,
-      backgroundColor: UIStore.theme.colors.surface,
-      color: UIStore.theme.colors.onSurface,
-      marginVertical: 6,
-      ...((style as object) || {}),
-    }}
-    includeRawValueInChangeText={true}
-    {...props}
-  />
-));
+export const InputMask = observer<TextInputMaskProps & { error?: boolean }>(
+  ({ style, error, ...props }) => (
+    <TextInputMask
+      placeholderTextColor={UIStore.theme.colors.onSurface}
+      style={[
+        {
+          height: 40,
+          paddingHorizontal: 20,
+          borderRadius: UIStore.theme.borderRadius,
+          backgroundColor: UIStore.theme.colors.surface,
+          color: UIStore.theme.colors.onSurface,
+          marginVertical: 6,
+          ...((style as object) || {}),
+        },
+        error && { color: UIStore.theme.colors.error },
+      ]}
+      includeRawValueInChangeText={true}
+      {...props}
+    />
+  ),
+);
 
 export const Button = observer<
   {

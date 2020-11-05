@@ -3,8 +3,17 @@ import register from "@/api/register";
 import { HttpException } from "@/api/exceptions";
 import { IUserRegisterDto } from "@shared/interfaces";
 import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
+import { AuthBaseState } from "../auth-base.state";
+import { isValidCPF } from "@brazilian-utils/brazilian-utils";
+import diferenceInYears from "date-fns/differenceInYears";
 
-type ErrorsNamespaces = { verify?: string; check?: string; finish?: string };
+type ErrorsNamespaces = {
+  verify?: string;
+  check?: string;
+  cpf?: string;
+  birth?: string;
+  finish?: string;
+};
 
 const ErrorMessages = {
   [HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED]:
@@ -17,10 +26,17 @@ const ErrorMessages = {
     "Esse CPF já está registrado, se ele é seu e você não se registrou, por favor, entre em contato.",
 };
 
-class RegisterState {
+class RegisterState extends AuthBaseState {
   @observable countryCode = "+55";
   @observable loading = false;
   @observable errors: ErrorsNamespaces = {};
+  @observable cpf = "";
+  @observable birth = "";
+
+  @observable validations = {
+    cpf: false,
+    birth: false,
+  };
 
   contact = "";
 
@@ -38,8 +54,17 @@ class RegisterState {
 
   @action async verify(contact: string) {
     try {
+      if (
+        this.contact === contact &&
+        this.verificationIat &&
+        this.resendSecondsLeft > 0
+      )
+        return true;
+
       this.contact = contact;
       await this.request("verify", this.getContact());
+      this.initiateVerificationResendCounter();
+
       return true;
     } catch (error) {
       this.exceptionHandler(error, "verify");
@@ -60,6 +85,44 @@ class RegisterState {
     } finally {
       this.loading = false;
     }
+  }
+
+  isValidCPFAndBirth() {
+    return [isValidCPF(this.cpf), this.isValidBirth(this.birth)];
+  }
+
+  @action setCpf(cpf: string) {
+    this.cpf = cpf;
+
+    if (cpf.length < 10) {
+      this.errors.cpf = "";
+    }
+
+    if (cpf.length === 11) {
+      this.errors.cpf = isValidCPF(cpf) ? "" : "CPF inválido";
+    }
+  }
+
+  @action setBirth(birth: string) {
+    this.birth = birth;
+    if (birth.length < 8) {
+      this.errors.birth = "";
+    }
+
+    if (birth.length === 10) {
+      this.errors.birth = this.isValidBirth(birth)
+        ? ""
+        : "Você precisa ser maior de idade";
+    }
+  }
+
+  isValidBirth(birth: string) {
+    const dateItens = birth.split("/");
+    const [day, month, year] = dateItens.map((item) => parseInt(item));
+    const date = new Date(year, month, day);
+    const differenceYears = diferenceInYears(date, new Date());
+
+    return differenceYears <= -18;
   }
 
   @action async finish(body: IUserRegisterDto) {
