@@ -1,44 +1,50 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore, AuthStore } from "@/states";
+import { UIStore } from "@/states";
 import { Button, Input, Divider } from "@/components/atoms";
-import { NextButton, Error } from "../../components";
+import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import { LoginScreenProps } from "../../interfaces";
+import LoginState from "../login.state";
 
 export const PasswordStep = observer<LoginScreenProps>(({ navigation }) => {
   const [password, setPassword] = useState("");
 
-  const error = AuthStore.errors.credential;
+  const error = LoginState.errors.credential;
 
   const handleSubmit = async () => {
     if (password.length < 6) return;
-    const next = await AuthStore.password(password);
+    const next = await LoginState.password(password);
     if (!next) return;
 
     navigation.navigate(next);
   };
 
   return (
-    <View style={styles.container}>
+    <Container>
       <View style={{ width: "100%" }}>
         <Input
-          editable={!AuthStore.loading}
+          editable={!LoginState.loading}
           status={error ? "error" : undefined}
           secureTextEntry={true}
-          style={{ width: "100%" }}
           value={password}
           placeholder="Sua senha"
           textContentType="password"
           onChangeText={(value) => {
-            AuthStore.errors.credential = "";
+            LoginState.errors.credential = "";
             setPassword(value);
           }}
           onSubmitEditing={handleSubmit}
         />
-        <NextButton visible={password.length >= 6} onPress={handleSubmit} />
-        <Error error={error} />
+        <NextButton
+          mode="attached"
+          visible={password.length >= 6}
+          onPress={handleSubmit}
+        />
+        <Alert type="error" visible={!!error}>
+          {error}
+        </Alert>
       </View>
       <Divider />
       <Button
@@ -56,6 +62,6 @@ export const PasswordStep = observer<LoginScreenProps>(({ navigation }) => {
       >
         Esqueci minha senha
       </Button>
-    </View>
+    </Container>
   );
 });

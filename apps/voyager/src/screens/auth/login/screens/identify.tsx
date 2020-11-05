@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore } from "@/states";
-import { Text, InputMask, Button, Divider } from "@/components/atoms";
+import { Text, Input, Button, Divider } from "@/components/atoms";
 import { GButton } from "@/components/google";
 import validator from "validator";
 import LoginState from "../login.state";
-import { NextButton, Error } from "../../components";
+import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import { LoginScreenProps } from "../../interfaces";
 
@@ -27,16 +27,12 @@ export const IdentifyStep = observer<LoginScreenProps>(({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container>
       <Text style={styles.title}>Entrar</Text>
-      <Text style={styles.subTitle}>
-        Digite o número do seu celular com ddd.
-      </Text>
       <View style={{ width: "100%" }}>
-        <InputMask
+        <Input
           type="cel-phone"
-          style={{ width: "100%" }}
-          placeholder="Digite aqui"
+          placeholder="Celular"
           keyboardType="phone-pad"
           value={phone}
           onChangeText={(masked, raw) => {
@@ -45,13 +41,17 @@ export const IdentifyStep = observer<LoginScreenProps>(({ navigation }) => {
           onSubmitEditing={handleSubmit}
         />
         <NextButton
+          mode="attached"
           visible={validator.isMobilePhone(`55${phone}`, "pt-BR")}
           onPress={(event) => {
             event.preventDefault();
             handleSubmit();
           }}
         />
-        <Error error={error} />
+
+        <Alert type="error" visible={!!error}>
+          {error}
+        </Alert>
       </View>
       <Text style={{ textAlign: "center", marginVertical: 10 }}>ou</Text>
       <GButton
@@ -79,6 +79,6 @@ export const IdentifyStep = observer<LoginScreenProps>(({ navigation }) => {
       >
         Criar conta
       </Button>
-    </View>
+    </Container>
   );
 });

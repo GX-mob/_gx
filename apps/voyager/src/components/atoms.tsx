@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useEffect, useRef, useState } from "react";
 import {
   StyleProp,
   View,
@@ -11,76 +11,123 @@ import {
   PressableProps,
   Image,
   ImageProps,
+  Animated,
 } from "react-native";
 import { observer } from "mobx-react-lite";
-import { ColorsThemeProperties } from "@/types";
+import { ColorsThemeProperties, PrimaryThemeColorsProperties } from "@/types";
 import UIStore from "@/states/ui.store";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
+import { Easing } from "react-native";
 
-export type InputStatus = "error" | "warn";
+const lineColors = {
+  normal: UIStore.theme.colors.onBackground,
+  ok: UIStore.theme.colors.success,
+  error: UIStore.theme.colors.error,
+};
 
-export const Input = observer<TextInputProps & { status?: InputStatus }>(
-  ({ style, status, ...props }) => {
-    let aditionalStyle: TextInputProps["style"] = {};
-    switch (status) {
-      case "error":
-        aditionalStyle = {
-          borderWidth: 2,
-          borderColor: UIStore.theme.colors.error,
-          color: UIStore.theme.colors.error,
-        };
-        break;
-      case "warn":
-        aditionalStyle = {
-          borderWidth: 2,
-          borderColor: UIStore.theme.colors.warn,
-          color: UIStore.theme.colors.warn,
-        };
-        break;
+const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
+
+export const Input = observer<
+  Omit<TextInputMaskProps, "style" | "type" | "inputRef" | "ref"> & {
+    getRef?: (ref: any) => void;
+    status?: "normal" | "ok" | "error";
+    type?: TextInputMaskProps["type"];
+  }
+>(({ status = "normal", getRef, type, placeholder, value, ...props }) => {
+  const [focused, setFocus] = useState(false);
+  const placeholderY = useRef(new Animated.Value(-10)).current;
+  const placeholderX = useRef(new Animated.Value(0)).current;
+  const lineColor = lineColors[status];
+  const setPlaceholderPos = (Y: number, X: number) => {
+    Animated.timing(placeholderY, {
+      toValue: Y,
+      duration: 300,
+      useNativeDriver: true,
+      easing,
+    }).start();
+    Animated.timing(placeholderX, {
+      toValue: X,
+      duration: 300,
+      useNativeDriver: true,
+      easing,
+    }).start();
+  };
+
+  useEffect(() => {
+    if (value && value.length > 0) {
+      setFocus(true);
     }
+  }, [value]);
 
-    return (
-      <TextInput
-        placeholderTextColor={UIStore.theme.colors.onSurface}
-        style={[
-          {
-            height: 40,
-            paddingHorizontal: 20,
-            borderRadius: UIStore.theme.borderRadius,
-            backgroundColor: UIStore.theme.colors.surface,
-            color: UIStore.theme.colors.onSurface,
-            marginVertical: 6,
-            ...aditionalStyle,
-          },
-          style,
-        ]}
-        {...props}
-      />
-    );
-  },
-);
+  useEffect(() => {
+    if (focused) setPlaceholderPos(-34, -10);
+    else setPlaceholderPos(-10, 0);
+  }, [focused]);
 
-export const InputMask = observer<TextInputMaskProps & { error?: boolean }>(
-  ({ style, error, ...props }) => (
-    <TextInputMask
-      placeholderTextColor={UIStore.theme.colors.onSurface}
-      style={[
-        {
-          height: 40,
-          paddingHorizontal: 20,
-          borderRadius: UIStore.theme.borderRadius,
-          backgroundColor: UIStore.theme.colors.surface,
-          color: UIStore.theme.colors.onSurface,
-          marginVertical: 6,
-          ...((style as object) || {}),
-        },
-        error && { color: UIStore.theme.colors.error },
-      ]}
-      includeRawValueInChangeText={true}
-      {...props}
-    />
-  ),
-);
+  const onFocusHandler = () => {
+    setFocus(true);
+  };
+  const onBlurHandler = () => {
+    if (!value) setFocus(false);
+  };
+  const inputStyle = {
+    color: UIStore.theme.colors.onBackground,
+    height: 40,
+    paddingHorizontal: 10,
+  };
+
+  return (
+    <View
+      style={{
+        height: 40,
+        marginVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: lineColor,
+      }}
+    >
+      <Animated.Text
+        style={{
+          color: UIStore.theme.colors.onBackground,
+          borderRadius: 2,
+          position: "absolute",
+          top: "50%",
+          left: 10,
+          transform: [
+            { translateY: placeholderY },
+            { translateX: placeholderX },
+          ],
+        }}
+      >
+        {placeholder}
+      </Animated.Text>
+      {type ? (
+        <TextInputMask
+          refInput={(ref) => {
+            getRef && getRef(ref);
+          }}
+          type={type}
+          onFocus={onFocusHandler}
+          onBlur={onBlurHandler}
+          value={value}
+          style={inputStyle}
+          includeRawValueInChangeText={true}
+          {...props}
+        />
+      ) : (
+        <TextInput
+          ref={(ref) => {
+            getRef && getRef(ref);
+          }}
+          onFocus={onFocusHandler}
+          onBlur={onBlurHandler}
+          value={value}
+          style={inputStyle}
+          {...props}
+        />
+      )}
+    </View>
+  );
+});
 
 export const Button = observer<
   {

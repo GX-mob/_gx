@@ -2,9 +2,9 @@ import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: {
-    width: "80%",
+    width: "100%",
     height: "100%",
-    marginHorizontal: "10%",
+    paddingTop: 46,
     alignItems: "center",
     flexDirection: "column",
     justifyContent: "flex-end",
@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   },
   subTitle: {
     alignSelf: "flex-start",
-    fontSize: 20,
+    fontSize: 16,
     marginBottom: 8,
     fontWeight: "100",
   },

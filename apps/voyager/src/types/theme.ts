@@ -1,3 +1,13 @@
+export type PrimaryThemeColorsProperties = Pick<
+  ThemeInterface["colors"],
+  | "background"
+  | "surface"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "error"
+  | "warn"
+>;
 export type ColorsThemeProperties = keyof ThemeInterface["colors"];
 
 export type ThemeInterface = {
@@ -15,6 +25,8 @@ export type ThemeInterface = {
     onSecondary: string;
     background: string;
     onBackground: string;
+    success: string;
+    onSuccess: string;
     surface: string;
     onSurface: string;
     error: string;

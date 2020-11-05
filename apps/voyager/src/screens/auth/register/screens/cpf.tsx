@@ -1,9 +1,8 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
-import { UIStore } from "@/states";
-import { Text, Button, InputMask, Divider } from "@/components/atoms";
-import { NextButton, Error } from "../../components";
+import { Text, Input } from "@/components/atoms";
+import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
@@ -13,7 +12,7 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
   let birthInputRef: any;
   const { cpf: cpfError, birth: birthError } = RegisterState.errors;
   const { cpf: validCPF, birth: validBirth } = RegisterState.validations;
-  console.log(validCPF, validBirth);
+
   const handleSubmit = async (e: any) => {
     const [validCPF, validBirth] = RegisterState.isValidCPFAndBirth();
 
@@ -31,15 +30,17 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container>
       <Text style={styles.title}>CPF</Text>
       <Text style={styles.subTitle}>
         Usado apenas para confirmação de identidade, visando aumentar a
         segurança da plataforma.
       </Text>
       <View style={{ width: "100%" }}>
-        <InputMask
-          error={!!RegisterState.errors.cpf}
+        <Input
+          status={
+            !!RegisterState.errors.cpf ? "error" : validCPF ? "ok" : "normal"
+          }
           refInput={(ref) => {
             if (ref) cpfInputRef = ref;
           }}
@@ -47,28 +48,38 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
           options={{
             mask: "999.999.999-99",
           }}
-          placeholder="Digite o CPF aqui"
+          placeholder="CPF"
           maxLength={14}
-          style={{ width: "100%" }}
           value={RegisterState.cpf}
           keyboardType="phone-pad"
           onChangeText={(value) => {
-            const validated = RegisterState.setCpf(value.replace(/[.-]/g, ""));
+            value = value.replace(/[.-]/g, "");
+            const validated = RegisterState.setCpf(value);
 
-            if (validated) {
-              const validBirth = RegisterState.validateBirth(false);
+            if (!validated) return;
 
-              if (!validBirth) birthInputRef.focus();
-              else cpfInputRef.blur();
-            }
+            const [validBirth] = RegisterState.isValidBirth(
+              RegisterState.birth,
+            );
+
+            if (!validBirth) birthInputRef.focus();
+            else cpfInputRef.blur();
           }}
           onSubmitEditing={handleSubmit}
         />
-        <Error error={cpfError} />
+        <Alert type="warn" visible={!!cpfError}>
+          {cpfError}
+        </Alert>
       </View>
       <View style={{ width: "100%" }}>
-        <InputMask
-          error={!!RegisterState.errors.birth}
+        <Input
+          status={
+            !!RegisterState.errors.birth
+              ? "error"
+              : validBirth
+              ? "ok"
+              : "normal"
+          }
           refInput={(ref) => {
             if (ref) birthInputRef = ref;
           }}
@@ -78,24 +89,28 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
           }}
           placeholder="Data de nascimento"
           maxLength={10}
-          style={{ width: "100%" }}
           value={RegisterState.birth}
           keyboardType="phone-pad"
           onChangeText={(value) => {
             const validated = RegisterState.setBirth(value);
 
-            if (validated) {
-              const validCPF = RegisterState.validateCPF(false);
+            if (!validated) return;
 
-              if (!validCPF) cpfInputRef.focus();
-              else birthInputRef.blur();
-            }
+            const validCPF = RegisterState.isValidCPF(RegisterState.cpf);
+
+            if (!validCPF) cpfInputRef.focus();
+            else birthInputRef.blur();
           }}
           onSubmitEditing={handleSubmit}
         />
-        <Error error={birthError} />
+
+        <Alert type="warn" visible={!!birthError}>
+          {birthError}
+        </Alert>
       </View>
-      {validCPF && validBirth ? <Button type="primary">next</Button> : null}
-    </View>
+      <NextButton mode="full" visible={validCPF && validBirth}>
+        Próximo
+      </NextButton>
+    </Container>
   );
 });

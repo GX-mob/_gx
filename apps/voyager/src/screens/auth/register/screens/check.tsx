@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { UIStore } from "@/states";
-import { Text, Button, InputMask, Divider } from "@/components/atoms";
-import { NextButton, Error } from "../../components";
+import { Text, Button, Input, Divider } from "@/components/atoms";
+import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import RegisterState from "../register.state";
 
@@ -16,20 +16,19 @@ export const CheckStep = observer(() => {
   };
 
   return (
-    <View style={styles.container}>
+    <Container>
       <Text style={styles.title}>Código</Text>
       <Text style={styles.subTitle}>
         Enviamos um SMS com o código de confirmação para o seu telefone.
       </Text>
       <View style={{ width: "100%" }}>
-        <InputMask
+        <Input
           type="custom"
           options={{
             mask: "999-999",
           }}
           placeholder="Digite aqui"
           maxLength={7}
-          style={{ width: "100%" }}
           value={code}
           keyboardType="phone-pad"
           onChangeText={(value) => {
@@ -37,8 +36,14 @@ export const CheckStep = observer(() => {
           }}
           onSubmitEditing={handleSubmit}
         />
-        <NextButton visible={code.length === 6} onPress={handleSubmit} />
-        <Error error={error} />
+        <NextButton
+          mode="attached"
+          visible={code.length === 6}
+          onPress={handleSubmit}
+        />
+        <Alert visible={!!error} type="error">
+          {error}
+        </Alert>
       </View>
       <Divider />
       <Button
@@ -59,6 +64,6 @@ export const CheckStep = observer(() => {
           ? ` - ${RegisterState.resendSecondsLeft}`
           : ""}
       </Button>
-    </View>
+    </Container>
   );
 });

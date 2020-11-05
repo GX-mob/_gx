@@ -18,6 +18,8 @@ const theme: ThemeInterface = {
     onPrimary: "#fff",
     surface: "#000",
     onSurface: "#fff",
+    success: "lime",
+    onSuccess: "#fff",
     error: "red",
     onError: "#000",
     warn: "#BFAF1D",

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "voyager",
-    "slug": "voyager",
+    "name": "driver",
+    "slug": "driver",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

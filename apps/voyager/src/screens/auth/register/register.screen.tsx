@@ -6,6 +6,7 @@ import { RegisterScreens } from "../interfaces";
 import { VerifyScreen } from "./screens/verify";
 import { CheckStep } from "./screens/check";
 import { CPFStep } from "./screens/cpf";
+import { ProfileStep } from "./screens/profile";
 
 const { Navigator, Screen } = createStackNavigator<
   Record<RegisterScreens, any>
@@ -29,7 +30,7 @@ export function RegisterScreen() {
         }}
       >
         <Screen name="cpf" component={CPFStep} />
-        <Screen name="profile" component={B} />
+        <Screen name="profile" component={ProfileStep} />
         <Screen name="password" component={B} />
         <Screen name="docs" component={B} />
         <Screen name="finish" component={B} />
