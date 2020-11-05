@@ -16,3 +16,6 @@ export const TOKEN_STORAGE_KEY = "token";
 export const NOT_FOUND_RESPONSES_TO_INDICATE_ACCOUNT_CREATION = 6;
 
 export const VERIFICATION_RESEND_TIMEOUT = 60;
+
+export const MINIMUN_REGISTER_AGE = -18;
+export const MAXIMUN_REGISTER_AGE = -70;

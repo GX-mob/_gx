@@ -6,6 +6,7 @@ import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import { AuthBaseState } from "../auth-base.state";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import diferenceInYears from "date-fns/differenceInYears";
+import { MINIMUN_REGISTER_AGE, MAXIMUN_REGISTER_AGE } from "@/constants";
 
 type ErrorsNamespaces = {
   verify?: string;
@@ -32,7 +33,6 @@ class RegisterState extends AuthBaseState {
   @observable errors: ErrorsNamespaces = {};
   @observable cpf = "";
   @observable birth = "";
-
   @observable validations = {
     cpf: false,
     birth: false,
@@ -88,41 +88,89 @@ class RegisterState extends AuthBaseState {
   }
 
   isValidCPFAndBirth() {
-    return [isValidCPF(this.cpf), this.isValidBirth(this.birth)];
+    return [this.validateCPF(), this.validateBirth()];
   }
 
   @action setCpf(cpf: string) {
     this.cpf = cpf;
+    this.validations.cpf = false;
 
     if (cpf.length < 10) {
       this.errors.cpf = "";
     }
 
     if (cpf.length === 11) {
-      this.errors.cpf = isValidCPF(cpf) ? "" : "CPF inválido";
+      const valid = this.validateCPF();
+      return valid;
     }
+
+    return false;
+  }
+
+  @action validateCPF(setErrors = true) {
+    if (this.cpf === "") {
+      if (setErrors) {
+        this.errors.cpf = "Digite o CPF";
+      }
+      return false;
+    }
+
+    const isValid = isValidCPF(this.cpf);
+    this.validations.cpf = isValid;
+    if (setErrors) {
+      this.errors.cpf = isValid ? "" : "CPF inválido";
+    }
+    return isValid;
   }
 
   @action setBirth(birth: string) {
     this.birth = birth;
+    this.validations.birth = false;
     if (birth.length < 8) {
       this.errors.birth = "";
     }
 
     if (birth.length === 10) {
-      this.errors.birth = this.isValidBirth(birth)
-        ? ""
-        : "Você precisa ser maior de idade";
+      this.errors.birth = "";
+      return this.validateBirth();
     }
+
+    return false;
+  }
+
+  @action validateBirth(setErrors = true) {
+    if (this.birth.length <= 9) {
+      if (setErrors) this.errors.birth = "Data inválida";
+      return false;
+    }
+
+    const [isValidBirth, hasMinimum, isMaximum] = this.isValidBirth(this.birth);
+    this.validations.birth = isValidBirth;
+    if (!hasMinimum) {
+      if (setErrors)
+        this.errors.birth = "Você precisa ser maior de idade para se cadastrar";
+      return isValidBirth;
+    }
+
+    if (isMaximum) {
+      if (setErrors) this.errors.birth = "Desculpa, mas o limite é de 70 anos.";
+    }
+    return isValidBirth;
   }
 
   isValidBirth(birth: string) {
+    const yearsDiff = this.getDiffYears(birth);
+    const hasMinimum = yearsDiff <= MINIMUN_REGISTER_AGE;
+    const isMaximum = yearsDiff <= MAXIMUN_REGISTER_AGE;
+
+    return [hasMinimum && !isMaximum, hasMinimum, isMaximum];
+  }
+
+  private getDiffYears(birth: string) {
     const dateItens = birth.split("/");
     const [day, month, year] = dateItens.map((item) => parseInt(item));
     const date = new Date(year, month, day);
-    const differenceYears = diferenceInYears(date, new Date());
-
-    return differenceYears <= -18;
+    return diferenceInYears(date, new Date());
   }
 
   @action async finish(body: IUserRegisterDto) {

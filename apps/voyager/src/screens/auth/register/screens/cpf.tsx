@@ -12,16 +12,10 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
   let cpfInputRef: any;
   let birthInputRef: any;
   const { cpf: cpfError, birth: birthError } = RegisterState.errors;
-  const handleSubmit = async () => {
+  const { cpf: validCPF, birth: validBirth } = RegisterState.validations;
+  console.log(validCPF, validBirth);
+  const handleSubmit = async (e: any) => {
     const [validCPF, validBirth] = RegisterState.isValidCPFAndBirth();
-
-    if (!validCPF) {
-      RegisterState.errors.cpf = "CPF inválido";
-    }
-
-    if (!validBirth) {
-      RegisterState.errors.birth = "Data de nascimento inválida";
-    }
 
     if (validCPF && validBirth) {
       return navigation.navigate("profile");
@@ -59,7 +53,14 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
           value={RegisterState.cpf}
           keyboardType="phone-pad"
           onChangeText={(value) => {
-            RegisterState.setCpf(value.replace(/[.-]/g, ""));
+            const validated = RegisterState.setCpf(value.replace(/[.-]/g, ""));
+
+            if (validated) {
+              const validBirth = RegisterState.validateBirth(false);
+
+              if (!validBirth) birthInputRef.focus();
+              else cpfInputRef.blur();
+            }
           }}
           onSubmitEditing={handleSubmit}
         />
@@ -81,12 +82,20 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
           value={RegisterState.birth}
           keyboardType="phone-pad"
           onChangeText={(value) => {
-            RegisterState.setBirth(value);
+            const validated = RegisterState.setBirth(value);
+
+            if (validated) {
+              const validCPF = RegisterState.validateCPF(false);
+
+              if (!validCPF) cpfInputRef.focus();
+              else birthInputRef.blur();
+            }
           }}
           onSubmitEditing={handleSubmit}
         />
         <Error error={birthError} />
       </View>
+      {validCPF && validBirth ? <Button type="primary">next</Button> : null}
     </View>
   );
 });
