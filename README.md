@@ -53,7 +53,7 @@ Aplicativos nativos com Expo gerenciado e Next.js em PWA's.
 - NestJS
   - Api HTTP com fastify
   - Api WebSocket com Socket.io.
-    - [Diagrama de funcionamento e estrategia de escalabilidade](http://figma.com)
+    - [Diagrama de funcionamento e estrategia de escalabilidade](https://www.figma.com/proto/chjANlM2wRPIgejwWPE3R2/Diagrama-do-servi%C3%A7o-de-corridas?node-id=1%3A3&scaling=scale-down-width)
 - MongoDB
 - Redis
 
