@@ -19,25 +19,25 @@ import UIStore from "@/states/ui.store";
 import { TextInputMask, TextInputMaskProps } from "react-native-masked-text";
 import { Easing } from "react-native";
 
-const lineColors = {
-  normal: UIStore.theme.colors.onBackground,
-  ok: UIStore.theme.colors.success,
-  error: UIStore.theme.colors.error,
-};
-
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
 
 export const Input = observer<
   Omit<TextInputMaskProps, "style" | "type" | "inputRef" | "ref"> & {
     getRef?: (ref: any) => void;
-    status?: "normal" | "ok" | "error";
+    status?:
+      | keyof Pick<
+          PrimaryThemeColorsProperties,
+          "success" | "info" | "warn" | "error"
+        >
+      | "normal";
     type?: TextInputMaskProps["type"];
   }
 >(({ status = "normal", getRef, type, placeholder, value, ...props }) => {
+  const statusColor = status === "normal" ? "onBackground" : status;
   const [focused, setFocus] = useState(false);
   const placeholderY = useRef(new Animated.Value(-10)).current;
   const placeholderX = useRef(new Animated.Value(0)).current;
-  const lineColor = lineColors[status];
+  const lineColor = UIStore.theme.colors[statusColor];
   const setPlaceholderPos = (Y: number, X: number) => {
     Animated.timing(placeholderY, {
       toValue: Y,

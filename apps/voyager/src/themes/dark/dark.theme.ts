@@ -20,10 +20,12 @@ const theme: ThemeInterface = {
     onSurface: "#ccc",
     success: "lime",
     onSuccess: "#fff",
-    error: "#db232c",
-    onError: "#fff",
+    info: "#0384fc",
+    onInfo: "#fff",
     warn: "#BFAF1D",
     onWarn: "#000",
+    error: "#db232c",
+    onError: "#fff",
   },
 };
 

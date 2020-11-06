@@ -24,7 +24,7 @@ export const NextButton: FC<
     visible: boolean;
     mode: "full" | "attached";
   }
-> = ({ visible, loading, mode, children, ...props }) => {
+> = ({ visible, loading, mode, disabled, children, ...props }) => {
   const buttonPosition = useRef(new Animated.Value(100)).current;
   const buttonScale = useRef(new Animated.Value(0)).current;
 
@@ -79,9 +79,16 @@ export const NextButton: FC<
       children
     );
 
+  const disabledProp = typeof disabled !== "undefined" ? disabled : !visible;
+
   return (
     <Animated.View style={containerStyle}>
-      <Button type="primary" style={buttonStyle} {...props}>
+      <Button
+        type="primary"
+        style={buttonStyle}
+        disabled={disabledProp}
+        {...props}
+      >
         {loading ? (
           <ActivityIndicator color={UIStore.theme.colors.onPrimary} />
         ) : (
@@ -97,7 +104,7 @@ export const Alert: FC<
     visible: boolean;
     type: keyof Pick<
       PrimaryThemeColorsProperties,
-      "success" | "error" | "warn"
+      "success" | "info" | "error" | "warn"
     >;
   }
 > = observer(({ style, type, children, visible, ...props }) => {

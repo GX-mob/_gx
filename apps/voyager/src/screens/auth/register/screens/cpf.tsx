@@ -39,7 +39,11 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
       <View style={{ width: "100%" }}>
         <Input
           status={
-            !!RegisterState.errors.cpf ? "error" : validCPF ? "ok" : "normal"
+            !!RegisterState.errors.cpf
+              ? "error"
+              : validCPF
+              ? "success"
+              : "normal"
           }
           refInput={(ref) => {
             if (ref) cpfInputRef = ref;
@@ -77,7 +81,7 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
             !!RegisterState.errors.birth
               ? "error"
               : validBirth
-              ? "ok"
+              ? "success"
               : "normal"
           }
           refInput={(ref) => {

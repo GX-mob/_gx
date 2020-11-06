@@ -39,11 +39,16 @@ class RegisterState extends AuthBaseState {
   @observable firstName = "";
   @observable lastName = "";
   @observable profielPicture = "";
+  @observable password = "";
+  @observable cnhPicture = "";
+  @observable aacPicture = "";
   @observable validations = {
     cpf: false,
     birth: false,
     name: false,
     profilePicture: false,
+    password: false,
+    docs: false,
   };
 
   contact = "";
@@ -228,11 +233,37 @@ class RegisterState extends AuthBaseState {
     });
 
     if (faces.length !== 1) {
-      this.errors.profilePicture = "Precisa ser uma foto pessoal";
+      this.errors.profilePicture = "Precisa ser uma foto do seu rosto";
       return;
     }
 
     return (this.validations.profilePicture = true);
+  }
+
+  @action setPassword(password: string) {
+    this.validations.password = false;
+
+    this.password = password;
+
+    const isValid = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\^\S]{5,}$/g.test(
+      password,
+    );
+
+    if (isValid) {
+      this.validations.password = true;
+    }
+  }
+
+  @action setDocumentPicture(uri: string, type: "CNH" | "AAC") {
+    const field = type === "CNH" ? "cnhPicture" : "aacPicture";
+
+    this.validations.docs = false;
+
+    this[field] = uri;
+
+    if (this.cnhPicture && this.aacPicture) {
+      this.validations.docs = true;
+    }
   }
 
   @action async finish(body: IUserRegisterDto) {

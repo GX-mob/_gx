@@ -12,7 +12,7 @@ import RegisterState from "../register.state";
 
 export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
   const [name, setName] = useState("");
-  const [imageLoading, setImageLoading] = useState(true);
+  const [imageLoading, setImageLoading] = useState(false);
   const image = RegisterState.profielPicture;
   const {
     name: validName,
@@ -122,13 +122,12 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
           onPress={pickImage}
         />
       </View>
-
       <Alert type="error" visible={!!RegisterState.errors.profilePicture}>
         {RegisterState.errors.profilePicture}
       </Alert>
       <View style={{ width: "100%" }}>
         <Input
-          status={validName ? "ok" : "normal"}
+          status={validName ? "success" : "normal"}
           value={name}
           placeholder="Nome e sobrenome"
           maxLength={30}
@@ -140,7 +139,6 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
         <Alert type="warn" visible={!!RegisterState.errors.name}>
           {RegisterState.errors.name}
         </Alert>
-
         <NextButton
           mode="attached"
           visible={validName && validProfilePicture}
