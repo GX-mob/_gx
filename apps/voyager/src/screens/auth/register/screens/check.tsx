@@ -7,7 +7,7 @@ import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import RegisterState from "../register.state";
 
-export const CheckStep = observer(() => {
+export const CheckScreen = observer(() => {
   const [code, setCode] = useState("");
   const error = RegisterState.errors.check;
   const handleSubmit = async () => {

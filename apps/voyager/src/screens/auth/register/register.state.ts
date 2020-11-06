@@ -7,6 +7,7 @@ import { AuthBaseState } from "../auth-base.state";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import diferenceInYears from "date-fns/differenceInYears";
 import { MINIMUN_REGISTER_AGE, MAXIMUN_REGISTER_AGE } from "@/constants";
+import * as FaceDetector from "expo-face-detector";
 
 type ErrorsNamespaces = {
   verify?: string;
@@ -14,6 +15,7 @@ type ErrorsNamespaces = {
   cpf?: string;
   birth?: string;
   name?: string;
+  profilePicture?: string;
   finish?: string;
 };
 
@@ -36,10 +38,12 @@ class RegisterState extends AuthBaseState {
   @observable birth = "";
   @observable firstName = "";
   @observable lastName = "";
+  @observable profielPicture = "";
   @observable validations = {
     cpf: false,
     birth: false,
     name: false,
+    profilePicture: false,
   };
 
   contact = "";
@@ -212,6 +216,23 @@ class RegisterState extends AuthBaseState {
 
       return (this.validations.name = true);
     }
+  }
+
+  @action async setProfilePicture(uri: string) {
+    this.validations.profilePicture = false;
+    this.errors.profilePicture = "";
+    this.profielPicture = uri;
+
+    const { faces } = await FaceDetector.detectFacesAsync(uri, {
+      mode: FaceDetector.Constants.Mode.accurate,
+    });
+
+    if (faces.length !== 1) {
+      this.errors.profilePicture = "Precisa ser uma foto pessoal";
+      return;
+    }
+
+    return (this.validations.profilePicture = true);
   }
 
   @action async finish(body: IUserRegisterDto) {

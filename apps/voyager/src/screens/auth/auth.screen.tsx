@@ -47,6 +47,7 @@ export const AuthScreen = observer(() => {
       <Lines width={windowWidth} />
       <NavigationContainer theme={navigatorTheme}>
         <Navigator
+          initialRouteName="register"
           screenOptions={{
             headerTitle: (props) => <></>,
             headerTransparent: true,

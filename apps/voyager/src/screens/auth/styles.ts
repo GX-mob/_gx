@@ -5,10 +5,13 @@ export const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     paddingTop: 46,
+  },
+  contentContainer: {
+    paddingHorizontal: "10%",
+    width: "100%",
     alignItems: "center",
     flexDirection: "column",
     justifyContent: "flex-end",
-    paddingVertical: 12,
   },
   title: {
     alignSelf: "flex-start",

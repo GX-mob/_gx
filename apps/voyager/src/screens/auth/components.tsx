@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, FC, Children } from "react";
+import React, { useRef, useEffect, FC } from "react";
 import {
   View,
   ScrollView,
@@ -125,14 +125,8 @@ export const Container: FC = ({ children }) => {
       <ScrollView
         style={{
           width: "100%",
-          paddingHorizontal: "10%",
         }}
-        contentContainerStyle={{
-          width: "100%",
-          alignItems: "center",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-        }}
+        contentContainerStyle={styles.contentContainer}
       >
         {children}
       </ScrollView>
