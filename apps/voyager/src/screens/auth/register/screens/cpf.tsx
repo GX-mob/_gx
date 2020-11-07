@@ -27,6 +27,8 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
     if (validBirth && !validCPF) {
       return cpfInputRef.focus();
     }
+
+    return navigation.navigate("profile");
   };
 
   return (

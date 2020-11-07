@@ -44,7 +44,7 @@ export const PasswordScreen = observer<RegisterScreenProps>(
             mode="full"
             visible={true}
             disabled={!validPassword}
-            onPress={() => alert("foo")}
+            onPress={() => navigation.navigate("docs")}
           >
             Salvar senha
           </NextButton>

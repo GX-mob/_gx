@@ -14,6 +14,7 @@ import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
 import { Button } from "@/components/atoms";
 import UIStore from "@/states/ui.store";
 import { PrimaryThemeColorsProperties } from "@/types";
+import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 
 const easing = Easing.bezier(0.88, 0.02, 0.16, 1.02);
@@ -129,6 +130,16 @@ export const Alert: FC<
 export const Container: FC = ({ children }) => {
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={[UIStore.theme.colors.background, "transparent"]}
+        style={{
+          position: "absolute",
+          zIndex: 99999,
+          top: 46,
+          width: "100%",
+          height: 30,
+        }}
+      ></LinearGradient>
       <ScrollView
         style={{
           width: "100%",
@@ -137,6 +148,17 @@ export const Container: FC = ({ children }) => {
       >
         {children}
       </ScrollView>
+
+      <LinearGradient
+        colors={["transparent", UIStore.theme.colors.background]}
+        style={{
+          position: "absolute",
+          zIndex: 99999,
+          bottom: 0,
+          width: "100%",
+          height: 30,
+        }}
+      ></LinearGradient>
     </View>
   );
 };

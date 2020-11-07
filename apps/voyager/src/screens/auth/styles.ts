@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: "10%",
+    paddingVertical: 10,
     width: "100%",
     alignItems: "center",
     flexDirection: "column",
@@ -20,10 +21,16 @@ export const styles = StyleSheet.create({
     fontWeight: "100",
     textTransform: "uppercase",
   },
-  subTitle: {
+  paragraph: {
     alignSelf: "flex-start",
     fontSize: 16,
     marginBottom: 8,
+    fontWeight: "100",
+  },
+  subTitle: {
+    alignSelf: "flex-start",
+    fontSize: 28,
+    marginVertical: 16,
     fontWeight: "100",
   },
 });

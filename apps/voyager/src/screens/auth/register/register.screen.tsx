@@ -27,7 +27,7 @@ export function RegisterScreen() {
           headerTitle: (props) => <></>,
           headerTransparent: true,
         }}
-        initialRouteName="docs"
+        initialRouteName="finish"
       >
         <Screen name="verify" component={VerifyScreen} />
         <Screen name="check" component={CheckScreen} />

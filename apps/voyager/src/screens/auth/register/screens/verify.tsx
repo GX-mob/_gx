@@ -6,10 +6,10 @@ import { GButton } from "@/components/google";
 import validator from "validator";
 import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
-import { AuthScreenProps } from "../../interfaces";
+import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
 
-export const VerifyScreen = observer<AuthScreenProps>(({ navigation }) => {
+export const VerifyScreen = observer<RegisterScreenProps>(({ navigation }) => {
   const [phone, setPhone] = useState("");
   const [googleSigInLoading, setGoogleSigInLoading] = useState(false);
   const error = RegisterState.errors.verify;

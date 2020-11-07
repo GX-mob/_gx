@@ -5,12 +5,14 @@ import { UIStore } from "@/states";
 import { Text, Button, Input, Divider } from "@/components/atoms";
 import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
+import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
 
-export const CheckScreen = observer(() => {
+export const CheckScreen = observer<RegisterScreenProps>(({ navigation }) => {
   const [code, setCode] = useState("");
   const error = RegisterState.errors.check;
   const handleSubmit = async () => {
+    return navigation.navigate("cpf");
     if (code.length !== 6) return;
     await RegisterState.check(code);
   };

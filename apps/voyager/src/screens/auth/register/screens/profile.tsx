@@ -32,6 +32,11 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
       setImageLoading(false);
     }
   };
+  const handleSubmit = () => {
+    if (validName && validProfilePicture) {
+      return navigation.navigate("password");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -142,6 +147,7 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
         <NextButton
           mode="attached"
           visible={validName && validProfilePicture}
+          onPress={handleSubmit}
         />
       </View>
     </Container>

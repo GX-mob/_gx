@@ -14,7 +14,6 @@ export const DocsScreen = observer<RegisterScreenProps>(({ navigation }) => {
   const pickImage = async (to: "CNH" | "AAC") => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-
       quality: 0.8,
     });
 
@@ -26,7 +25,7 @@ export const DocsScreen = observer<RegisterScreenProps>(({ navigation }) => {
   return (
     <Container>
       <Text style={styles.title}>Documentos</Text>
-      <Text style={styles.subTitle}>
+      <Text style={styles.paragraph}>
         Precisamos que você tire foto da sua CNH, ela precisa ter a observação
         EAR e também de um Atestado de Antecedentes Criminais em seu nome.
       </Text>
@@ -43,7 +42,11 @@ export const DocsScreen = observer<RegisterScreenProps>(({ navigation }) => {
       <NextButton
         mode="full"
         visible={RegisterState.validations.docs}
-        onPress={() => alert("foo")}
+        onPress={() => {
+          if (RegisterState.validations.docs) {
+            navigation.navigate("finish");
+          }
+        }}
       >
         Enviar
       </NextButton>
@@ -57,27 +60,23 @@ const UploadItemContainer = observer<{
   onPress: (...args: any) => any;
 }>(({ picture, label, onPress }) => {
   return (
-    <View
+    <Pressable
       style={[
         localStyles.item,
         { backgroundColor: UIStore.theme.colors.surface },
       ]}
+      onPress={onPress}
     >
       {picture ? (
         <Image source={{ uri: picture }} style={localStyles.itemCover} />
       ) : null}
-      <Pressable
-        style={(localStyles.item, { marginBottom: 0 })}
-        onPress={onPress}
-      >
-        <Text color={"onBackground"}>{label}</Text>
-        {picture ? (
-          <Text color={"success"} style={{ textAlign: "center" }}>
-            <MaterialIcons name="check" size={18} />
-          </Text>
-        ) : null}
-      </Pressable>
-    </View>
+      <Text color={"onBackground"}>{label}</Text>
+      {picture ? (
+        <Text color={"success"} style={{ textAlign: "center" }}>
+          <MaterialIcons name="check" size={18} />
+        </Text>
+      ) : null}
+    </Pressable>
   );
 });
 
