@@ -212,13 +212,15 @@ export class UserService {
    * @param contact
    */
   validateContact(contact: string): ContactTypes {
-    const isMobilePhone = validator.isMobilePhone(contact);
-
-    if (!isMobilePhone || !validator.isEmail(contact)) {
-      throw new InvalidContactException();
+    if (validator.isMobilePhone(contact)) {
+      return "phone";
     }
 
-    return isMobilePhone ? "phone" : "email";
+    if (validator.isEmail(contact)) {
+      return "email";
+    }
+
+    throw new InvalidContactException();
   }
 
   private getContactFieldName(type: ContactTypes): "emails" | "phones" {

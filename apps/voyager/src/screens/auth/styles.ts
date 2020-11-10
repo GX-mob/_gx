@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
   },
   subTitle: {
     alignSelf: "flex-start",
-    fontSize: 28,
+    fontSize: 26,
     marginVertical: 16,
     fontWeight: "100",
   },

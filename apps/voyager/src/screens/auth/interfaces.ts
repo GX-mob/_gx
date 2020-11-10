@@ -17,9 +17,9 @@ export type LoginScreenProps = StackScreenProps<
 >;
 
 export type RegisterScreens =
-  | AuthScreens
-  | "verify"
-  | "check"
+  | "terms"
+  | "contact"
+  | "code"
   | "cpf"
   | "profile"
   | "password" // optional

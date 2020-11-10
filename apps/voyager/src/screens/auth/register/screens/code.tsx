@@ -8,13 +8,12 @@ import { styles } from "../../styles";
 import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
 
-export const CheckScreen = observer<RegisterScreenProps>(({ navigation }) => {
+export const CodeScreen = observer<RegisterScreenProps>(({ navigation }) => {
   const [code, setCode] = useState("");
-  const error = RegisterState.errors.check;
-  const handleSubmit = async () => {
-    return navigation.navigate("cpf");
-    if (code.length !== 6) return;
-    await RegisterState.check(code);
+  const error = RegisterState.errors.code;
+  const validated = RegisterState.validations.code;
+  const handleSubmit = () => {
+    RegisterState.checkContactVerification(code);
   };
 
   return (
@@ -34,14 +33,18 @@ export const CheckScreen = observer<RegisterScreenProps>(({ navigation }) => {
           value={code}
           keyboardType="phone-pad"
           onChangeText={(value) => {
-            setCode(value.replace("-", ""));
+            value = value.replace("-", "");
+            setCode(value);
+            RegisterState.validateCode(value);
           }}
           onSubmitEditing={handleSubmit}
         />
         <NextButton
           mode="attached"
-          visible={code.length === 6}
           onPress={handleSubmit}
+          visible={validated}
+          disabled={RegisterState.loading}
+          loading={RegisterState.loading}
         />
         <Alert visible={!!error} type="error">
           {error}

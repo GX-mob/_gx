@@ -4,7 +4,9 @@ export async function request<T = any>(
   uri: string,
   options: RequestInit = {},
 ): Promise<{ response: Response; content: T }> {
+  console.log("b");
   const response = await fetch(uri, options);
+  console.log("a");
   const content = await response.json();
 
   if (!response.ok) {

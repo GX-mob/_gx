@@ -12,6 +12,27 @@ export const FinishScreen = observer<RegisterScreenProps>(({ navigation }) => {
   return (
     <Container>
       <Text style={styles.title}>Obrigado!</Text>
+
+      <Text style={styles.paragraph}>É um prazer te-lo conosco!</Text>
+
+      <Text style={styles.paragraph}>
+        Agora é hora de você enviar os documentos necessários para ativar o
+        acesso de motorista.
+      </Text>
+
+      <Text style={styles.paragraph}>
+        Com o acesso ativo o pagamento do plano é liberado e após a confirmação,
+        que dependendo do método de pagamento é instântanea, você estará apto
+        para realizar corridas!
+      </Text>
+
+      <Text style={styles.subTitle}>Tem alguma dúvida?</Text>
+      <Text style={styles.paragraph}>
+        Toque no botão abaixo e acesse o F.A.Q do motorista, lá esclarecemos
+        muitas dúvidas e caso a sua não esteja la, você pode abrir o chat de
+        suporte.
+      </Text>
+
       <Text style={styles.paragraph}>
         É uma honra te-lo conosco, abaixo algumas regras e informções
         importantes sobre como funcionamos.

@@ -66,7 +66,7 @@ export const NextButton: FC<
       ? {
           width: 40,
           height: 40,
-          paddingVertical: 8,
+          paddingVertical: loading ? 9 : 8,
           paddingLeft: 15,
           backfaceVisibility: "visible",
           borderRadius: 50,
@@ -91,7 +91,7 @@ export const NextButton: FC<
         {...props}
       >
         {loading ? (
-          <ActivityIndicator color={UIStore.theme.colors.onPrimary} />
+          <ActivityIndicator color={UIStore.theme.colors.onPrimary} size={22} />
         ) : (
           label
         )}

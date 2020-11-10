@@ -1,14 +1,5 @@
-interface HttpExceptionInterface {
-  message: string;
+export interface IHttpExceptionBase<Message = any> {
+  message: Message;
   statusCode: number;
   error?: string;
-}
-
-export class HttpException extends Error implements HttpExceptionInterface {
-  statusCode!: number;
-  constructor(httpErrorObject: HttpExceptionInterface) {
-    const { message, ...rest } = httpErrorObject;
-    super(message);
-    Object.assign(this, rest);
-  }
 }

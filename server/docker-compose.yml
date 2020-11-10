@@ -25,16 +25,16 @@ services:
       - "3000:3000"
       - "9228:9228"
 
-  gx-ridesflows:
-    <<: *gxweb-dev
-    depends_on:
-      - gx-mongo
-      - gx-redis
-    container_name: gx-rides-flows
-    command: npm run start:rides-flows:debug
-    ports:
-      - "3001:3001"
-      - "9229:9229"
+  #  gx-ridesflows:
+  #    <<: *gxweb-dev
+  #    depends_on:
+  #      - gx-mongo
+  #      - gx-redis
+  #    container_name: gx-rides-flows
+  #    command: npm run start:rides-flows:debug
+  #    ports:
+  #      - "3001:3001"
+  #      - "9229:9229"
 
   gx-mongo:
     image: mongo

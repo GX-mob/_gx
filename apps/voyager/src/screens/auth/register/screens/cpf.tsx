@@ -7,7 +7,7 @@ import { styles } from "../../styles";
 import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
 
-export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
+export const CPFScreen = observer<RegisterScreenProps>(({ navigation }) => {
   let cpfInputRef: any;
   let birthInputRef: any;
   const { cpf: cpfError, birth: birthError } = RegisterState.errors;
@@ -28,13 +28,13 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
       return cpfInputRef.focus();
     }
 
-    return navigation.navigate("profile");
+    return RegisterState.next();
   };
 
   return (
     <Container>
       <Text style={styles.title}>CPF</Text>
-      <Text style={styles.subTitle}>
+      <Text style={styles.paragraph}>
         Usado apenas para confirmação de identidade, visando aumentar a
         segurança da plataforma.
       </Text>
@@ -114,7 +114,17 @@ export const CPFStep = observer<RegisterScreenProps>(({ navigation }) => {
           {birthError}
         </Alert>
       </View>
-      <NextButton mode="full" visible={validCPF && validBirth}>
+      <NextButton
+        mode="full"
+        disabled={RegisterState.loading}
+        loading={RegisterState.loading}
+        visible={validCPF && validBirth}
+        onPress={() => {
+          RegisterState.setLoading(true);
+          RegisterState.next();
+          RegisterState.setLoading(false);
+        }}
+      >
         Próximo
       </NextButton>
     </Container>

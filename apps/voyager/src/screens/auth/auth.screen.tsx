@@ -8,6 +8,7 @@ import { LoginScreen } from "./login";
 import { RegisterScreen } from "./register";
 import { Lines } from "@/components/general";
 import { AuthScreens } from "./interfaces";
+import { navigationRef } from "./navigation";
 
 const windowWidth = Dimensions.get("window").width;
 const { Navigator, Screen } = createStackNavigator<Record<AuthScreens, any>>();
@@ -45,7 +46,7 @@ export const AuthScreen = observer(() => {
       }}
     >
       <Lines width={windowWidth} />
-      <NavigationContainer theme={navigatorTheme}>
+      <NavigationContainer ref={navigationRef} theme={navigatorTheme}>
         <Navigator
           initialRouteName="register"
           screenOptions={{

@@ -34,7 +34,7 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
   };
   const handleSubmit = () => {
     if (validName && validProfilePicture) {
-      return navigation.navigate("password");
+      return RegisterState.next();
     }
   };
 
@@ -148,6 +148,8 @@ export const ProfileStep = observer<RegisterScreenProps>(({ navigation }) => {
           mode="attached"
           visible={validName && validProfilePicture}
           onPress={handleSubmit}
+          disabled={RegisterState.loading}
+          loading={RegisterState.loading}
         />
       </View>
     </Container>

@@ -4,7 +4,7 @@ export const IS_WEB = Device.brand === null;
 export const GOOGLE_OAUTH_ID =
   "190699413732-i81jlb46op5q7t189bbee0iq5n73akkt.apps.googleusercontent.com";
 export const ENDPOINTS = {
-  ACCOUNT: "http://192.168.0.105:3000/account/",
+  ACCOUNT: "http://192.168.0.105:3000/user/account/",
   LOGIN: "http://192.168.0.105:3000/user/auth/",
   REGISTER: "http://192.168.0.105:3000/user/register/",
   RIDES: "http://192.168.0.105:3000/rides/",

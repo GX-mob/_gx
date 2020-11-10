@@ -13,6 +13,12 @@ export class RideNotFoundException extends WsException {
   }
 }
 
+export class OfferNotFoundException extends WsException {
+  constructor(ridePID: string) {
+    super({ ridePID, error: EXCEPTIONS.OFFER_NOT_FOUND });
+  }
+}
+
 export class VehicleNotFoundException extends WsException {
   constructor(vehicleID: string) {
     super({ error: EXCEPTIONS.VEHICLE_NOT_FOUND, vehicleID });

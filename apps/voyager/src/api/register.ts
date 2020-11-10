@@ -1,27 +1,39 @@
 import {
   IContactVerificationCheckDto,
   IUserRegisterDto,
-  IAuthIdentifyResponse,
-  IAuthPasswordResponse,
-  IAuthCodeResponse,
-  IAuthPasswordDto,
-  IAuthCodeDto,
+  IUserRegisterSuccessDto,
 } from "@shared/interfaces";
 import { ENDPOINTS } from "../constants";
-import { createAgent } from "./http";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
+import { IHttpExceptionBase } from "./exceptions";
+import ky from "ky";
 
-const agent = createAgent(ENDPOINTS.REGISTER);
+const agent = ky.extend({
+  prefixUrl: ENDPOINTS.REGISTER,
+});
+
+export interface IHttpException
+  extends IHttpExceptionBase<
+    | HTTP_EXCEPTIONS_MESSAGES.INVALID_CONTACT
+    | HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED
+    | HTTP_EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED
+    | HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED
+    | HTTP_EXCEPTIONS_MESSAGES.INVALID_CPF
+    | HTTP_EXCEPTIONS_MESSAGES.CPF_REGISTRED
+  > {}
+
+//const agent = createAgent(ENDPOINTS.REGISTER);
 
 export function verify(contact: string) {
-  return agent.get(`verify/${contact}`);
+  return agent.post("verify", { json: { contact } });
 }
 
 export function check(body: IContactVerificationCheckDto) {
-  return agent.post("check", body);
+  return agent.post("check", { json: body });
 }
 
 export function finish(body: IUserRegisterDto) {
-  return agent.post("", body);
+  return agent.post("", { json: body }).json<IUserRegisterSuccessDto>();
 }
 
 export default {

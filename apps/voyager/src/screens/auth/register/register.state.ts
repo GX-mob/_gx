@@ -1,17 +1,20 @@
 import { observable, action } from "mobx";
-import register from "@/api/register";
-import { HttpException } from "@/api/exceptions";
+import diferenceInYears from "date-fns/differenceInYears";
+import * as FaceDetector from "expo-face-detector";
+import { isValidCPF } from "@brazilian-utils/brazilian-utils";
+import validator from "validator";
+import ky from "ky";
+import register, { IHttpException } from "@/api/register";
 import { IUserRegisterDto } from "@shared/interfaces";
 import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
-import { AuthBaseState } from "../auth-base.state";
-import { isValidCPF } from "@brazilian-utils/brazilian-utils";
-import diferenceInYears from "date-fns/differenceInYears";
 import { MINIMUN_REGISTER_AGE, MAXIMUN_REGISTER_AGE } from "@/constants";
-import * as FaceDetector from "expo-face-detector";
+import { AuthBaseState } from "../auth-base.state";
+import { navigationRef, navigate } from "../navigation";
+import { RegisterScreens } from "../interfaces";
 
 type ErrorsNamespaces = {
-  verify?: string;
-  check?: string;
+  contact?: string;
+  code?: string;
   cpf?: string;
   birth?: string;
   name?: string;
@@ -19,9 +22,22 @@ type ErrorsNamespaces = {
   finish?: string;
 };
 
+type TValidations = {
+  terms: boolean;
+  contact: boolean;
+  code: boolean;
+  cpf: boolean;
+  birth: boolean;
+  name: boolean;
+  profilePicture: boolean;
+  password: boolean;
+  // docs: boolean;
+};
+
 const ErrorMessages = {
   [HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED]:
     "Você precisa aceitar os termos de uso.",
+  [HTTP_EXCEPTIONS_MESSAGES.INVALID_CONTACT]: "Contato inválido.",
   [HTTP_EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED]:
     "Desculpa, esse número já está registrado.",
   [HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED]: "Código errado",
@@ -32,8 +48,17 @@ const ErrorMessages = {
 
 class RegisterState extends AuthBaseState {
   @observable countryCode = "+55";
+
+  // UI Control
   @observable loading = false;
   @observable errors: ErrorsNamespaces = {};
+  @observable snackVisible = false;
+  @observable snackContent = "";
+
+  // Register fields
+  @observable terms = false;
+  contact = "";
+  code = "";
   @observable cpf = "";
   @observable birth = "";
   @observable firstName = "";
@@ -42,60 +67,140 @@ class RegisterState extends AuthBaseState {
   @observable password = "";
   @observable cnhPicture = "";
   @observable aacPicture = "";
-  @observable validations = {
+
+  @observable validations: TValidations = {
+    terms: false,
+    contact: false,
+    code: false,
     cpf: false,
     birth: false,
     name: false,
     profilePicture: false,
-    password: false,
-    docs: false,
+    password: true,
+    // docs: false,
   };
 
-  contact = "";
   birthDateObject?: Date;
 
-  request<K extends keyof typeof register>(
-    action: K,
-    arg: Parameters<typeof register[K]>[0],
-  ) {
-    this.loading = true;
-    return register[action](arg as any);
+  @action setLoading(state: boolean) {
+    this.loading = state;
+  }
+
+  hashInvalidStep() {
+    const invalidStep = Object.entries(this.validations).find(
+      ([, state]) => !state,
+    );
+
+    if (!invalidStep) {
+      return;
+    }
+    const [field] = invalidStep as [keyof TValidations, boolean];
+    let screenName: RegisterScreens;
+
+    if (field === "name" || field === "profilePicture") {
+      screenName = "profile";
+    } else if (field === "birth") {
+      screenName = "cpf";
+    } else {
+      screenName = field;
+    }
+
+    return screenName;
+  }
+
+  next() {
+    const invalidStep = this.hashInvalidStep();
+
+    if (invalidStep) {
+      return navigate(invalidStep);
+    }
+
+    return navigate("finish");
   }
 
   getContact() {
     return `${this.countryCode}${this.contact}`;
   }
 
+  @action acceptTerms() {
+    this.validations.terms = true;
+    this.terms = true;
+    navigate("contact");
+  }
+
+  @action validateContact(contact: string) {
+    this.validations.contact = false;
+
+    if (validator.isMobilePhone(`+55${contact}`, "pt-BR")) {
+      this.validations.contact = true;
+    }
+  }
+
   @action async verify(contact: string) {
     try {
+      const invalidField = this.hashInvalidStep();
+
+      if (invalidField) {
+        return navigate(invalidField);
+      }
+
+      if (!this.validations.contact || this.loading) {
+        return;
+      }
+
       if (
         this.contact === contact &&
         this.verificationIat &&
         this.resendSecondsLeft > 0
       )
-        return true;
+        return this.next();
 
+      this.loading = true;
       this.contact = contact;
-      await this.request("verify", this.getContact());
+      await register.verify(this.getContact());
       this.initiateVerificationResendCounter();
 
-      return true;
+      this.next();
+      // navigate("code");
     } catch (error) {
-      this.exceptionHandler(error, "verify");
-      return false;
+      this.exceptionHandler(error, "contact");
     } finally {
+      console.log("??");
       this.loading = false;
     }
   }
 
-  @action async check(code: string) {
+  @action validateCode(code: string) {
+    this.validations.code = false;
+
+    if (code.length === 6) {
+      this.validations.code = true;
+    }
+  }
+
+  @action async checkContactVerification(code: string) {
     try {
-      await this.request("check", {
+      const invalidField = this.hashInvalidStep();
+
+      if (invalidField) {
+        return navigate(invalidField);
+      }
+
+      if (!this.validations.code || this.loading) {
+        return;
+      }
+
+      this.loading = true;
+      this.code = code;
+      await register.check({
         contact: this.getContact(),
         code,
       });
+
+      this.next();
+      // navigate("cpf");
     } catch (error) {
-      this.exceptionHandler(error, "check");
+      this.exceptionHandler(error, "code");
     } finally {
       this.loading = false;
     }
@@ -240,7 +345,11 @@ class RegisterState extends AuthBaseState {
     return (this.validations.profilePicture = true);
   }
 
-  @action setPassword(password: string) {
+  @action setPassword(password: string, validate = false) {
+    if (validate) {
+      return (this.validations.password = true);
+    }
+
     this.validations.password = false;
 
     this.password = password;
@@ -254,6 +363,7 @@ class RegisterState extends AuthBaseState {
     }
   }
 
+  /*
   @action setDocumentPicture(uri: string, type: "CNH" | "AAC") {
     const field = type === "CNH" ? "cnhPicture" : "aacPicture";
 
@@ -265,24 +375,55 @@ class RegisterState extends AuthBaseState {
       this.validations.docs = true;
     }
   }
+  */
 
-  @action async finish(body: IUserRegisterDto) {
+  @action async finish() {
     try {
-      await this.request("check", body);
+      this.loading = true;
+
+      const registerObject: IUserRegisterDto = {
+        contact: this.contact,
+        code: this.code,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        cpf: this.cpf,
+        terms: this.terms,
+        birth: this.birth,
+      };
+
+      if (this.password) {
+        registerObject.password = this.password;
+      }
+
+      await register.finish(registerObject);
+
+      navigationRef.current?.addListener("beforeRemove", (e: any) => {
+        e.preventDefault();
+      });
     } catch (error) {
       this.exceptionHandler(error, "finish");
     } finally {
       this.loading = false;
+      this.next();
     }
   }
 
-  exceptionHandler(error: Error, key: keyof ErrorsNamespaces) {
-    if (error instanceof HttpException) {
-      const errorMessage = error.message as keyof typeof ErrorMessages;
-      this.errors[key] = ErrorMessages[errorMessage] || "Tente novamente";
+  async exceptionHandler(error: Error, key: keyof ErrorsNamespaces) {
+    if (error instanceof ky.HTTPError) {
+      const content = (await error.response.json()) as IHttpException;
+      console.log("c", content);
+      this.errors[key] = ErrorMessages[content.message] || "Tente novamente";
 
       return;
     }
+
+    this.snackContent = "Algo errado não esta certo, tente de novo.";
+    this.snackVisible = true;
+
+    setTimeout(() => {
+      this.snackContent = "";
+      this.snackVisible = false;
+    }, 5000);
   }
 }
 

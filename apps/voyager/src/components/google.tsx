@@ -31,10 +31,11 @@ export const Icon: FC<SvgProps> = (props) => (
 
 export const GButton: FC<
   PressableProps & { loading?: boolean; label: string }
-> = ({ style, loading, label, ...props }) => {
+> = ({ style, loading, label, disabled, ...props }) => {
   return (
     <Pressable
       {...props}
+      disabled={disabled}
       style={[
         {
           backgroundColor: "#fff",
@@ -49,6 +50,7 @@ export const GButton: FC<
           shadowOpacity: 0.2,
           shadowRadius: 1.41,
           elevation: 2,
+          opacity: disabled ? 0.6 : 1,
         },
         style as any,
       ]}

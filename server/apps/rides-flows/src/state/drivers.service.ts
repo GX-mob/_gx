@@ -1,8 +1,7 @@
-import deepmerge from "deepmerge";
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
-import { CacheService, setOptions } from "@app/cache";
+import { CacheService } from "@app/cache";
 import { IRide } from "@shared/interfaces";
 import { RideRepository, VehicleRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
@@ -21,38 +20,27 @@ import {
   Setup,
   OfferResponse,
   OfferServer,
-  OfferRequest,
   Configuration,
   UserState,
 } from "@shared/events";
-import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
+import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "../constants";
 import {
   NODES_EVENTS,
   INodesEvents,
   TellMeYourDriversState,
-  UpdateDriverState,
-  UpdateLocalSocketData,
-} from "./events/nodes";
+} from "../events/nodes";
 import { PinoLogger } from "nestjs-pino";
-import {
-  ConnectionDataNotFoundException,
-  RideNotFoundException,
-  VehicleNotFoundException,
-} from "./exceptions";
-import { Socket } from "socket.io";
+import { VehicleNotFoundException } from "../exceptions";
 import { retryUnderHood } from "@app/helpers/util";
-import { WsException } from "@nestjs/websockets";
+import { ConnectionService } from "./connection.service";
+import { RidesService } from "./rides.service";
 
 @Injectable()
-export class StateService {
+export class DriversService {
   /**
    * Drivers list
    */
   public drivers = new Map<string, Driver>();
-  /**
-   * Offers list
-   */
-  public offers = new Map<string, OfferServer>();
 
   constructor(
     readonly cacheService: CacheService,
@@ -61,8 +49,11 @@ export class StateService {
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
     private vehicleRepository: VehicleRepository,
+    private connectionService: ConnectionService,
+    @Inject(forwardRef(() => RidesService))
+    private ridesService: RidesService,
   ) {
-    logger.setContext(StateService.name);
+    logger.setContext(DriversService.name);
 
     this.socketService.on(EVENTS.DRIVER_SETUP, ({ socketId, data }) => {
       this.setupDriverEvent(socketId, data).catch((err) => {
@@ -92,20 +83,6 @@ export class StateService {
       ({ socketId, state }, ack) => {
         ack(true);
         this.updateDriver(socketId, state, true);
-      },
-    );
-
-    this.socketService.nodes.on(
-      NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA,
-      ({ socketId, namespace, data }, ack) => {
-        ack(true);
-
-        const client = this.socketService.server.of(namespace).sockets[
-          socketId
-        ];
-        if (!client) return;
-
-        client.data = { ...client.data, ...data };
       },
     );
 
@@ -186,7 +163,7 @@ export class StateService {
     connectionData?: ConnectionData,
   ) {
     if (!connectionData) {
-      connectionData = await this.getConnectionData(socketId);
+      connectionData = await this.connectionService.get(socketId);
     }
 
     const vehicle = await this.vehicleRepository.get({ _id: setup.vehicleId });
@@ -262,11 +239,11 @@ export class StateService {
     offerResponse: OfferResponse,
     driverData?: ConnectionData,
   ) {
-    const offer = this.offers.get(offerResponse.ridePID);
+    const offer = this.ridesService.offers.get(offerResponse.ridePID);
     if (!offer) return;
 
     const driverConnectionData =
-      driverData || (await this.getConnectionData(socketId));
+      driverData || (await this.connectionService.get(socketId));
 
     /**
      * To avoid any bug in a delayed response and other driver already received the offer
@@ -285,14 +262,14 @@ export class StateService {
     clearTimeout(offer.offerResponseTimeout as NodeJS.Timeout);
 
     /**
-     * If negative response, adds to ignore list and resume the offer
+     * If negative response, adds to ignoreds list and resume the offer
      */
     if (!offerResponse.response) {
       offer.ignoreds.push(driverConnectionData.pid);
 
-      const ride = await this.rideRepository.get({ pid: offer.ridePID });
+      const ride = await this.ridesService.getRide({ pid: offer.ridePID });
 
-      this.offerRide(offer, ride as IRide);
+      this.ridesService.startOffer(offer, ride as IRide);
       return;
     }
 
@@ -303,22 +280,17 @@ export class StateService {
 
     // Store to decide in the future whether to generate a pendencie in a cancelation event
     const { offerResponseTimeout, ...offerStoreData } = offer;
-    await util.retry(
-      () =>
-        this.cacheService.set(
-          CACHE_NAMESPACES.OFFERS,
-          offer.ridePID,
-          {
-            ...offerStoreData,
-            driverSocketId: driverConnectionData.socketId,
-            acceptTimestamp,
-          },
-          {
-            ex: CACHE_TTL.OFFERS,
-          },
-        ),
-      3,
-      500,
+    await this.cacheService.set(
+      CACHE_NAMESPACES.OFFERS,
+      offer.ridePID,
+      {
+        ...offerStoreData,
+        driverSocketId: driverConnectionData.socketId,
+        acceptTimestamp,
+      },
+      {
+        ex: CACHE_TTL.OFFERS,
+      },
     );
 
     // Update ride data
@@ -352,145 +324,19 @@ export class StateService {
       },
     );
 
-    const voyagerConnectionData = await this.getConnectionData(
+    const voyagerConnectionData = await this.connectionService.get(
       offer.requesterSocketId,
     );
 
-    const driverUpdateConnectionData: Pick<ConnectionData, "observers"> = {
-      observers: [
-        ...driverConnectionData.observers,
-        { socketId: offer.requesterSocketId, p2p: voyagerConnectionData.p2p },
-      ],
-    };
-    const voyagerUpdateConnectionData: Pick<ConnectionData, "observers"> = {
-      observers: [
-        ...voyagerConnectionData.observers,
-        {
-          socketId: driverConnectionData.socketId,
-          p2p: driverConnectionData.p2p,
-        },
-      ],
-    };
-
-    // Update driver observers
-    retryUnderHood(() =>
-      this.setConnectionData(
-        driverConnectionData.pid,
-        driverUpdateConnectionData,
-      ),
-    );
-
-    // Update voyager observers
-    retryUnderHood(() =>
-      this.setConnectionData(
-        voyagerConnectionData.pid,
-        voyagerUpdateConnectionData,
-      ),
-    );
-
-    this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
-      socketId: voyagerConnectionData.socketId,
-      namespace: NAMESPACES.VOYAGERS,
-      data: voyagerUpdateConnectionData,
+    await this.connectionService.insertObserver(driverConnectionData, {
+      socketId: offer.requesterSocketId,
+      p2p: voyagerConnectionData.p2p,
     });
 
-    this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
+    await this.connectionService.insertObserver(offer.requesterSocketId, {
       socketId: driverConnectionData.socketId,
-      namespace: NAMESPACES.DRIVERS,
-      data: driverUpdateConnectionData,
+      p2p: driverConnectionData.p2p,
     });
-  }
-
-  async createOffer(
-    offer: OfferRequest,
-    client: Socket,
-    startOffer = true,
-  ): Promise<boolean> {
-    const ride = await this.rideRepository.get({ pid: offer.ridePID });
-
-    if (!ride) {
-      throw new RideNotFoundException();
-    }
-
-    const offerObject: OfferServer = {
-      ridePID: offer.ridePID,
-      requesterSocketId: client.id,
-      ignoreds: [],
-      offeredTo: null,
-      offerResponseTimeout: null,
-    };
-
-    client.data.rides.push(ride.pid);
-
-    this.offers.set(offer.ridePID, offerObject);
-
-    await this.cacheService.set(
-      CACHE_NAMESPACES.OFFERS,
-      ride.pid,
-      offerObject,
-      {
-        ex: CACHE_TTL.OFFERS,
-      },
-    );
-
-    startOffer && this.offerRide(offerObject, ride);
-
-    // acknownlegment
-    return true;
-  }
-
-  /**
-   * Offer a ride to drivers
-   * @param {OfferServer} offer
-   * @param {string} requesterSocketId SocketId of requester
-   */
-  async offerRide(offer: OfferServer, ride: IRide): Promise<void> {
-    const driver = await this.match(offer, ride);
-
-    /**
-     * If don't have a match, informes to user the break time,
-     * this should be rarely executed, its to avoid a long time
-     * blocking of server resources.
-     */
-    if (!driver) {
-      this.socketService.emit(
-        offer.requesterSocketId,
-        EVENTS.OFFER_GOT_TOO_LONG,
-        true,
-      );
-      return;
-    }
-
-    /**
-     * Defines the current driver that received the offer
-     */
-    offer.offeredTo = driver.pid;
-
-    /**
-     * Emit the offer to driver
-     */
-    this.socketService.emit(driver.socketId, EVENTS.OFFER, {
-      ridePID: offer.ridePID,
-    });
-
-    /**
-     * Inform the user that we have a compatible driver and we awaiting the driver response
-     */
-    this.socketService.emit(offer.requesterSocketId, EVENTS.OFFER_SENT, driver);
-
-    /**
-     * Defines a timeout to driver response
-     */
-    offer.offerResponseTimeout = setTimeout(
-      (rider, offer) => {
-        offer.ignoreds.push(rider.pid);
-        offer.offeredTo = null;
-        this.offerRide(offer, ride);
-      },
-      this.configService.get("OFFER.DRIVER_RESPONSE_TIMEOUT") as number,
-      driver,
-      offer,
-    );
   }
 
   /**
@@ -636,68 +482,6 @@ export class StateService {
         : initialRadiusSize + addRadiusSizeEachIteration * trys;
 
     return distance > maxRadiusSize ? maxRadiusSize : distance;
-  }
-
-  setOfferData(
-    ridePID: string,
-    data: Partial<Omit<OfferServer, "offerResponseTimeout">>,
-  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
-    return this.setOrUpdateCache(CACHE_NAMESPACES.OFFERS, ridePID, data, {
-      ex: CACHE_TTL.OFFERS,
-    });
-  }
-
-  getOfferData(
-    ridePID: string,
-  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
-    return this.cacheService.get(CACHE_NAMESPACES.OFFERS, ridePID);
-  }
-
-  /**
-   * Get connection data
-   * @param id Socket ID or User public ID
-   */
-  public async getConnectionData(id: string): Promise<ConnectionData> {
-    const connection = await this.cacheService.get(
-      CACHE_NAMESPACES.CONNECTIONS,
-      id,
-    );
-
-    if (!connection) {
-      throw new ConnectionDataNotFoundException(id);
-    }
-
-    return connection;
-  }
-
-  /**
-   * Set connection data
-   * @param pid User public ID
-   * @param data
-   */
-  public async setConnectionData(
-    pid: string,
-    data: Partial<ConnectionData>,
-  ): Promise<ConnectionData> {
-    return this.setOrUpdateCache(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
-      link: [data.socketId as string],
-      ex: CACHE_TTL.CONNECTIONS,
-    });
-  }
-
-  private async setOrUpdateCache<T = any>(
-    namespace: string,
-    key: string,
-    data: any,
-    options: setOptions,
-  ): Promise<T> {
-    const previousData = await this.cacheService.get(namespace, key);
-
-    const newData = { ...previousData, ...data };
-
-    await this.cacheService.set(namespace, key, newData, options);
-
-    return newData;
   }
 
   /**

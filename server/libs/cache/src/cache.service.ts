@@ -38,11 +38,11 @@ export class CacheService {
    * @param key Key name
    * @returns Value cached or null
    */
-  async get(
+  async get<T = any>(
     ns: string,
     key: any,
     { autoReTry = true }: Pick<setOptions, "autoReTry"> = {},
-  ): Promise<any> {
+  ): Promise<T | null> {
     const finalKey = this.key(ns, key);
     const data = await this.execute("get", autoReTry, finalKey);
 
@@ -116,6 +116,26 @@ export class CacheService {
       options?.autoReTry ? AUTO_RETRY_ATTEMPS : 0,
       AUTO_RETRY_INTERVAL_MS,
     );
+  }
+  /**
+   * Updates cached value with simple merge of the first level children
+   * @param namespace
+   * @param key
+   * @param data
+   * @param options
+   */
+  async update<T = any>(
+    namespace: string,
+    key: string,
+    data: any,
+    options?: setOptions,
+  ): Promise<T> {
+    const currentData = await this.get(namespace, key);
+    const newData = { ...currentData, ...data };
+
+    await this.set(namespace, key, newData, options);
+
+    return newData;
   }
 
   /**

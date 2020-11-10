@@ -1,14 +1,16 @@
-import React from "react";
-import { View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { observer } from "mobx-react-lite";
 import { Text, Input, Button } from "@/components/atoms";
 import { Container, NextButton, Alert } from "../../components";
 import { styles } from "../../styles";
 import { RegisterScreenProps } from "../../interfaces";
 import RegisterState from "../register.state";
+import { UIStore } from "@/states";
 
 export const PasswordScreen = observer<RegisterScreenProps>(
   ({ navigation }) => {
+    const [localLoad, setLocalLoad] = useState("");
     const validPassword =
       RegisterState.password.length > 0 && RegisterState.validations.password;
 
@@ -43,18 +45,30 @@ export const PasswordScreen = observer<RegisterScreenProps>(
           <NextButton
             mode="full"
             visible={true}
+            loading={localLoad === "withPassword"}
             disabled={!validPassword}
-            onPress={() => navigation.navigate("docs")}
+            onPress={async () => {
+              setLocalLoad("withPassword");
+              RegisterState.finish();
+              setLocalLoad("");
+            }}
           >
             Salvar senha
           </NextButton>
           <Button
+            disabled={RegisterState.loading}
             type="surface"
-            onPress={() => {
-              navigation.navigate("docs");
+            onPress={async () => {
+              setLocalLoad("withoutPassword");
+              RegisterState.setPassword("", true);
+              await RegisterState.finish();
+              setLocalLoad("");
             }}
           >
             Autenticar por SMS
+            {localLoad === "withoutPassword" ? (
+              <ActivityIndicator color={UIStore.theme.colors.onPrimary} />
+            ) : null}
           </Button>
         </View>
       </Container>

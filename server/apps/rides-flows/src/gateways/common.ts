@@ -7,7 +7,6 @@ import {
   ConnectedSocket,
 } from "@nestjs/websockets";
 import { PinoLogger } from "nestjs-pino";
-import { ConfigService } from "@nestjs/config";
 import { Server, Socket } from "socket.io";
 import { auth, storageAdapters, unique } from "extensor";
 import { SocketService } from "@app/socket";
@@ -15,27 +14,25 @@ import { AuthService } from "@app/auth";
 import { CacheService } from "@app/cache";
 import { retryUnderHood } from "@app/helpers/util";
 import { IUser, IRide, UserRoles } from "@shared/interfaces";
+import { PendencieRepository } from "@app/repositories";
 import {
-  PendencieRepository,
-  RideRepository,
-  RideUpdateInterface,
-  RideQueryInterface,
-} from "@app/repositories";
-import { EVENTS, State, Position, EventsInterface } from "@shared/events";
+  EVENTS,
+  State,
+  Position,
+  EventsInterface,
+  UserState,
+} from "@shared/events";
 import { CANCELATION } from "../constants";
-import { StateService } from "../state.service";
-import { NotInRideException, RideNotFoundException } from "../exceptions";
+import { ConnectionService } from "../state";
 
 export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
   public role!: UserRoles;
 
   constructor(
-    readonly configService: ConfigService,
     readonly socketService: SocketService<EventsInterface>,
-    readonly rideRepository: RideRepository,
     readonly pendencieRepository: PendencieRepository,
     readonly sessionService: AuthService,
-    readonly stateService: StateService,
+    readonly connectionService: ConnectionService,
     readonly cacheService: CacheService,
     readonly logger: PinoLogger,
   ) {
@@ -48,7 +45,6 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
         token,
         socket.handshake.address,
       );
-
       const hasPermission = this.sessionService.hasPermission(session, [
         this.role,
       ]);
@@ -58,15 +54,26 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
       }
 
       const { _id, pid, averageEvaluation } = session.user;
+      const previousData = await this.connectionService.find(pid);
 
-      socket.data = await this.stateService.setConnectionData(pid, {
+      if (previousData) {
+        socket.data = await this.connectionService.update(pid, {
+          socketId: socket.id,
+        });
+
+        return true;
+      }
+
+      socket.data = await this.connectionService.set(pid, {
         _id,
         pid,
-        mode: this.role,
         p2p,
+        mode: this.role,
         rate: averageEvaluation,
         socketId: socket.id,
+        state: UserState.IDLE,
         rides: [],
+        observers: [],
       });
 
       return true;
@@ -121,10 +128,6 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     return { ...packet, pid: socket.data.pid };
   }
 
-  public updateRide(query: RideQueryInterface, data: RideUpdateInterface) {
-    return retryUnderHood(() => this.rideRepository.update(query, data));
-  }
-
   public createPendencie({
     ride,
     issuer,
@@ -145,28 +148,5 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
       3,
       500,
     );
-  }
-
-  async getRide(query: RideQueryInterface): Promise<IRide> {
-    const ride = await this.rideRepository.get(query);
-
-    if (!ride) {
-      throw new RideNotFoundException();
-    }
-
-    return ride;
-  }
-
-  checkIfInRide(ride: IRide, _id: IUser["_id"]) {
-    if (ride.voyager._id !== _id && ride.driver?._id !== _id) {
-      throw new NotInRideException(ride.pid, _id);
-    }
-  }
-
-  isSafeCancel(acceptTimestamp: number, now: number) {
-    const cancelationSafeTime = this.configService.get(
-      "OFFER.SAFE_CANCELATION_WINDOW",
-    ) as number;
-    return acceptTimestamp + cancelationSafeTime > now;
   }
 }

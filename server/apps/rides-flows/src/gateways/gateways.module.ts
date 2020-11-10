@@ -3,10 +3,10 @@ import { AuthService } from "@app/auth";
 import { SocketModule } from "@app/socket";
 import { VoyagersGateway } from "./voyagers.gateway";
 import { DriversGateway } from "./drivers.gateway";
-import { StateService } from "../state.service";
+import { StateModule } from "../state";
 
 @Module({
-  imports: [SocketModule],
-  providers: [StateService, AuthService, VoyagersGateway, DriversGateway],
+  imports: [SocketModule, StateModule],
+  providers: [AuthService, VoyagersGateway, DriversGateway],
 })
 export class GatewaysModule {}
