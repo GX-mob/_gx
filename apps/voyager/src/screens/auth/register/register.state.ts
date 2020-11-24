@@ -76,7 +76,7 @@ class RegisterState extends AuthBaseState {
     birth: false,
     name: false,
     profilePicture: false,
-    password: true,
+    password: false,
     // docs: false,
   };
 
@@ -138,30 +138,20 @@ class RegisterState extends AuthBaseState {
 
   @action async verify(contact: string) {
     try {
-      const invalidField = this.hashInvalidStep();
-
-      if (invalidField) {
-        return navigate(invalidField);
-      }
-
       if (!this.validations.contact || this.loading) {
         return;
       }
 
-      if (
-        this.contact === contact &&
-        this.verificationIat &&
-        this.resendSecondsLeft > 0
-      )
+      if (this.contact === contact && this.hasPendentVerification())
         return this.next();
 
       this.loading = true;
       this.contact = contact;
+
       await register.verify(this.getContact());
       this.initiateVerificationResendCounter();
 
       this.next();
-      // navigate("code");
     } catch (error) {
       this.exceptionHandler(error, "contact");
     } finally {
@@ -171,6 +161,7 @@ class RegisterState extends AuthBaseState {
   }
 
   @action validateCode(code: string) {
+    this.code = code;
     this.validations.code = false;
 
     if (code.length === 6) {
@@ -198,7 +189,6 @@ class RegisterState extends AuthBaseState {
       });
 
       this.next();
-      // navigate("cpf");
     } catch (error) {
       this.exceptionHandler(error, "code");
     } finally {
@@ -296,7 +286,7 @@ class RegisterState extends AuthBaseState {
   private makeDateObject(birth: string) {
     const dateItens = birth.split("/");
     const [day, month, year] = dateItens.map((item) => parseInt(item));
-    return new Date(year, month, day);
+    return new Date(year, month - 1, day);
   }
 
   @action setName(name: string) {
@@ -382,14 +372,19 @@ class RegisterState extends AuthBaseState {
       this.loading = true;
 
       const registerObject: IUserRegisterDto = {
-        contact: this.contact,
+        contact: this.getContact(),
         code: this.code,
         firstName: this.firstName,
         lastName: this.lastName,
         cpf: this.cpf,
         terms: this.terms,
-        birth: this.birth,
+        birth: this.birthDateObject?.toISOString() as string,
       };
+      console.log(
+        this.birth,
+        this.birthDateObject?.toDateString(),
+        this.birthDateObject?.toISOString(),
+      );
 
       if (this.password) {
         registerObject.password = this.password;
@@ -413,6 +408,8 @@ class RegisterState extends AuthBaseState {
       const content = (await error.response.json()) as IHttpException;
       console.log("c", content);
       this.errors[key] = ErrorMessages[content.message] || "Tente novamente";
+
+      // TODO move to screen error
 
       return;
     }

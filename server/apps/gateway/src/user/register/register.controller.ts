@@ -44,7 +44,6 @@ export class UserRegisterController {
   @HttpCode(202)
   @Post("verify")
   async phoneVerificationRequest(@Body() { contact }: ContactDto) {
-    // TODO add contact registred step
     await this.usersService.checkInUseContact(contact);
     await this.usersService.requestContactVerify(contact);
   }

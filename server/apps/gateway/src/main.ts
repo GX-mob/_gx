@@ -12,6 +12,7 @@ import { CacheService } from "@app/cache";
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
   trustProxy: true,
+  ignoreTrailingSlash: true,
 });
 
 const fastifyInstance = FastifyAdapterInstance.getInstance();

@@ -8,10 +8,6 @@ import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
 import { IHttpExceptionBase } from "./exceptions";
 import ky from "ky";
 
-const agent = ky.extend({
-  prefixUrl: ENDPOINTS.REGISTER,
-});
-
 export interface IHttpException
   extends IHttpExceptionBase<
     | HTTP_EXCEPTIONS_MESSAGES.INVALID_CONTACT
@@ -22,7 +18,9 @@ export interface IHttpException
     | HTTP_EXCEPTIONS_MESSAGES.CPF_REGISTRED
   > {}
 
-//const agent = createAgent(ENDPOINTS.REGISTER);
+const agent = ky.extend({
+  prefixUrl: ENDPOINTS.REGISTER,
+});
 
 export function verify(contact: string) {
   return agent.post("verify", { json: { contact } });

@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsString,
   ValidateIf,
+  IsOptional,
 } from "class-validator";
 import {
   IAuthPasswordDto,
@@ -58,6 +59,7 @@ export class UserRegisterDto
   @IsBoolean()
   terms!: boolean;
 
+  @IsOptional()
   @IsString()
   password?: string;
 }

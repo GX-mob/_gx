@@ -2,8 +2,12 @@ import { observable } from "mobx";
 import { VERIFICATION_RESEND_TIMEOUT } from "@/constants";
 
 export class AuthBaseState {
-  @observable resendSecondsLeft = 60;
+  @observable resendSecondsLeft = 0;
   public verificationIat?: number;
+
+  public hasPendentVerification() {
+    return this.verificationIat && this.resendSecondsLeft > 0;
+  }
 
   initiateVerificationResendCounter() {
     this.verificationIat = Date.now();

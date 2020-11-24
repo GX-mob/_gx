@@ -231,6 +231,9 @@ export class UserService {
     const type = this.validateContact(contact);
     const field = this.getContactFieldName(type);
     const user = await this.userRepository.get({ [field]: contact });
+    const user2 = await this.userRepository.get({ [field]: [contact] });
+    console.log("repository query", { [field]: contact });
+    console.log("repository response", user, user2);
 
     if (user) {
       throw new ContactRegistredException();
