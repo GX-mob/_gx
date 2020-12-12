@@ -6,13 +6,20 @@ import redisIoAdapter from "socket.io-redis";
 import { ParsersList } from "extensor/dist/types";
 import shortid from "shortid";
 import EventEmitter from "eventemitter3";
-import { ConfigOptions, ServerEvent, DispatchedEvent, Callback } from "./types";
-import { SERVER_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
+import {
+  ConfigOptions,
+  ServerEvent,
+  DispatchedEvent,
+  IModuleCommunicationEvents,
+  IDispatchedBroadcastedEvent,
+} from "./types";
+import { MODULE_COMMUNICATION_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
+import { Callback } from "@shared/types/helpers";
 
 @Injectable()
 export class SocketService<
-  Events = Record<string, any>,
-  NodesEvents = Record<string, any>
+  ClientEvents = Record<string, any>,
+  ServerNodesEvents = Record<string, any>
 > {
   /**
    * Self node id to used prevent handling self emitted events
@@ -25,11 +32,11 @@ export class SocketService<
     /**
      * Registres a event listener from another server nodes
      */
-    on: <K extends keyof NodesEvents>(
+    on: <K extends keyof ServerNodesEvents>(
       event: K,
       listener: (
-        data: NodesEvents[K],
-        acknow: (data: NodesEvents[K] | true) => void,
+        data: ServerNodesEvents[K],
+        acknow: (data: ServerNodesEvents[K] | true) => void,
       ) => void,
     ) =>
       this.nodeListener.on(event as string, ({ data, ack }: any) => {
@@ -38,13 +45,13 @@ export class SocketService<
     /**
      * Emits events to another server nodes
      */
-    emit: <K extends keyof NodesEvents>(
+    emit: <K extends keyof ServerNodesEvents>(
       event: K,
-      data: NodesEvents[K],
-      acknowledgment?: (response: (NodesEvents[K] | null)[]) => void,
+      data: ServerNodesEvents[K],
+      acknowledgment?: (response: (ServerNodesEvents[K] | null)[]) => void,
     ) => {
       const serverEvent = this.createServerEvent(
-        SERVER_EVENTS.SOCKET_NODE_EVENT,
+        MODULE_COMMUNICATION_EVENTS.SOCKET_NODE_EVENT,
         {
           event,
           data,
@@ -81,15 +88,12 @@ export class SocketService<
             subClient: new Redis(options.redis),
           }
         : options.redis;
-
     const redisAdapter = redisIoAdapter(redisAdapterConfigure);
+
     server.adapter(redisAdapter);
-
     this.adapter = server.of("/").adapter;
-
     this.registerServerEventsListener();
     this.configureEventsMiddleware();
-
     this.serviceEvents.emit("serviceConfigured");
   }
 
@@ -98,35 +102,37 @@ export class SocketService<
    * @param event
    * @param listener
    */
-  public on<K extends keyof Events>(
+  public on<K extends keyof ClientEvents>(
     event: K,
     listener: (
-      content: Omit<DispatchedEvent<Events[K]>, "event">,
+      content: Omit<DispatchedEvent<ClientEvents[K]>, "event">,
       acknowledgment?: Callback,
     ) => void,
   ) {
-    this.broadcastedListener.on(String(event), listener);
+    this.broadcastedListener.on(event as string, listener);
   }
 
   private registerServerEventsListener() {
     /**
      * Register server events listener
      */
-    this.adapter.customHook = (packet: ServerEvent, cb: Callback) => {
+    this.adapter.customHook = (
+      packet: ServerEvent<MODULE_COMMUNICATION_EVENTS>,
+      cb: Callback,
+    ) => {
       const { event, nodeId, content } = packet;
 
-      // ignore self emited events
       if (nodeId === this.nodeId) {
         return cb(null);
       }
 
       switch (event) {
-        case SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT:
+        case MODULE_COMMUNICATION_EVENTS.DISPATCHED_BROADCASTED_EVENT:
           this.broadcastedListener.emit(content.event, content);
           return cb(true);
-        case SERVER_EVENTS.DISPATCHED_SOCKET_EVENT:
+        case MODULE_COMMUNICATION_EVENTS.DISPATCHED_SOCKET_EVENT:
           return this.handleDispatchedSocketEvent(content, cb);
-        case SERVER_EVENTS.SOCKET_NODE_EVENT:
+        case MODULE_COMMUNICATION_EVENTS.SOCKET_NODE_EVENT:
           const acknowledgmentTimeout = setTimeout(() => {
             cb(null);
           }, 3000);
@@ -139,13 +145,6 @@ export class SocketService<
           });
 
           return;
-        /*
-          this.nodeListener.emit(
-            content.event,
-            content.data,
-            (data: any) => {},
-          );
-          return cb(true);*/
       }
 
       cb(null);
@@ -154,7 +153,6 @@ export class SocketService<
 
   private handleDispatchedSocketEvent(content: DispatchedEvent, cb: Callback) {
     const { socketId, event, data, ack } = content;
-
     const socket = this.getSocket(socketId);
 
     if (!socket) {
@@ -190,21 +188,16 @@ export class SocketService<
    * @param {any} data
    * @param {function | true} [ack] Acknowledgment
    */
-  emit<K extends keyof Events>(
+  emit<K extends keyof ClientEvents>(
     socketId: string,
     event: K,
-    data: Events[K],
+    data: ClientEvents[K],
     callback?: Callback,
   ) {
     const socket = this.getSocket(socketId);
 
     if (!socket) {
-      return this.dispatchSocketEvent(
-        socketId,
-        event as string,
-        data,
-        callback,
-      );
+      return this.dispatchSocketEvent(socketId, event, data, callback);
     }
 
     return (socket as any).emit(event, data, callback);
@@ -222,14 +215,14 @@ export class SocketService<
     return this.server.of(namespace).sockets[id] || null;
   }
 
-  private dispatchSocketEvent(
+  private dispatchSocketEvent<K extends keyof ClientEvents>(
     socketId: string,
-    event: string,
-    data: any,
+    event: K,
+    data: ClientEvents[K],
     callback?: Callback,
   ) {
     const serverEvent = this.createServerEvent(
-      SERVER_EVENTS.DISPATCHED_SOCKET_EVENT,
+      MODULE_COMMUNICATION_EVENTS.DISPATCHED_SOCKET_EVENT,
       {
         socketId,
         event,
@@ -247,7 +240,12 @@ export class SocketService<
     });
   }
 
-  private createServerEvent(event: SERVER_EVENTS, content: any): ServerEvent {
+  private createServerEvent<
+    K extends keyof IModuleCommunicationEvents<ClientEvents, ServerNodesEvents>
+  >(
+    event: K,
+    content: IModuleCommunicationEvents<ClientEvents, ServerNodesEvents>[K],
+  ): ServerEvent<K> {
     return {
       nodeId: this.nodeId,
       event,
@@ -289,9 +287,9 @@ export class SocketService<
     });
   }
 
-  private dispatchBroadcastedEvent(packet: any) {
+  private dispatchBroadcastedEvent(packet: IDispatchedBroadcastedEvent) {
     const serverEvent = this.createServerEvent(
-      SERVER_EVENTS.DISPATCHED_BROADCASTED_EVENT,
+      MODULE_COMMUNICATION_EVENTS.DISPATCHED_BROADCASTED_EVENT,
       packet,
     );
 
@@ -302,7 +300,7 @@ export class SocketService<
 declare module "socket.io" {
   interface Adapter {
     customRequest(
-      data: ServerEvent,
+      data: ServerEvent<MODULE_COMMUNICATION_EVENTS>,
       callback?: (err: any, replies: any[]) => void,
     ): void;
     customHook: (data: any, callback: (data: any) => void) => void;
