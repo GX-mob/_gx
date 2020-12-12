@@ -7,6 +7,8 @@ import {
   IRideAreaConfiguration,
   IRideTypeConfiguration,
   RideTypes,
+  IPendencie,
+  IRideCosts,
 } from "@shared/interfaces";
 import {
   RideRepository,
@@ -72,24 +74,8 @@ export class RidesService {
   }
 
   async create(userId: IUser["_id"], data: ICreateRideDto) {
-    /**
-     * Get user pendencies
-     */
-    const pendencies: any[] = await this.pendencieRepository.model
-      .find({ issuer: userId })
-      .lean();
     const { route, type, payMethod, country, area, subArea } = data;
-
-    /**
-     * Calculate rides costs
-     */
-    const rideCosts = this.getRideCosts(data);
-    const base = rideCosts.duration.total + rideCosts.distance.total;
-    const total = pendencies.reduce((currentAmount, pendencie) => {
-      return currentAmount + pendencie.amount;
-    }, base);
-
-    const costs = { ...rideCosts, base, total };
+    const pendencies = await this.getUserPendencies(userId);
 
     return this.rideRepository.create({
       voyager: userId,
@@ -100,8 +86,28 @@ export class RidesService {
       country,
       area,
       subArea,
-      costs,
+      costs: await this.calculateRideCosts(userId, data, pendencies),
     });
+  }
+
+  private async calculateRideCosts(
+    userId: string,
+    rideData: ICreateRideDto,
+    pendencies?: IPendencie[],
+  ): Promise<IRideCosts> {
+    pendencies = pendencies || (await this.getUserPendencies(userId));
+
+    const rideCosts = this.getRideCosts(rideData);
+    const base = rideCosts.duration.total + rideCosts.distance.total;
+    const total = pendencies.reduce((currentAmount, pendencie) => {
+      return currentAmount + pendencie.amount;
+    }, base);
+
+    return { ...rideCosts, base, total };
+  }
+
+  private getUserPendencies(issuer: string) {
+    return this.pendencieRepository.model.find({ issuer }).lean();
   }
 
   /**

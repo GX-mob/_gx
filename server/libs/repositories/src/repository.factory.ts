@@ -1,4 +1,10 @@
-import mongoose, { DocumentQuery, Document } from "mongoose";
+import mongoose, {
+  DocumentQuery,
+  Document,
+  CreateQuery,
+  FilterQuery,
+  UpdateQuery,
+} from "mongoose";
 import { CacheService } from "@app/cache";
 import { util } from "@app/helpers";
 
@@ -19,11 +25,12 @@ export interface ConfigurationInterface<Model> {
  */
 export class RepositoryFactory<
   Model,
+  ModelDocument extends Model & Document,
   Configuration extends ConfigurationInterface<Model>
 > {
   constructor(
     private cache: CacheService,
-    public model: mongoose.Model<any>,
+    public model: mongoose.Model<ModelDocument>,
     private settings: Settings<Model>,
   ) {}
 
@@ -47,7 +54,7 @@ export class RepositoryFactory<
 
     this.setCache(data);
 
-    return data as Model;
+    return (data as unknown) as Model;
   }
 
   /**
@@ -55,25 +62,19 @@ export class RepositoryFactory<
    * @param query
    */
   private async makeQuery(query: Configuration["Query"]) {
-    const _query = this.model.findOne(query).lean();
-
-    this.populateObject(_query);
-
-    return _query;
+    return this.populateObject(
+      this.model.findOne(query as FilterQuery<ModelDocument>).lean(),
+    );
   }
 
   /**
    * Do auto populate on configured fields
    * @param query
    */
-  private populateObject(query: DocumentQuery<any, any> | Document) {
-    if (!this.settings.autoPopulate) {
-      return query;
-    }
-
-    for (let i = 0; i < this.settings.autoPopulate.length; i++) {
-      query.populate(this.settings.autoPopulate[i] as string);
-    }
+  private populateObject(query: DocumentQuery<any, ModelDocument> | Document) {
+    this.settings.autoPopulate?.forEach((prop) => {
+      query.populate(prop as string);
+    });
 
     return query;
   }
@@ -100,7 +101,10 @@ export class RepositoryFactory<
    * @param data
    */
   async update(query: Configuration["Query"], data: Configuration["Update"]) {
-    await this.model.updateOne(query, data);
+    await this.model.updateOne(
+      query as FilterQuery<ModelDocument>,
+      (data as unknown) as UpdateQuery<ModelDocument>,
+    );
     this.updateCache(query);
   }
 
@@ -115,16 +119,18 @@ export class RepositoryFactory<
     data: Configuration["Create"],
     options = { cache: true },
   ): Promise<Model> {
-    let modelResult = await this.model.create((data as unknown) as Model);
+    let modelResult = await this.model.create(
+      data as CreateQuery<ModelDocument>,
+    );
 
     if (this.settings.autoPopulate) {
       modelResult = await (this.populateObject(
         modelResult,
-      ) as Document).execPopulate();
+      ) as ModelDocument).execPopulate();
     }
 
     if (options.cache) {
-      this.setCache(modelResult._doc);
+      this.setCache(modelResult);
     }
 
     return modelResult;

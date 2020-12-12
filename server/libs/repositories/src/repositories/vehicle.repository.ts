@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { IVehicle } from "@shared/interfaces";
-import { VehicleModel } from "../schemas/vehicle";
+import { VehicleModel, VehicleDocument } from "../schemas/vehicle";
 import { VehicleMetadataModel } from "../schemas/vehicle-metadata";
 
 export interface VehicleQueryInterface
@@ -15,6 +15,7 @@ export interface VehicleCreateInterface
 @Injectable()
 export class VehicleRepository extends RepositoryFactory<
   IVehicle,
+  VehicleDocument,
   {
     Query: VehicleQueryInterface;
     Update: VehicleUpdateInterface;

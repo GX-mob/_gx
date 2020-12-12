@@ -128,7 +128,7 @@ export class UserService {
 
     /**
      * Validate CPF
-     * * Only on the first ride the CPF is consulted with the government api
+     * * Only before the first ride the CPF is consulted with the government api
      */
     if (!isValidCPF(cpf)) {
       throw new InvalidCPFException();

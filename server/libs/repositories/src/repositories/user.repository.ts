@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { IUser } from "@shared/interfaces";
-import { UserModel } from "../schemas/user";
+import { UserModel, UserDocument } from "../schemas/user";
 
 export interface UserQueryInterface
   extends Partial<Pick<IUser, "_id" | "pid" | "phones" | "emails" | "cpf">> {}
@@ -17,6 +17,7 @@ export interface UserCreateInterface
 @Injectable()
 export class UserRepository extends RepositoryFactory<
   IUser,
+  UserDocument,
   {
     Query: UserQueryInterface;
     Update: UserUpdateInterface;

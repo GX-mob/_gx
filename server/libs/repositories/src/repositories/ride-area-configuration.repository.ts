@@ -2,7 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { IRideAreaConfiguration } from "@shared/interfaces";
-import { RideAreaConfigurationModel } from "../schemas/ride-area-configuration";
+import {
+  RideAreaConfigurationModel,
+  RideAreaConfigurationDocument,
+} from "../schemas/ride-area-configuration";
 
 export interface IRideAreaConfigurationQuery
   extends Partial<Pick<IRideAreaConfiguration, "area">> {}
@@ -17,6 +20,7 @@ export interface IRideAreaConfigurationCreate
 @Injectable()
 export class RideAreaConfigurationRepository extends RepositoryFactory<
   IRideAreaConfiguration,
+  RideAreaConfigurationDocument,
   {
     Query: IRideAreaConfigurationQuery;
     Update: IRideAreaConfigurationUpdate;

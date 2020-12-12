@@ -40,10 +40,10 @@ export enum RidePayMethods {
 }
 
 export enum RideStatus {
-  CREATED,
-  RUNNING,
-  COMPLETED,
-  CANCELED,
+  CREATED = "created",
+  RUNNING = "running",
+  COMPLETED = "completed",
+  CANCELED = "canceled",
 }
 
 export interface IRideCosts {

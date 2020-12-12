@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { IRide } from "@shared/interfaces";
-import { RideModel } from "../schemas/ride";
+import { RideModel, RideDocument } from "../schemas/ride";
 
 export interface RideQueryInterface
   extends Partial<Pick<IRide, "_id" | "pid">> {}
@@ -14,6 +14,7 @@ export interface RideCreateInterface
 @Injectable()
 export class RideRepository extends RepositoryFactory<
   IRide,
+  RideDocument,
   {
     Query: RideQueryInterface;
     Update: RideUpdateInterface;
