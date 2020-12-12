@@ -5,7 +5,7 @@ x-gxweb-dev: &gxweb-dev
     context: ../
     dockerfile: ./server/Dockerfile
   volumes:
-    - .:/usr/src/app
+    - .:/usr/src/app:z
   networks:
     - gxnet
   environment:
@@ -40,7 +40,7 @@ services:
     image: mongo
     restart: always
     volumes:
-      - mongo:/data
+      - mongo:/data:z
     environment:
       MONGO_INITDB_DATABASE: config
     networks:
