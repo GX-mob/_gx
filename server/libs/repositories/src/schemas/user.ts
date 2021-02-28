@@ -17,7 +17,7 @@
  */
 import { Document, Schema } from "mongoose";
 import { Entities } from "../connections";
-import { IUser, UserRoles } from "@shared/interfaces";
+import { IUser, UserRoles } from "@core/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import shortid from "shortid";
 import validator from "validator";

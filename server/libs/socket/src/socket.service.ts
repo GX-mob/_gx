@@ -14,7 +14,7 @@ import {
   IDispatchedBroadcastedEvent,
 } from "./types";
 import { MODULE_COMMUNICATION_EVENTS, DEFAULT_ACK_TIMEOUT } from "./constants";
-import { Callback } from "@shared/types/helpers";
+import { Callback } from "@core/types/helpers";
 
 @Injectable()
 export class SocketService<

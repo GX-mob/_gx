@@ -33,7 +33,7 @@ import {
   IAuthIdentifyResponse,
   IAuthPasswordResponse,
   IAuthCodeResponse,
-} from "@shared/interfaces";
+} from "@core/interfaces";
 import { AuthService } from "@app/auth";
 import { UserService } from "../user.service";
 

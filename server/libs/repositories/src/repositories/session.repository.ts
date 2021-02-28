@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { ISession } from "@shared/interfaces";
+import { ISession } from "@core/interfaces";
 import { SessionModel, SessionDocument } from "../schemas/session";
 
 export interface SessionQueryInterface

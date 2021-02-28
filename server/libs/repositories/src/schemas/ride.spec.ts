@@ -3,7 +3,7 @@
  *
  * @group unit/models/ride
  */
-import { RideTypes, RidePayMethods } from "@shared/interfaces";
+import { RideTypes, RidePayMethods } from "@core/interfaces";
 import { RideModel } from "./ride";
 
 describe("Model: Ride", () => {

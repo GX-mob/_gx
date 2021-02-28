@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IPendencie } from "@shared/interfaces";
+import { IPendencie } from "@core/interfaces";
 import { PendencieModel, PendencieDocument } from "../schemas/pendencie";
 
 export interface PendencieQueryInterface

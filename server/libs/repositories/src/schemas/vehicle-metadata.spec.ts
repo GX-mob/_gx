@@ -1,7 +1,7 @@
 /**
  * @group unit/models/vehicle-metadata
  */
-import { VehicleTypes } from "@shared/interfaces";
+import { VehicleTypes } from "@core/interfaces";
 import { VehicleMetadataModel } from "./vehicle-metadata";
 
 describe("Model: Vehicle", () => {

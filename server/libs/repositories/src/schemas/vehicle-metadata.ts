@@ -1,4 +1,4 @@
-import { IVehicleMetadata, VehicleTypes } from "@shared/interfaces";
+import { IVehicleMetadata, VehicleTypes } from "@core/interfaces";
 import { Document, Schema } from "mongoose";
 import { Entities } from "../connections";
 

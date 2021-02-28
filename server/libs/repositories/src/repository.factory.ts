@@ -100,7 +100,7 @@ export class RepositoryFactory<
    * @param query
    * @param data
    */
-  async update(query: Configuration["Query"], data: Configuration["Update"]) {
+  async updateByQuery(query: Configuration["Query"], data: Configuration["Update"]) {
     await this.model.updateOne(
       query as FilterQuery<ModelDocument>,
       (data as unknown) as UpdateQuery<ModelDocument>,

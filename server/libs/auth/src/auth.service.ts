@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import { IUser, UserRoles, ISession } from "@shared/interfaces";
+import { IUser, EUserRoles, ISession } from "@core/interfaces";
 import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
@@ -126,7 +126,7 @@ export class AuthService {
     return session;
   }
 
-  public hasPermission(session: ISession, roles: UserRoles[]) {
+  public hasPermission(session: ISession, roles: EUserRoles[]) {
     return !!roles.find((role) => session.user.roles.includes(role));
   }
 

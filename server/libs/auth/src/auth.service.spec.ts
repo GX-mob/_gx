@@ -7,7 +7,7 @@ import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { CacheModule, CacheService, RedisService } from "@app/cache";
 import { AuthService } from "./auth.service";
-import { UserRoles, ISession } from "@shared/interfaces";
+import { EUserRoles, ISession } from "@core/interfaces";
 import {
   SessionRepository,
   RepositoryModule,
@@ -104,15 +104,15 @@ describe("AuthService", () => {
 
   it("should check permission", () => {
     const session1 = ({
-      user: { roles: [UserRoles.VOYAGER] },
+      user: { roles: [EUserRoles.VOYAGER] },
     } as unknown) as ISession;
     const session2 = ({
-      user: { roles: [UserRoles.VOYAGER, UserRoles.DRIVER] },
+      user: { roles: [EUserRoles.VOYAGER, EUserRoles.DRIVER] },
     } as unknown) as ISession;
-    const group1 = [UserRoles.VOYAGER];
-    const group2 = [UserRoles.DRIVER];
-    const group3 = [UserRoles.DRIVER, "admin"] as UserRoles[];
-    const group4 = (["su"] as unknown) as UserRoles[];
+    const group1 = [EUserRoles.VOYAGER];
+    const group2 = [EUserRoles.DRIVER];
+    const group3 = [EUserRoles.DRIVER, "admin"] as EUserRoles[];
+    const group4 = (["su"] as unknown) as EUserRoles[];
 
     expect(service.hasPermission(session1, group1)).toBeTruthy();
     expect(service.hasPermission(session1, group2)).toBeFalsy();

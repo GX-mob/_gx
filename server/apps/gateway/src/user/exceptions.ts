@@ -3,7 +3,7 @@ import {
   UnprocessableEntityException,
   ConflictException,
 } from "@nestjs/common";
-import { HTTP_EXCEPTIONS_MESSAGES } from "@shared/http-exceptions";
+import { HTTP_EXCEPTIONS_MESSAGES } from "@core/exceptions-messages-codes";
 
 export class UserNotFoundException extends NotFoundException {
   constructor() {

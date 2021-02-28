@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IRideAreaConfiguration } from "@shared/interfaces";
+import { IRideAreaConfiguration } from "@core/interfaces";
 import {
   RideAreaConfigurationModel,
   RideAreaConfigurationDocument,

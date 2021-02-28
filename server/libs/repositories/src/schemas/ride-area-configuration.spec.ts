@@ -3,7 +3,7 @@
  *
  * @group unit/models/prices
  */
-import { IRideTypeConfiguration } from "@shared/interfaces";
+import { IRideTypeConfiguration } from "@core/interfaces";
 import { RideAreaConfigurationModel } from "./ride-area-configuration";
 
 describe("Model: Price", () => {

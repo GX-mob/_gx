@@ -9,7 +9,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthService } from "./auth.service";
 import { getClientIp } from "request-ip";
 import { FastifyRequest } from "fastify";
-import { UserRoles } from "@shared/interfaces";
+import { EUserRoles } from "@core/interfaces";
 import { ROLES_METATADA_KEY } from "./constants";
 
 @Injectable()
@@ -20,10 +20,10 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const roles = this.reflector.get<UserRoles[]>(
+    const roles = this.reflector.get<EUserRoles[]>(
       ROLES_METATADA_KEY,
       context.getHandler(),
-    ) || [UserRoles.VOYAGER];
+    ) || [EUserRoles.VOYAGER];
 
     const request: FastifyRequest = context.switchToHttp().getRequest();
 

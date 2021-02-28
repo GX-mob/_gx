@@ -2,7 +2,7 @@ import { Controller, UseGuards, Patch, Body } from "@nestjs/common";
 import { UserService } from "../user.service";
 import { AuthGuard, User } from "@app/auth";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "../user.dto";
-import { IUser } from "@shared/interfaces";
+import { IUser } from "@core/interfaces";
 
 @Controller("user/secutiry")
 @UseGuards(AuthGuard)

@@ -1,4 +1,4 @@
-import { IVehicle } from "@shared/interfaces";
+import { IVehicle } from "@core/interfaces";
 import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
 import { UserModel } from "./user";

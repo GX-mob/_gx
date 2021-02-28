@@ -17,7 +17,7 @@
  */
 import { Document, Schema } from "mongoose";
 import { Sessions } from "../connections";
-import { ISession } from "@shared/interfaces";
+import { ISession } from "@core/interfaces";
 import { UserModel } from "./user";
 
 export interface SessionDocument extends ISession, Document {}

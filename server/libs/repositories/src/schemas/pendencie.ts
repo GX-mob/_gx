@@ -1,5 +1,5 @@
 import { Document, Schema } from "mongoose";
-import { IPendencie } from "@shared/interfaces";
+import { IPendencie } from "@core/interfaces";
 import { Operational } from "../connections";
 import { UserModel } from "./user";
 

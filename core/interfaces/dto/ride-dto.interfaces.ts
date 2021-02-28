@@ -1,4 +1,4 @@
-import { IPendencie } from "../models/pendencie.interface";
+//import { IPendencie } from "../models/pendencie.interface";
 import {
   IRide,
   IRoute,
@@ -27,5 +27,5 @@ export interface ICreateRideDto {
 export interface ICreatedRideDto {
   pid: IRide["pid"];
   costs: IRide["costs"];
-  pendencies: IPendencie[];
+  //pendencies: IPendencie[];
 }

@@ -23,9 +23,12 @@ import {
   RemoveContactNotAllowed,
 } from "./exceptions";
 import { util } from "@app/helpers";
-import { IUser } from "@shared/interfaces";
+import { IUser } from "@core/interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import validator from "validator";
+
+import { UserSecurity } from "@core/domain/user/user.security";
+import { UserContact } from "@core/domain/user/user.contact";
 
 type ContactTypes = "email" | "phone";
 
@@ -40,7 +43,6 @@ export class UserService {
   ) {}
 
   /**
-   * Find user by phone
    * @param phone
    * @throws [HTTP] UserNotFoundException
    * @returns <UserInterface> User
@@ -55,33 +57,6 @@ export class UserService {
     }
 
     return user;
-  }
-
-  hashPassword(password: string) {
-    return this.securePassword.hash(Buffer.from(password));
-  }
-
-  async assertPassword(user: IUser, password: string) {
-    const passwordValue = Buffer.from(password);
-    const currentPassword = Buffer.from(user.password as string, "base64");
-    const result = await this.securePassword.verify(
-      passwordValue,
-      currentPassword,
-    );
-
-    switch (result) {
-      case SecurePassword.VALID:
-        return;
-      case SecurePassword.VALID_NEEDS_REHASH:
-        const newHash = await this.hashPassword(password);
-        await this.userRepository.update(
-          { pid: user.pid },
-          { password: newHash.toString("base64") },
-        );
-        return;
-      default:
-        throw new WrongPasswordException();
-    }
   }
 
   /**
@@ -151,60 +126,28 @@ export class UserService {
     return this.sessionRepository.updateCache({ user: id });
   }
 
-  async updatePassword(user: IUser, current: string, newPassword: string) {
-    if (!user.password) {
-      const password = await this.hashPassword(newPassword);
+  async updatePassword(userData: IUser, currentRawPassword: string, newRawPassword: string) {
+    const user = new UserSecurity(userData);
 
-      await this.userRepository.update(
-        { _id: user._id },
-        { password: password.toString("base64") },
-      );
+    await user.upsertPassword(currentRawPassword, newRawPassword)
 
-      return;
-    }
-
-    await this.assertPassword(user, current);
-
-    const compareResult = await this.securePassword.verify(
-      Buffer.from(newPassword),
-      Buffer.from(user.password, "base64"),
-    );
-
-    if (compareResult === SecurePassword.VALID) {
-      throw new UnchangedPasswordException();
-    }
-
-    const password = await this.hashPassword(newPassword);
-
-    await this.userRepository.model.updateOne(
-      { _id: user._id },
-      { password: password.toString("base64") },
-    );
+    this.userRepository.update(user);
   }
 
-  enable2FA(user: IUser, target: string) {
-    this.validateContact(target);
-    this.passwordRequired(user);
+  enable2FA(userData: IUser, target: string) {
+    const user = new UserSecurity(userData);
 
-    if (!user.phones.includes(target) && !user.emails.includes(target)) {
-      throw new NotOwnContactException();
-    }
+    user.enable2FA(target);
 
-    return this.userRepository.update({ _id: user._id }, { "2fa": target });
+    return this.userRepository.update(user);
+
   }
 
-  async disable2FA(user: IUser, password: string) {
-    this.passwordRequired(user);
+  async disable2FA(userData: IUser, rawSentPassword: string) {
+    const user = new UserSecurity(userData);
 
-    await this.assertPassword(user, password);
-
-    return this.userRepository.update({ _id: user._id }, { "2fa": "" });
-  }
-
-  private passwordRequired(user: IUser) {
-    if (!user.password) {
-      throw new PasswordRequiredException();
-    }
+    await user.disable2FA(rawSentPassword);
+    await this.userRepository.update(user);
   }
 
   /**
@@ -232,47 +175,24 @@ export class UserService {
     const field = this.getContactFieldName(type);
     const user = await this.userRepository.get({ [field]: contact });
     const user2 = await this.userRepository.get({ [field]: [contact] });
-    console.log("repository query", { [field]: contact });
-    console.log("repository response", user, user2);
 
     if (user) {
       throw new ContactRegistredException();
     }
   }
 
-  async addContact(user: IUser, contact: string, code: string) {
-    const type = await this.verifyContact(contact, code);
-    const field = this.getContactFieldName(type);
+  async addContact(userData: IUser, contact: string, code: string) {
+    const user = new UserContact(userData);
 
-    const update = {
-      [field]: [...(user[field] || []), contact],
-    };
+    user.addContact(contact);
 
-    await this.userRepository.update({ _id: user._id }, update);
+    return this.userRepository.update(user);
   }
 
-  async removeContact(user: IUser, contact: string, password: string) {
-    await this.assertPassword(user, password);
+  async removeContact(userData: IUser, contact: string, rawSentPassword: string) {
 
-    const type = this.validateContact(contact);
-    const field = this.getContactFieldName(type);
-
-    /**
-     * Prevent removing the last contact or
-     * the second factor authentication
-     */
-    if (
-      [...user.phones, ...user.emails].length === 1 ||
-      user["2fa"] === contact
-    ) {
-      throw new RemoveContactNotAllowed();
-    }
-
-    const updated = [...user[field]];
-    const index = updated.indexOf(contact);
-
-    updated.splice(index, 1);
-
-    await this.userRepository.update({ _id: user._id }, { [field]: updated });
+    const user = new UserContact(userData);
+    await user.removeContact(contact, rawSentPassword);
+    await this.userRepository.update(user);
   }
 }

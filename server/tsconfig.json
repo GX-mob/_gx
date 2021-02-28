@@ -30,7 +30,7 @@
       "@app/socket/*": ["libs/socket/src/*"],
       "@testing/testing": ["libs/testing/src"],
       "@testing/testing/*": ["libs/testing/src/*"],
-      "@shared/*": ["../shared/*"]
+      "@core/*": ["../core/*"]
     }
   }
 }

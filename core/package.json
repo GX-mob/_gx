@@ -1,0 +1,22 @@
+{
+  "name": "gx-core",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@brazilian-utils/brazilian-utils": "^1.0.0-rc.12",
+    "@nestjs/common": "^7.6.13",
+    "@types/secure-password": "^3.1.0",
+    "secure-password": "^4.0.0",
+    "typescript": "^4.2.2",
+    "validator": "^13.5.2"
+  },
+  "devDependencies": {
+    "@types/validator": "^13.1.3"
+  }
+}

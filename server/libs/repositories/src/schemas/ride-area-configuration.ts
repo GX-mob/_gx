@@ -1,6 +1,6 @@
 import { Document, Schema } from "mongoose";
 import { Configuration } from "../connections";
-import { IRideAreaConfiguration, RideTypes } from "@shared/interfaces";
+import { IRideAreaConfiguration, RideTypes } from "@core/interfaces";
 
 export interface RideAreaConfigurationDocument
   extends IRideAreaConfiguration,

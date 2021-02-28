@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IVehicle } from "@shared/interfaces";
+import { IVehicle } from "@core/interfaces";
 import { VehicleModel, VehicleDocument } from "../schemas/vehicle";
 import { VehicleMetadataModel } from "../schemas/vehicle-metadata";
 

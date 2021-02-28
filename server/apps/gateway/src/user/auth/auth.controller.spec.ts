@@ -20,7 +20,7 @@ import {
   IAuthPasswordResponse,
   IAuthCodeResponse,
   IUser,
-} from "@shared/interfaces";
+} from "@core/interfaces";
 import { UserModule } from "../user.module";
 import { UserService } from "../user.service";
 import { ContactDto } from "../user.dto";

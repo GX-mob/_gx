@@ -12,6 +12,7 @@ export interface IUserRegisterDto
   birth: string;
   terms: boolean;
   password?: string;
+  termsAcceptedVersion: string;
 }
 
 export interface IUserRegisterSuccessDto {

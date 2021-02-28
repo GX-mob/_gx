@@ -32,7 +32,7 @@ import {
   ContactVerificationCheckDto,
   UserRegisterDto,
 } from "../user.dto";
-import { IUserRegisterSuccessDto } from "@shared/interfaces";
+import { IUserRegisterSuccessDto } from "@core/interfaces";
 
 @Controller("user/register")
 export class UserRegisterController {

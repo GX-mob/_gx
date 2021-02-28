@@ -27,12 +27,12 @@
   "dependencies": {
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.11",
     "@google-cloud/storage": "^5.3.0",
-    "@nestjs/common": "^7.4.4",
+    "@nestjs/common": "^7.6.13",
     "@nestjs/config": "^0.5.0",
     "@nestjs/core": "^7.4.4",
     "@nestjs/mongoose": "^7.0.2",
     "@nestjs/platform-fastify": "^7.4.4",
-    "@nestjs/platform-socket.io": "^7.4.4",
+    "@nestjs/platform-socket.io": "^7.6.13",
     "@nestjs/websockets": "^7.4.4",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
@@ -65,7 +65,7 @@
     "shortid": "^2.2.15",
     "socket.io-redis": "^5.4.0",
     "spherical-geometry-js": "^2.0.0",
-    "twilio": "^3.49.1",
+    "twilio": "^3.57.0",
     "validator": "^13.1.1"
   },
   "devDependencies": {
@@ -153,7 +153,7 @@
       "@app/socket": "<rootDir>/libs/socket/src",
       "@testing/testing/(.*)": "<rootDir>/libs/testing/src/$1",
       "@testing/testing": "<rootDir>/libs/testing/src",
-      "@shared/(.*)": "<rootDir>/../shared/$1"
+      "@core/(.*)": "<rootDir>/../core/$1"
     }
   }
 }

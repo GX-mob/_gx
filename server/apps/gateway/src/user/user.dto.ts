@@ -5,6 +5,9 @@ import {
   IsString,
   ValidateIf,
   IsOptional,
+  IsEmail,
+  IsMobilePhone,
+  IsSemVer
 } from "class-validator";
 import {
   IAuthPasswordDto,
@@ -12,14 +15,20 @@ import {
   IContactVerificationCheckDto,
   IUser,
   IUserRegisterDto,
-  UserRoles,
-} from "@shared/interfaces";
+  EUserRoles,
+} from "@core/interfaces";
 import { Exclude } from "class-transformer";
 
 export class ContactDto implements IContactDto {
   @IsNotEmpty()
-  @IsString()
-  contact!: string;
+  @IsEmail()
+  @ValidateIf((o) => !o.mobilePhone)
+  email!: string;
+
+  @IsNotEmpty()
+  @IsMobilePhone()
+  @ValidateIf((o) => !o.email)
+  mobilePhone!: string;
 }
 
 export class ContactVerificationCheckDto
@@ -51,17 +60,18 @@ export class UserRegisterDto
   @IsString()
   cpf!: string;
 
-  @IsNotEmpty()
   @IsDateString()
   birth!: string;
 
-  @IsNotEmpty()
   @IsBoolean()
   terms!: boolean;
 
   @IsOptional()
   @IsString()
   password?: string;
+
+  @IsSemVer()
+  termsAcceptedVersion: string;
 }
 
 export class UserDto implements IUser {
@@ -69,12 +79,12 @@ export class UserDto implements IUser {
   pid!: string;
   firstName!: string;
   lastName!: string;
-  phones!: string[];
-  emails!: string[];
+  primaryEmail!: string;
+  primaryMobilePhone!: string;
   cpf!: string;
   birth!: Date;
   avatar!: string;
-  roles!: UserRoles[];
+  roles!: EUserRoles[];
   averageEvaluation!: number;
 
   @Exclude()

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IRide } from "@shared/interfaces";
+import { IRide } from "@core/interfaces";
 import { RideModel, RideDocument } from "../schemas/ride";
 
 export interface RideQueryInterface

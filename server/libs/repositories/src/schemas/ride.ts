@@ -26,7 +26,7 @@ import {
   RidePayMethods,
   IRoute,
   IRoutePoint,
-} from "@shared/interfaces";
+} from "@core/interfaces";
 import { UserModel } from "./user";
 
 class Route extends mongoose.SchemaType {
