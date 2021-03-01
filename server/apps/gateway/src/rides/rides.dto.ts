@@ -1,15 +1,18 @@
 import {
-  IRide,
-  RideTypes,
-  RidePayMethods,
-  IRoute,
-  IRoutePoint,
   IGetRideInfoDto,
   IGetRidePricesDto,
   ICreateRideDto,
-  IPendencie,
-  RideStatus,
-} from "@shared/interfaces";
+} from "@core/interfaces";
+
+import {
+  IRide,
+  ERideTypes,
+  ERidePayMethods,
+  ERideStatus,
+  IRoute,
+  IRoutePoint,
+} from "@core/domain/ride"
+
 import {
   ValidateNested,
   IsNotEmpty,
@@ -19,7 +22,7 @@ import {
   IsArray,
 } from "class-validator";
 import { Exclude, Expose } from "class-transformer";
-import { UserRoles } from "@shared/interfaces";
+import { EUserRoles } from "@core/domain/user";
 
 class Point implements IRoutePoint {
   @IsArray()
@@ -72,11 +75,11 @@ export class CreateRideDto implements ICreateRideDto {
   @ValidateNested()
   route!: Route;
 
-  @IsEnum(RideTypes)
-  type!: RideTypes;
+  @IsEnum(ERideTypes)
+  type!: ERideTypes;
 
-  @IsEnum(RidePayMethods)
-  payMethod!: RidePayMethods;
+  @IsEnum(ERidePayMethods)
+  payMethod!: ERidePayMethods;
 
   @IsNotEmpty()
   country!: IRide["country"];
@@ -91,25 +94,19 @@ export class CreateRideDto implements ICreateRideDto {
 export class RideInfoDto implements IRide {
   _id!: any;
   pid!: string;
-  @Expose({ groups: [UserRoles.DRIVER] })
+
+  @Expose({ groups: [EUserRoles.Driver] })
   voyager!: any;
-  @Expose({ groups: [UserRoles.DRIVER] })
+
+  @Expose({ groups: [EUserRoles.Driver] })
   route!: IRoute;
-  /**
-   * * 1 = Normal
-   * * 2 = VIG - Very important gx
-   */
-  @Expose({ groups: [UserRoles.DRIVER] })
-  type!: RideTypes;
-  /**
-   * * 1 = Money
-   * * 2 = Credit card
-   */
-  @Expose({ groups: [UserRoles.DRIVER] })
-  payMethod!: RidePayMethods;
-  /**
-   * Ride costs
-   */
+
+  @Expose({ groups: [EUserRoles.Driver] })
+  type!: ERideTypes;
+
+  @Expose({ groups: [EUserRoles.Driver] })
+  payMethod!: ERidePayMethods;
+
   costs!: IRide["costs"];
 
   @Exclude()
@@ -119,11 +116,9 @@ export class RideInfoDto implements IRide {
   @Exclude()
   subArea!: string;
   @Exclude()
-  status!: RideStatus;
-  @Expose({ groups: [UserRoles.VOYAGER] })
+  status!: ERideStatus;
+  @Expose({ groups: [EUserRoles.Voyager] })
   driver?: any;
-  @Expose({ groups: [UserRoles.VOYAGER] })
-  pendencies?: IPendencie[];
 
   constructor(ride: IRide) {
     Object.assign(this, ride);

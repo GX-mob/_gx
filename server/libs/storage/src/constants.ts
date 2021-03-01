@@ -1,1 +1,1 @@
-export const DEFAULT_URL_PREFIX = "https://storage.googleapis.com/";
+export const STORAGE_BASE_URL = "https://storage.googleapis.com/";

@@ -189,7 +189,7 @@ export class StateService {
       connectionData = await this.getConnectionData(socketId);
     }
 
-    const vehicle = await this.vehicleRepository.get({ _id: setup.vehicleId });
+    const vehicle = await this.vehicleRepository.find({ _id: setup.vehicleId });
 
     if (!vehicle) {
       throw new VehicleNotFoundException(setup.vehicleId);
@@ -290,7 +290,7 @@ export class StateService {
     if (!offerResponse.response) {
       offer.ignoreds.push(driverConnectionData.pid);
 
-      const ride = await this.rideRepository.get({ pid: offer.ridePID });
+      const ride = await this.rideRepository.find({ pid: offer.ridePID });
 
       this.offerRide(offer, ride as IRide);
       return;
@@ -406,7 +406,7 @@ export class StateService {
     client: Socket,
     startOffer = true,
   ): Promise<boolean> {
-    const ride = await this.rideRepository.get({ pid: offer.ridePID });
+    const ride = await this.rideRepository.find({ pid: offer.ridePID });
 
     if (!ride) {
       throw new RideNotFoundException();

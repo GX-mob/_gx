@@ -1,52 +1,25 @@
 import { Injectable } from "@nestjs/common";
-import { utcToZonedTime } from "date-fns-tz";
-import {
-  IUser,
-  ICreateRideDto,
-  IRide,
-  IRideAreaConfiguration,
-  IRideTypeConfiguration,
-  RideTypes,
-  IPendencie,
-  IRideCosts,
-} from "@shared/interfaces";
+import { ICreateRideDto } from "@core/interfaces";
 import {
   RideRepository,
-  PendencieRepository,
   RideAreaConfigurationRepository,
 } from "@app/repositories";
 import { util } from "@app/helpers";
-import { CreateRideDto } from "./rides.dto";
+import { UnsupportedAreaException } from "@core/domain/ride";
+import { IUser } from "@core/domain/user";
 import {
-  BUSINESS_TIME_HOURS,
-  AMOUT_DECIMAL_ADJUST,
-  LONG_RIDE,
-} from "../constants";
-
-import {
-  InvalidRideTypeException,
-  UnsupportedAreaException,
-  RideNotFoundException,
-} from "./exceptions";
-
-type CalculatedPriceAspect = {
-  total: number;
-  aditionalForLongRide: number;
-  aditionalForOutBusinessTime: number;
-};
-
-type RideBasePrices = {
-  duration: CalculatedPriceAspect;
-  distance: CalculatedPriceAspect;
-};
+  IRide,
+  IRideAreaConfiguration,
+  IRideTypeConfiguration,
+  RideCreate,
+} from "@core/domain/ride";
 
 @Injectable()
 export class RidesService {
-  readonly areas: { [area: string]: IRideAreaConfiguration } = {};
+  readonly areas: IRideAreaConfiguration[] = [];
 
   constructor(
     private rideRepository: RideRepository,
-    private pendencieRepository: PendencieRepository,
     private rideAreaConfigurationRepository: RideAreaConfigurationRepository,
   ) {
     this.init();
@@ -54,60 +27,23 @@ export class RidesService {
 
   private async init() {
     /**
-     * Get and store all rides types and prices
+     * Get and store all area and subArea configuration for all rides types and prices in memory
      */
-    const prices: any[] = await this.rideAreaConfigurationRepository.model
+    const prices = await this.rideAreaConfigurationRepository.model
       .find()
-      .lean();
+      .lean<IRideAreaConfiguration>();
 
-    if (!prices.length) {
-      // throw new Error("Empty rides types list");
-    }
-
-    prices.forEach((price) => {
-      this.areas[price.area] = price;
-    });
+    this.areas.push(...prices);
   }
 
   async getRideByPid(pid: IRide["pid"]) {
-    return this.rideRepository.get({ pid });
+    return this.rideRepository.find({ pid });
   }
 
-  async create(userId: IUser["_id"], data: ICreateRideDto) {
-    const { route, type, payMethod, country, area, subArea } = data;
-    const pendencies = await this.getUserPendencies(userId);
+  async create(user: IUser, data: ICreateRideDto) {
+    const rideCreate = new RideCreate(user, this.areas, data);
 
-    return this.rideRepository.create({
-      voyager: userId,
-      route,
-      type,
-      pendencies,
-      payMethod,
-      country,
-      area,
-      subArea,
-      costs: await this.calculateRideCosts(userId, data, pendencies),
-    });
-  }
-
-  private async calculateRideCosts(
-    userId: string,
-    rideData: ICreateRideDto,
-    pendencies?: IPendencie[],
-  ): Promise<IRideCosts> {
-    pendencies = pendencies || (await this.getUserPendencies(userId));
-
-    const rideCosts = this.getRideCosts(rideData);
-    const base = rideCosts.duration.total + rideCosts.distance.total;
-    const total = pendencies.reduce((currentAmount, pendencie) => {
-      return currentAmount + pendencie.amount;
-    }, base);
-
-    return { ...rideCosts, base, total };
-  }
-
-  private getUserPendencies(issuer: string) {
-    return this.pendencieRepository.model.find({ issuer }).lean();
+    return this.rideRepository.create(rideCreate);
   }
 
   /**
@@ -122,11 +58,13 @@ export class RidesService {
     area: string,
     subArea?: string,
   ): IRideTypeConfiguration[] {
-    if (!util.hasProp(this.areas, area)) {
+    const areaPrices = this.areas.find(
+      (areaConfig) => areaConfig.area === area,
+    );
+
+    if (!areaPrices) {
       throw new UnsupportedAreaException();
     }
-
-    const areaPrices = this.areas[area];
 
     const response =
       subArea && util.hasProp(areaPrices.subAreas, subArea)
@@ -134,142 +72,5 @@ export class RidesService {
         : areaPrices.general;
 
     return response;
-  }
-
-  getRideCosts(request: CreateRideDto): RideBasePrices {
-    const { type, area, subArea } = request;
-
-    /**
-     * The costs of ride type
-     */
-    const timezone = this.areas[area].timezone;
-    const pricesOfRidesType = this.getPricesOfRidesType(area, subArea);
-    const costs = this.getCostsOfRideType(pricesOfRidesType, type);
-    const isBusinessTime = this.isBusinessTime(timezone);
-    const duration = this.durationPrice(
-      request.route.duration,
-      costs,
-      isBusinessTime,
-    );
-    const distance = this.distancePrice(
-      request.route.distance,
-      costs,
-      isBusinessTime,
-    );
-
-    return { duration, distance };
-  }
-
-  getCostsOfRideType(
-    pricesOfRidesType: IRideTypeConfiguration[],
-    type: RideTypes,
-  ) {
-    const costs = pricesOfRidesType.find((price) => price.type === type);
-
-    if (!costs) {
-      throw new InvalidRideTypeException();
-    }
-
-    return costs;
-  }
-
-  isBusinessTime(timezone: string, date: Date = new Date()) {
-    const zonedDate = utcToZonedTime(date, timezone);
-    const hour = zonedDate.getHours();
-    const isSunday = zonedDate.getDay() === 0;
-
-    if (isSunday) {
-      return false;
-    }
-
-    return hour >= BUSINESS_TIME_HOURS.START && hour <= BUSINESS_TIME_HOURS.END;
-  }
-
-  /**
-   *
-   * @param duration In minutes
-   * @param price Fares of ride type
-   * @param isBusinessTime
-   */
-  durationPrice(
-    duration: number,
-    price: IRideTypeConfiguration,
-    isBusinessTime: boolean,
-  ): CalculatedPriceAspect {
-    /**
-     * Default price multiplier
-     */
-    let multipler = price.perMinute;
-    let aditionalForLongRide = 0;
-    let aditionalForOutBusinessTime = 0;
-
-    /**
-     * Aditional multipler to long rides
-     */
-    if (duration > LONG_RIDE.MINUTES) {
-      multipler += price.minuteMultipler;
-      aditionalForLongRide = duration * price.minuteMultipler;
-    }
-
-    /**
-     * Aditional fare to non business time rides
-     */
-    if (!isBusinessTime) {
-      multipler += price.overBusinessTimeMinuteAdd;
-      aditionalForOutBusinessTime = duration * price.minuteMultipler;
-    }
-
-    return {
-      total: duration * multipler,
-      aditionalForLongRide,
-      aditionalForOutBusinessTime,
-    };
-  }
-
-  /**
-   *
-   * @param distance in KM
-   * @param price Fares of ride type
-   * @param isBusinessTime
-   */
-  distancePrice(
-    distance: number,
-    price: IRideTypeConfiguration,
-    isBusinessTime: boolean,
-  ): CalculatedPriceAspect {
-    /**
-     * Default price multiplier
-     */
-    let multipler = price.perKilometer;
-    let aditionalForLongRide = 0;
-    let aditionalForOutBusinessTime = 0;
-
-    /**
-     * Aditional fare multiplier for long rides
-     */
-    if (distance > LONG_RIDE.DISTANCE_KM) {
-      multipler += price.overBusinessTimeKmAdd;
-      aditionalForLongRide = distance * price.kilometerMultipler;
-    }
-
-    /**
-     * Aditional fare to non business time rides
-     */
-    if (!isBusinessTime) {
-      multipler += price.overBusinessTimeKmAdd;
-      aditionalForOutBusinessTime = distance * price.overBusinessTimeKmAdd;
-    }
-
-    return {
-      total: util.decimalAdjust(multipler * distance, AMOUT_DECIMAL_ADJUST),
-      aditionalForLongRide: util.decimalAdjust(
-        aditionalForLongRide,
-        AMOUT_DECIMAL_ADJUST,
-      ),
-      aditionalForOutBusinessTime: util.decimalAdjust(
-        aditionalForOutBusinessTime,
-        AMOUT_DECIMAL_ADJUST,
-      ),
-    };
   }
 }

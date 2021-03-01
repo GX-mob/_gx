@@ -9,7 +9,7 @@ import {
   HttpCode,
 } from "@nestjs/common";
 import { AuthGuard, User } from "@app/auth";
-import { IUser } from "@shared/interfaces";
+import { IUser } from "@core/domain/user";
 import { ContactDto, ContactVerificationCheckDto } from "../user.dto";
 import { UserService } from "../user.service";
 import { RemoveContactDto } from "../user.dto";
@@ -22,7 +22,7 @@ export class UserContactController {
   @Get("verify/:contact")
   async verifyContactRequest(@Param() { contact }: ContactDto) {
     await this.usersService.checkInUseContact(contact);
-    await this.usersService.requestContactVerify(contact);
+    await this.usersService.requestContactVerification(contact);
   }
 
   @Put("confirm")

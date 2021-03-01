@@ -15,68 +15,57 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Document, Schema } from "mongoose";
+import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
-import { IUser, UserRoles } from "@core/interfaces";
-import { isValidCPF } from "@brazilian-utils/brazilian-utils";
+import { IUser, EUserRoles, EAccountMode, EAvailableCountries } from "@core/domain/user";
+import { AccountVerificationModel } from "./account-verification.model";
 import shortid from "shortid";
-import validator from "validator";
 
 export interface UserDocument extends IUser, Document {}
 
-export const UserSchema: Schema = new Schema(
+const RolesSchema: Schema = new Schema({
+  type: [String],
+  enum: Object.values(EUserRoles)
+})
+
+export const UserSchema: Schema = new Schema<IUser>(
   {
     pid: { type: String, default: shortid.generate, unique: true },
+    parentAccount: { type: Types.ObjectId, ref: "Users" },
+    accountVerifications: { type: [Types.ObjectId], ref: AccountVerificationModel, default: [] },
+    country: { type: String, enum: Object.values(EAvailableCountries), required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    cpf: {
+    federalID: {
       type: String,
       required: true,
       unique: true,
-      validate: {
-        validator(v: string) {
-          return isValidCPF(v);
-        },
-        message(props) {
-          return `${props.value} isn't a valid cpf`;
-        },
-      },
     },
-    phones: {
-      type: Array,
-      of: String,
-      validate: {
-        /**
-         * Validate all mobile phone numbers in the list
-         */
-        validator: (v: string[]) =>
-          v.filter((phone) => validator.isMobilePhone(phone)).length ===
-          v.length,
-        message: (props) => `${props.value} has an invalid mobile phone`,
-      },
-      required: true,
+    primaryMobilePhone: {
+      type: String,
       unique: true,
     },
-    emails: {
+    secondariesMobilePhones: {
       type: Array,
       of: String,
-      validate: {
-        /**
-         * Validate all emails in the list
-         */
-        validator: (v: string[]) =>
-          v.length === 0 || // empty
-          v.filter((email) => validator.isEmail(email)).length === v.length,
-        message: (props) => `${props.value} has an invalid email`,
-      },
+      default: []
+    },
+    primaryEmail: {
+      type: String,
+      unique: true,
+    },
+    secondariesEmails: {
+      type: Array,
+      of: String,
       default: [],
     },
-    avatar: String,
+    birth: { type: Date, required: true },
+    termsAcceptedVersion: { type: String, required: true },
     averageEvaluation: { type: Number, default: 0 },
+    avatar: String,
     createdAt: { type: Date, default: Date.now },
     updatedAt: Date,
-    birth: { type: Date, required: true },
-    roles: { type: Array, of: String, default: UserRoles.VOYAGER },
+    roles: { type: RolesSchema, default: [EUserRoles.Voyager] },
     password: String,
     ["2fa"]: String,
   },
@@ -86,7 +75,5 @@ export const UserSchema: Schema = new Schema(
 UserSchema.pre<UserDocument>("updateOne", function () {
   this.set({ updatedAt: new Date() });
 });
-
-export class User {}
 
 export const UserModel = Entities.model<UserDocument>("Users", UserSchema);

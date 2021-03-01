@@ -13,7 +13,8 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { ISession, IUser } from "@shared/interfaces";
+import { IUser } from "@core/domain/user";
+import { ISession } from "@core/interfaces"
 import { AuthGuard, User, Session } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { util } from "@app/helpers";
@@ -95,7 +96,7 @@ export class UserProfileController {
       }
     };
 
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       request.multipart(handler, () => {
         if (error) {
           this.logger.error(error);

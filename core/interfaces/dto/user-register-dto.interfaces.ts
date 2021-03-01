@@ -2,17 +2,11 @@ import {
   IContactDto,
   IContactVerificationCheckDto,
 } from "./common-dto.interfaces";
+import { IUser, TUserCreate } from "../../domain/user";
 
 export interface IUserRegisterDto
   extends IContactDto,
-    IContactVerificationCheckDto {
-  firstName: string;
-  lastName: string;
-  cpf: string;
-  birth: string;
-  terms: boolean;
-  password?: string;
-  termsAcceptedVersion: string;
+    IContactVerificationCheckDto, Omit<TUserCreate, "primaryMobilePhone" | "primaryEmail"> {
 }
 
 export interface IUserRegisterSuccessDto {

@@ -1,23 +1,23 @@
-import { IUser, AvailableCountries } from "../../interfaces";
-import { InvalidFederalIDException } from "./user.exceptions";
+import { IUser } from "./user.types";
 
 export class UserBasic {
   private initialData: IUser;
 
-  constructor(protected userData: IUser){
+  constructor(protected userData: IUser) {
     this.initialData = { ...userData };
   }
 
-  public getID(): string {
+  public getID(): any {
     return this.userData._id;
   }
 
-  public validate() {
-
-  }
+  public validate() {}
 
   public getUpdatedData(): Partial<IUser> {
-    return {}
+    return {};
   }
 
+  public getData(): IUser {
+    return this.userData;
+  }
 }

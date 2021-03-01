@@ -1,36 +1,70 @@
-import { RemoveContactNotAllowed } from "./user.exceptions";
-import { IUser } from "../../interfaces";
+import { IUser } from "./user.types";
+import {
+  NotOwnContactException,
+  RemoveContactNotAllowed,
+} from "./user.exceptions";
 import { UserSecurity } from "./user.security";
-import { ContactObject } from "../value-objects/contact.value-object";
+import {
+  ContactObject,
+  InvalidContactException,
+} from "../value-objects/contact.value-object";
 
-export function hasContact(userData: IUser, value: string) {
+export function checkIfHasContact(
+  userData: IUser,
+  value: string,
+): ContactObject {
   const contact = new ContactObject(value);
+  let hasContact: boolean;
 
   switch (contact.getType()) {
     case "email":
-      return (
+      hasContact =
         userData.primaryEmail === contact.value ||
-        userData.secondariesEmails.includes(contact.value)
-      );
+        userData.secondariesEmails.includes(contact.value);
     case "phone":
-      return (
+      hasContact =
         userData.primaryMobilePhone === contact.value ||
-        userData.secondariesMobilePhones.includes(contact.value)
-      );
+        userData.secondariesMobilePhones.includes(contact.value);
   }
+
+  if (!hasContact) {
+    throw new NotOwnContactException();
+  }
+
+  return contact;
 }
 
 export class UserContact extends UserSecurity {
-  public setPrimaryEmail(contact: string) {}
-  public setPrimaryMobilePhone(contact: string) {}
+  public setPrimaryEmail(contact: string) {
+    const contactObj = checkIfHasContact(this.userData, contact);
+
+    if (contactObj.getType() !== "email") {
+      throw new InvalidContactException();
+    }
+
+    this.userData.primaryEmail = contactObj.value;
+  }
+
+  public setPrimaryMobilePhone(contact: string) {
+    const contactObj = checkIfHasContact(this.userData, contact);
+
+    if (contactObj.getType() !== "phone") {
+      throw new InvalidContactException();
+    }
+
+    this.userData.primaryMobilePhone = contactObj.value;
+  }
 
   public async addContact(contact: string) {
     const contactObject = new ContactObject(contact);
-    contactObject.validate();
 
     switch (contactObject.getType()) {
-      case "email": this.addEmail(contactObject.value); break;
-      case "phone": this.addMobilePhone(contactObject.value); break;
+      case "email":
+        this.addEmail(contactObject.value);
+        break;
+      case "phone":
+        this.addMobilePhone(contactObject.value);
+        break;
     }
   }
 
@@ -54,13 +88,16 @@ export class UserContact extends UserSecurity {
     }
 
     const contactObject = new ContactObject(contact);
-    contactObject.validate();
 
     await super.assertPassword(rawSentPassword);
 
     switch (contactObject.getType()) {
-      case "email": this.removeEmail(contactObject.value); break;
-      case "phone": this.removeMobilePhone(contactObject.value); break;
+      case "email":
+        this.removeEmail(contactObject.value);
+        break;
+      case "phone":
+        this.removeMobilePhone(contactObject.value);
+        break;
     }
   }
 
@@ -70,13 +107,11 @@ export class UserContact extends UserSecurity {
   }
 
   private removeMobilePhone(mobileNumber: string) {
-    const index = this.userData.secondariesMobilePhones.indexOf(
-      mobileNumber,
-    );
+    const index = this.userData.secondariesMobilePhones.indexOf(mobileNumber);
     this.userData.secondariesMobilePhones.splice(index, 1);
   }
 
-  public hasContact(value: string): boolean {
-    return hasContact(this.userData, value);
+  public hasContact(value: string): ContactObject {
+    return checkIfHasContact(this.userData, value);
   }
 }

@@ -88,7 +88,7 @@ describe("RepositoryFactory", () => {
   });
 
   it("should get record from cache", async () => {
-    const user = (await userRepository.get({
+    const user = (await userRepository.find({
       _id: userCached._id,
     })) as IUser;
 
@@ -98,7 +98,7 @@ describe("RepositoryFactory", () => {
   it("should get non-cached record", async () => {
     const nonCached = await UserModel.create(mockUser());
 
-    const user = (await userRepository.get({
+    const user = (await userRepository.find({
       _id: nonCached._id,
     })) as IUser;
 
@@ -112,7 +112,7 @@ describe("RepositoryFactory", () => {
   });
 
   it("get by a linking key", async () => {
-    const user2 = (await userRepository.get({
+    const user2 = (await userRepository.find({
       phones: userCached.phones[0],
     })) as IUser;
 
@@ -133,7 +133,7 @@ describe("RepositoryFactory", () => {
   });
 
   it("should do auto populate", async () => {
-    const sessionPopulated = (await sessionRepository.get({
+    const sessionPopulated = (await sessionRepository.find({
       _id: session._id,
     })) as ISession;
 
@@ -147,7 +147,7 @@ describe("RepositoryFactory", () => {
 
     await userRepository.remove(query);
 
-    const user = (await userRepository.get(query)) as null;
+    const user = (await userRepository.find(query)) as null;
 
     expect(user).toBe(null);
   });

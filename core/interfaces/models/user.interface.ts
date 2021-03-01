@@ -1,6 +1,6 @@
 export enum EUserRoles {
-  VOYAGER = "VOYAGER",
-  DRIVER = "DRIVER",
+  Voyager = "voyager",
+  Driver = "voyager",
 }
 
 export enum EAccountMode {

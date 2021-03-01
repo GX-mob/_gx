@@ -1,4 +1,4 @@
-import { IUser } from "./user.interface";
+import { IUser } from "@core/domain/user";
 
 export interface ISession {
   _id: any;

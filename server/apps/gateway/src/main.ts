@@ -8,6 +8,7 @@ import fastifyRateLimit from "fastify-rate-limit";
 import { logger } from "@app/helpers";
 import { AppModule } from "./app.module";
 import { CacheService } from "@app/cache";
+import { DomainExceptionFilter } from "./domain-exception.filter";
 
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
@@ -31,6 +32,7 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalFilters(new DomainExceptionFilter());
   app.enableCors();
 
   return app;

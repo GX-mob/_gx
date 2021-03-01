@@ -104,14 +104,14 @@ describe("AuthService", () => {
 
   it("should check permission", () => {
     const session1 = ({
-      user: { roles: [EUserRoles.VOYAGER] },
+      user: { roles: [EUserRoles.Voyager] },
     } as unknown) as ISession;
     const session2 = ({
-      user: { roles: [EUserRoles.VOYAGER, EUserRoles.DRIVER] },
+      user: { roles: [EUserRoles.Voyager, EUserRoles.Driver] },
     } as unknown) as ISession;
-    const group1 = [EUserRoles.VOYAGER];
-    const group2 = [EUserRoles.DRIVER];
-    const group3 = [EUserRoles.DRIVER, "admin"] as EUserRoles[];
+    const group1 = [EUserRoles.Voyager];
+    const group2 = [EUserRoles.Driver];
+    const group3 = [EUserRoles.Driver, "admin"] as EUserRoles[];
     const group4 = (["su"] as unknown) as EUserRoles[];
 
     expect(service.hasPermission(session1, group1)).toBeTruthy();

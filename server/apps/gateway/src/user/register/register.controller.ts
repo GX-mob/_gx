@@ -15,16 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-  Controller,
-  Get,
-  Param,
-  Body,
-  Post,
-  HttpCode,
-  Ip,
-  Headers,
-} from "@nestjs/common";
+import { Controller, Body, Post, HttpCode, Ip, Headers } from "@nestjs/common";
 import { UserService } from "../user.service";
 import { AuthService } from "@app/auth";
 import {
@@ -33,6 +24,7 @@ import {
   UserRegisterDto,
 } from "../user.dto";
 import { IUserRegisterSuccessDto } from "@core/interfaces";
+import { UserCreate } from "@core/domain/user";
 
 @Controller("user/register")
 export class UserRegisterController {
@@ -45,14 +37,14 @@ export class UserRegisterController {
   @Post("verify")
   async phoneVerificationRequest(@Body() { contact }: ContactDto) {
     await this.usersService.checkInUseContact(contact);
-    await this.usersService.requestContactVerify(contact);
+    await this.usersService.requestContactVerification(contact);
   }
 
   @Post("check")
   async contactVerificationCheck(
     @Body() { contact, code }: ContactVerificationCheckDto,
   ) {
-    await this.usersService.verifyContact(contact, code);
+    await this.usersService.checkContactVerification(contact, code);
   }
 
   @Post()
@@ -61,35 +53,19 @@ export class UserRegisterController {
     @Headers("user-agent") userAgent: string,
     @Body() body: UserRegisterDto,
   ): Promise<IUserRegisterSuccessDto> {
-    const {
-      contact,
-      code,
-      firstName,
-      lastName,
-      cpf,
-      birth,
-      terms,
-      password,
-    } = body;
+    const userCreate = new UserCreate(body, "");
+
     /**
      * Ensures security checks
      */
-    await this.usersService.checkInUseContact(contact);
-    await this.usersService.verifyContact(contact, code);
-
-    const user = await this.usersService.create(
-      {
-        phones: contact,
-        firstName,
-        lastName,
-        cpf,
-        birth: new Date(birth),
-        ...(password ? { password } : {}),
-      },
-      terms,
+    //await this.usersService.checkInUseContact(userCreate.contactObject.value);
+    await this.usersService.checkContactVerification(
+      userCreate.contactObject.value,
+      body.code,
     );
 
-    const session = await this.sessionService.create(user, userAgent, ip);
+    const user = await this.usersService.create(userCreate);
+    const session = await this.sessionService.create(user._id, userAgent, ip);
 
     return {
       user: {

@@ -7,27 +7,24 @@ import {
   RideAreaConfigurationDocument,
 } from "../schemas/ride-area-configuration";
 
-export interface IRideAreaConfigurationQuery
-  extends Partial<Pick<IRideAreaConfiguration, "area">> {}
-export interface IRideAreaConfigurationUpdate
-  extends Pick<
-    IRideAreaConfiguration,
-    "general" | "longRideConditions" | "subAreas"
-  > {}
-export interface IRideAreaConfigurationCreate
-  extends Omit<IRideAreaConfiguration, "_id"> {}
+export type TRideAreaConfigurationQuery = Partial<
+  Pick<IRideAreaConfiguration, "area">
+>;
+export type TRideAreaConfigurationUpdate = Pick<
+  IRideAreaConfiguration,
+  "general" | "longRideConditions" | "subAreas"
+>;
+export type TRideAreaConfigurationCreate = Omit<IRideAreaConfiguration, "_id">;
 
 @Injectable()
 export class RideAreaConfigurationRepository extends RepositoryFactory<
   IRideAreaConfiguration,
   RideAreaConfigurationDocument,
-  {
-    Query: IRideAreaConfigurationQuery;
-    Update: IRideAreaConfigurationUpdate;
-    Create: IRideAreaConfigurationCreate;
-  }
+  TRideAreaConfigurationCreate,
+  TRideAreaConfigurationQuery,
+  TRideAreaConfigurationUpdate
 > {
-  constructor(private cacheService: CacheService) {
+  constructor(cacheService: CacheService) {
     super(cacheService, RideAreaConfigurationModel, {
       namespace: RideAreaConfigurationRepository.name,
     });

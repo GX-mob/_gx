@@ -4,24 +4,19 @@ import { RepositoryFactory } from "../repository.factory";
 import { ISession } from "@core/interfaces";
 import { SessionModel, SessionDocument } from "../schemas/session";
 
-export interface SessionQueryInterface
-  extends Partial<Pick<ISession, "_id" | "user">> {}
-export interface SessionUpdateInterface
-  extends Partial<Omit<ISession, "_id" | "user">> {}
-export interface SessionCreateInterface
-  extends Omit<ISession, "_id" | "active" | "createdAt"> {}
+export type TSessionQuery = Partial<Pick<ISession, "_id" | "user">>
+export type TSessionUpdate =  Partial<Omit<ISession, "_id" | "user">>
+export type TSessionCreate = Omit<ISession, "_id" | "active" | "createdAt">
 
 @Injectable()
 export class SessionRepository extends RepositoryFactory<
   ISession,
   SessionDocument,
-  {
-    Query: SessionQueryInterface;
-    Update: SessionUpdateInterface;
-    Create: SessionCreateInterface;
-  }
+  TSessionCreate,
+  TSessionQuery,
+  TSessionUpdate
 > {
-  constructor(private cacheService: CacheService) {
+  constructor(cacheService: CacheService) {
     super(cacheService, SessionModel, {
       namespace: SessionRepository.name,
       autoPopulate: ["user"],

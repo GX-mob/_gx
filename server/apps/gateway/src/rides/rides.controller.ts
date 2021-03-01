@@ -17,7 +17,7 @@ import {
   CreateRideDto,
   RideInfoDto,
 } from "./rides.dto";
-import { IUser, UserRoles } from "@shared/interfaces";
+import { IUser, EUserRoles } from "@core/domain/user";
 import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 
 @Controller("rides/")
@@ -34,7 +34,7 @@ export class RidesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     excludePrefixes: ["_"],
-    groups: [UserRoles.DRIVER],
+    groups: [EUserRoles.Driver],
   })
   @Get(":pid")
   async getRideDataHandler(
@@ -55,10 +55,10 @@ export class RidesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     excludePrefixes: ["_"],
-    groups: [UserRoles.VOYAGER],
+    groups: [EUserRoles.Voyager],
   })
   async createRideHandler(@User() user: IUser, @Body() body: CreateRideDto) {
-    const ride = await this.rideService.create(user._id, body);
+    const ride = await this.rideService.create(user, body);
     return new RideInfoDto(ride);
   }
 }

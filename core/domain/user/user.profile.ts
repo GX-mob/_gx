@@ -1,5 +1,4 @@
-import { IUser } from "../../interfaces/models/user.interface";
-import { UserBasic  } from "./user.basic";
+import { UserBasic } from "./user.basic";
 
 export class UserProfile extends UserBasic {
   // @TODO: name validations
@@ -16,7 +15,7 @@ export class UserProfile extends UserBasic {
   }
 
   setBirthDate(value: Date) {
-    this.userData.birth = value
+    this.userData.birth = value;
   }
 
   setProfileAvatar(value: string) {

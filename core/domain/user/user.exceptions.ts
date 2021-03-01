@@ -1,11 +1,9 @@
-import {
-  DomainException
-} from "../base-classes/domain.exception";
+import { DomainException } from "../base-classes/domain.exception";
 import { DomainExceptionsMessages } from "../exceptions/messages";
 
 export class PasswordRequiredException extends DomainException {
   constructor() {
-    super(DomainExceptionsMessages.PasswordRequired)
+    super(DomainExceptionsMessages.PasswordRequired);
   }
 }
 

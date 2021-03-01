@@ -36,6 +36,7 @@ import {
 } from "@core/interfaces";
 import { AuthService } from "@app/auth";
 import { UserService } from "../user.service";
+import { UserSecurity } from "@core/domain/user";
 
 @Controller("user/auth")
 export class UserAuthController {
@@ -51,7 +52,7 @@ export class UserAuthController {
     const { password } = await this.usersService.findByContact(contact);
 
     if (!password) {
-      await this.usersService.requestContactVerify(contact);
+      await this.usersService.requestContactVerification(contact);
       return { next: "code" };
     }
 
@@ -64,16 +65,17 @@ export class UserAuthController {
     @Headers("user-agent") userAgent: string,
     @Body() { contact, password }: AuthPasswordDto,
   ): Promise<IAuthPasswordResponse> {
-    const user = await this.usersService.findByContact(contact);
+    const userData = await this.usersService.findByContact(contact);
+    const userSecurity = new UserSecurity(userData);
+    
+    await userSecurity.assertPassword(password);
 
-    await this.usersService.assertPassword(user, password);
-
-    if (!user["2fa"]) {
-      const { token } = await this.sessionService.create(user, userAgent, ip);
+    if (!userData["2fa"]) {
+      const { token } = await this.sessionService.create(userData._id, userAgent, ip);
       return { next: "authorized", body: { token } };
     }
 
-    const target = await this.usersService.requestContactVerify(user["2fa"]);
+    const target = await this.usersService.requestContactVerification(userData["2fa"]);
     return { next: "code", body: { target } };
   }
 
@@ -83,10 +85,10 @@ export class UserAuthController {
     @Headers("user-agent") userAgent: string,
     @Body() { contact, code }: ContactVerificationCheckDto,
   ): Promise<IAuthCodeResponse> {
-    await this.usersService.verifyContact(contact, code);
+    await this.usersService.checkContactVerification(contact, code);
 
     const user = await this.usersService.findByContact(contact);
-    const { token } = await this.sessionService.create(user, userAgent, ip);
+    const { token } = await this.sessionService.create(user._id, userAgent, ip);
 
     return { next: "authorized", body: { token } };
   }

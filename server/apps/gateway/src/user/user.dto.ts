@@ -1,34 +1,31 @@
 import {
   IsBoolean,
-  IsDateString,
   IsNotEmpty,
   IsString,
   ValidateIf,
   IsOptional,
-  IsEmail,
-  IsMobilePhone,
-  IsSemVer
+  IsSemVer,
+  IsDate,
 } from "class-validator";
 import {
   IAuthPasswordDto,
   IContactDto,
   IContactVerificationCheckDto,
-  IUser,
   IUserRegisterDto,
-  EUserRoles,
 } from "@core/interfaces";
+import {
+  IUser,
+  EUserRoles,
+  EAccountMode,
+  EAvailableCountries,
+} from "@core/domain/user";
 import { Exclude } from "class-transformer";
+import { IAccountVerification } from "@core/interfaces/models/account-verifications.interface";
 
 export class ContactDto implements IContactDto {
   @IsNotEmpty()
-  @IsEmail()
-  @ValidateIf((o) => !o.mobilePhone)
-  email!: string;
-
-  @IsNotEmpty()
-  @IsMobilePhone()
-  @ValidateIf((o) => !o.email)
-  mobilePhone!: string;
+  @IsString()
+  contact!: string;
 }
 
 export class ContactVerificationCheckDto
@@ -58,10 +55,10 @@ export class UserRegisterDto
 
   @IsNotEmpty()
   @IsString()
-  cpf!: string;
+  federalID!: string;
 
-  @IsDateString()
-  birth!: string;
+  @IsDate()
+  birth!: Date;
 
   @IsBoolean()
   terms!: boolean;
@@ -71,24 +68,36 @@ export class UserRegisterDto
   password?: string;
 
   @IsSemVer()
-  termsAcceptedVersion: string;
+  termsAcceptedVersion!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  country!: EAvailableCountries;
 }
 
 export class UserDto implements IUser {
   _id!: string;
   pid!: string;
+  country!: EAvailableCountries;
+  accountMode!: EAccountMode;
   firstName!: string;
   lastName!: string;
   primaryEmail!: string;
+  secondariesEmails!: string[];
   primaryMobilePhone!: string;
-  cpf!: string;
+  secondariesMobilePhones!: string[];
+  federalID!: string;
   birth!: Date;
   avatar!: string;
   roles!: EUserRoles[];
   averageEvaluation!: number;
+  termsAcceptedVersion!: string;
 
   @Exclude()
   password!: string;
+
+  @Exclude()
+  accountVerifications!: IAccountVerification[];
 
   constructor(partial: Partial<IUser>) {
     Object.assign(this, partial);

@@ -30,13 +30,13 @@ export interface IRoute {
 }
 
 export enum RideTypes {
-  Normal = 1,
-  VIG = 2,
+  Normal = "normal",
+  VIG = "vig",
 }
 
 export enum RidePayMethods {
-  Money = 1,
-  CreditCard = 2,
+  Money = "money",
+  CreditCard = "credit-card",
 }
 
 export enum RideStatus {
@@ -72,24 +72,12 @@ export interface IRide {
   pid: string;
   voyager: IUser;
   route: IRoute;
-  /**
-   * * 1 = Normal
-   * * 2 = VIG - Very important gx
-   */
   type: RideTypes;
-  /**
-   * * 1 = Money
-   * * 2 = Credit card
-   */
   payMethod: RidePayMethods;
-  /**
-   * Ride costs
-   */
   costs: IRideCosts;
   country: string;
   area: string;
   subArea: string;
   status: RideStatus;
   driver?: IUser;
-  pendencies?: IPendencie[];
 }

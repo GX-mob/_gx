@@ -2,7 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import { IUser, EUserRoles, ISession } from "@core/interfaces";
+import { EUserRoles } from "@core/domain/user"
+import { ISession } from "@core/interfaces";
 import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
@@ -12,6 +13,7 @@ import {
   SessionNotFoundException,
   SessionDeactivatedException,
 } from "./exceptions";
+import { UserBasic } from "@core/domain/user";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
   jwt.verify,
@@ -47,17 +49,17 @@ export class AuthService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user: IUser,
+    user: UserBasic,
     userAgent?: string | null,
     ip?: string | null,
   ): Promise<{ token: string; session: ISession }> {
-    const session = await this.sessionRepository.create({
-      user: user._id,
+    const session = await this.sessionRepository.insert({
+      user: user.getID(),
       userAgent: userAgent || "",
       ips: ip ? [ip] : [],
     });
 
-    const token = await this.signToken({ sid: session._id, uid: user._id });
+    const token = await this.signToken({ sid: session._id, uid: user.getID() });
 
     return { token, session };
   }
@@ -131,14 +133,14 @@ export class AuthService {
   }
 
   async get(_id: Types.ObjectId) {
-    return this.sessionRepository.get({ _id });
+    return this.sessionRepository.find({ _id });
   }
 
   async update(
     session_id: Types.ObjectId,
     data: Partial<Omit<ISession, "_id" | "user" | "createdAt">>,
   ) {
-    await this.sessionRepository.update({ _id: session_id }, data);
+    await this.sessionRepository.updateByQuery({ _id: session_id }, data);
   }
 
   async delete(session_id: string) {

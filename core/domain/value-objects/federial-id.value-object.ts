@@ -1,28 +1,28 @@
-import { AvailableCountries } from "../../interfaces";
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import { ValueObject } from "../base-classes/value-object";
-import { InvalidFederalIDException } from "../user/user.exceptions";
+import { EAvailableCountries, InvalidFederalIDException } from "../user";
 
 type TFederalIDValidationFunction = (value: string) => boolean;
 type TFederalIDsValidationFunctions = {
-  [key in AvailableCountries]: TFederalIDValidationFunction
-}
+  [key in EAvailableCountries]: TFederalIDValidationFunction;
+};
 
 const federalIdsValidationFunctions: TFederalIDsValidationFunctions = {
-  [AvailableCountries.BR]: isValidCPF
-}
+  [EAvailableCountries.BR]: isValidCPF,
+};
 
 export class FederalIDObject implements ValueObject<string> {
+  constructor(private _value: string, private country: EAvailableCountries) {
+    this.validate();
+  }
 
-  constructor(private _value: string, private country: AvailableCountries) {}
+  public validate() {
+    const validationFunction: TFederalIDValidationFunction =
+      federalIdsValidationFunctions[this.country];
 
-  public validate(){
-    const validationFunction: TFederalIDValidationFunction = federalIdsValidationFunctions[this.country];
-
-    if(!validationFunction(this._value)) {
+    if (!validationFunction(this._value)) {
       throw new InvalidFederalIDException();
     }
-
   }
 
   public get value(): string {

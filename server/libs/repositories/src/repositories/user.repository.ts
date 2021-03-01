@@ -1,38 +1,59 @@
 import { Injectable } from "@nestjs/common";
+import { IUser } from "@core/domain/user/user.types";
+import { UserBasic } from "@core/domain/user/user.basic";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IUser } from "@core/interfaces";
 import { UserModel, UserDocument } from "../schemas/user";
-import { UserBasic } from "@core/domain/user/user.basic";
+import { ContactObject } from "@core/domain/value-objects/contact.value-object";
+import { TUserCreate, UserCreate } from "@core/domain/user";
 
-export interface UserQueryInterface
-  extends Partial<Pick<IUser, "_id" | "pid" | "primaryEmail" | "primaryMobilePhone" | "cpf">> {}
-export interface UserUpdateInterface
-  extends Partial<Omit<IUser, "_id" | "pid">> {}
-export interface UserCreateInterface
-  extends Omit<
+export type TUserQuery = Partial<
+  Pick<
     IUser,
-    "_id" | "pid" | "averageEvaluation" | "roles"
-  > {}
+    "_id" | "pid" | "primaryEmail" | "primaryMobilePhone" | "federalID"
+  >
+>;
+export type TUserUpdate = Partial<Omit<IUser, "_id" | "pid">>;
 
 @Injectable()
 export class UserRepository extends RepositoryFactory<
   IUser,
   UserDocument,
-  {
-    Query: UserQueryInterface;
-    Update: UserUpdateInterface;
-    Create: UserCreateInterface;
-  }
+  TUserCreate,
+  TUserQuery,
+  TUserUpdate
 > {
-  constructor(private cacheService: CacheService) {
+  constructor(cacheService: CacheService) {
     super(cacheService, UserModel, {
       namespace: UserRepository.name,
-      linkingKeys: ["pid", "primaryEmail", "primaryMobilePhone", "cpf"],
+      linkingKeys: ["pid", "primaryEmail", "primaryMobilePhone"],
     });
   }
 
-  public update(user: UserBasic){
-    return super.updateByQuery({ _id: user.getID() } , user.getUpdatedData());
+  public update(user: UserBasic) {
+    return super.updateByQuery({ _id: user.getID() }, user.getUpdatedData());
+  }
+
+  public async create(user: UserCreate) {
+    return this.insert(user.getCreationData());
+  }
+
+  public findByContact(value: string) {
+    const contact = new ContactObject(value);
+
+    switch(contact.getType()){
+      case "email":
+        return this.findByEmail(value);
+      case "phone":
+        return this.findByPhone(value);
+    }
+  }
+
+  public findByEmail(email: string) {
+    return this.find({ primaryEmail: email })
+  }
+
+  public findByPhone(phone: string) {
+    return this.find({ primaryMobilePhone: phone })
   }
 }

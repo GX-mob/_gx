@@ -5,25 +5,25 @@ import { IVehicle } from "@core/interfaces";
 import { VehicleModel, VehicleDocument } from "../schemas/vehicle";
 import { VehicleMetadataModel } from "../schemas/vehicle-metadata";
 
-export interface VehicleQueryInterface
-  extends Partial<Pick<IVehicle, "_id" | "plate">> {}
-export interface VehicleUpdateInterface
-  extends Partial<Omit<IVehicle, "year" | "permissions">> {}
-export interface VehicleCreateInterface
-  extends Omit<IVehicle, "_id" | "inUse" | "permissions"> {}
+export type TVehicleQuery = Partial<Pick<IVehicle, "_id" | "plate">>;
+export type TVehicleUpdate = Partial<
+  Omit<IVehicle, "year" | "permissions">
+>;
+export type TVehicleCreate = Omit<
+  IVehicle,
+  "_id" | "inUse" | "permissions"
+>;
 
 @Injectable()
 export class VehicleRepository extends RepositoryFactory<
   IVehicle,
   VehicleDocument,
-  {
-    Query: VehicleQueryInterface;
-    Update: VehicleUpdateInterface;
-    Create: VehicleCreateInterface;
-  }
+  TVehicleCreate,
+  TVehicleQuery,
+  TVehicleUpdate
 > {
   vehicleMetadataModel = VehicleMetadataModel;
-  constructor(private cacheService: CacheService) {
+  constructor(cacheService: CacheService) {
     super(cacheService, VehicleModel, {
       namespace: VehicleRepository.name,
       autoPopulate: ["metadata"],

@@ -149,7 +149,7 @@ describe("RidesWSService (e2e)", () => {
 
     async function findOrCreateUser(data: Omit<IUser, "_id">) {
       return (
-        (await userRepository.get({ phones: data.phones[0] })) ||
+        (await userRepository.find({ phones: data.phones[0] })) ||
         userRepository.create(data)
       );
     }
@@ -171,7 +171,7 @@ describe("RidesWSService (e2e)", () => {
       }));
 
     vehicles[0] =
-      (await vehicleRepository.get({ plate: "ABCD-1234" })) ||
+      (await vehicleRepository.find({ plate: "ABCD-1234" })) ||
       (await vehicleRepository.create({
         plate: "ABCD-1234",
         year: 2012,
@@ -180,7 +180,7 @@ describe("RidesWSService (e2e)", () => {
       }));
 
     vehicles[1] =
-      (await vehicleRepository.get({ plate: "ABCD-1235" })) ||
+      (await vehicleRepository.find({ plate: "ABCD-1235" })) ||
       (await vehicleRepository.create({
         plate: "ABCD-1235",
         year: 2012,

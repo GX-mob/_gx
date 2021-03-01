@@ -7,7 +7,6 @@ import {
   UserRepository,
   RideRepository,
   SessionRepository,
-  PendencieRepository,
   VehicleRepository,
   RideAreaConfigurationRepository,
 } from "./repositories";
@@ -21,7 +20,6 @@ import { Connections } from "./connections";
     UserRepository,
     RideRepository,
     SessionRepository,
-    PendencieRepository,
     VehicleRepository,
     RideAreaConfigurationRepository,
   ],
@@ -29,7 +27,6 @@ import { Connections } from "./connections";
     UserRepository,
     RideRepository,
     SessionRepository,
-    PendencieRepository,
     VehicleRepository,
     RideAreaConfigurationRepository,
   ],

@@ -3,9 +3,9 @@ import { ConfigService } from "@nestjs/config";
 import { CacheService } from "@app/cache";
 import { IRide, IUser } from "@shared/interfaces";
 import {
-  RideQueryInterface,
+  TRideQuery,
   RideRepository,
-  RideUpdateInterface,
+  TRideUpdate,
 } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import {
@@ -153,8 +153,8 @@ export class RidesService {
     return data;
   }
 
-  async getRide(query: RideQueryInterface): Promise<IRide> {
-    const ride = await this.rideRepository.get(query);
+  async getRide(query: TRideQuery): Promise<IRide> {
+    const ride = await this.rideRepository.find(query);
 
     if (!ride) {
       throw new RideNotFoundException();
@@ -176,7 +176,7 @@ export class RidesService {
     return acceptTimestamp + cancelationSafeTime > now;
   }
 
-  public updateRide(query: RideQueryInterface, data: RideUpdateInterface) {
+  public updateRide(query: TRideQuery, data: TRideUpdate) {
     return retryUnderHood(() => this.rideRepository.update(query, data));
   }
 }

@@ -1,25 +1,18 @@
-import SecurePassword from "secure-password";
 import {
-  NotOwnContactException,
   PasswordRequiredException,
   UnchangedPasswordException,
-  WrongPasswordException,
 } from "./user.exceptions";
 import { UserBasic } from "./user.basic";
-import { hasContact } from "./user.contact";
-
-const securePassword = new SecurePassword();
+import { checkIfHasContact } from "./user.contact";
+import { PasswordObject } from "../value-objects/password.value-object";
 
 export class UserSecurity extends UserBasic {
   enable2FA(userContactTarget: string) {
     this.passwordRequired();
 
-    if(!hasContact(this.userData, userContactTarget)){
-      throw new NotOwnContactException();
-    }
+    checkIfHasContact(this.userData, userContactTarget);
 
     this.userData["2fa"] = userContactTarget;
-
   }
 
   public async disable2FA(rawSentPassword: string) {
@@ -34,55 +27,42 @@ export class UserSecurity extends UserBasic {
     }
   }
 
-  public async upsertPassword(
-    currentRawPassword: string,
-    newRawPassword: string,
-  ) {
-    const newPasswordHash = await securePassword.hash(
-      Buffer.from(newRawPassword),
-    );
+  public async upsertPassword(currentRawPassword: string, newRawPassword: string) {
+    const newPasswordObject = new PasswordObject(newRawPassword);
+    await newPasswordObject.makeHash();
 
     if (!this.userData.password) {
-      this.userData.password = newPasswordHash.toString("base64");
+      this.userData.password = newPasswordObject.toString("base64");
       return;
     }
 
-    const currentPassword = this.userData.password;
+    const { rightPasswordObject } = await this.assertPassword(currentRawPassword);
 
-    await this.assertPassword(currentRawPassword);
-
-    const compareResult = await securePassword.verify(
-      newPasswordHash,
-      Buffer.from(currentPassword, "base64"),
-    );
-
-    if (compareResult === SecurePassword.VALID) {
+    if (newPasswordObject.isEqual(rightPasswordObject.toBuffer())) {
       throw new UnchangedPasswordException();
     }
 
-    this.userData.password = newPasswordHash.toString("base64");
+    this.userData.password = rightPasswordObject.toString("base64");
   }
 
-  public async assertPassword(rawSentPassword: string) {
-    const rawSentPasswordBuffer = Buffer.from(rawSentPassword);
-    const currentPassword = Buffer.from(
+  public async assertPassword(
+    rawSentPassword: string,
+  ): Promise<{
+    leftPasswordObject: PasswordObject;
+    rightPasswordObject: PasswordObject;
+  }> {
+    const leftPasswordObject = new PasswordObject(
       this.userData.password as string,
       "base64",
     );
-    const result = await securePassword.verify(
-      rawSentPasswordBuffer,
-      currentPassword,
-    );
+    const rightPasswordObject = new PasswordObject(rawSentPassword);
 
-    switch (result) {
-      case SecurePassword.VALID:
-        return;
-      case SecurePassword.VALID_NEEDS_REHASH:
-        const newHash = await securePassword.hash(Buffer.from(rawSentPassword));
-        this.userData.password = newHash.toString("base64");
-        return;
-      default:
-        throw new WrongPasswordException();
+    await leftPasswordObject.compare(rightPasswordObject);
+
+    if (leftPasswordObject.neededReHash) {
+      this.userData.password = leftPasswordObject.toString();
     }
+
+    return { leftPasswordObject, rightPasswordObject };
   }
 }

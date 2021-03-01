@@ -26,7 +26,9 @@ export interface ConfigurationInterface<Model> {
 export class RepositoryFactory<
   Model,
   ModelDocument extends Model & Document,
-  Configuration extends ConfigurationInterface<Model>
+  Insert,
+  Query,
+  Update
 > {
   constructor(
     private cache: CacheService,
@@ -40,7 +42,7 @@ export class RepositoryFactory<
    * @returns
    * @constructs {Model}
    */
-  async get(query: Configuration["Query"]): Promise<Model | null> {
+  async find(query: Query): Promise<Model | null> {
     const cache = await this.cache.get(this.settings.namespace, query);
     if (cache) {
       return cache;
@@ -61,7 +63,7 @@ export class RepositoryFactory<
    * Execute autopopulate on query
    * @param query
    */
-  private async makeQuery(query: Configuration["Query"]) {
+  private async makeQuery(query: Query) {
     return this.populateObject(
       this.model.findOne(query as FilterQuery<ModelDocument>).lean(),
     );
@@ -100,7 +102,7 @@ export class RepositoryFactory<
    * @param query
    * @param data
    */
-  async updateByQuery(query: Configuration["Query"], data: Configuration["Update"]) {
+  async updateByQuery(query: Query, data: Update) {
     await this.model.updateOne(
       query as FilterQuery<ModelDocument>,
       (data as unknown) as UpdateQuery<ModelDocument>,
@@ -115,8 +117,8 @@ export class RepositoryFactory<
    * @default true
    * @returns Lean document
    */
-  async create(
-    data: Configuration["Create"],
+  public async insert(
+    data: Insert,
     options = { cache: true },
   ): Promise<Model> {
     let modelResult = await this.model.create(
@@ -140,7 +142,7 @@ export class RepositoryFactory<
    * Updates cache with data from persistent storage
    * @param query
    */
-  async updateCache(query: Configuration["Query"]) {
+  async updateCache(query: Query) {
     const data = await this.makeQuery(query);
 
     if (!data) return;

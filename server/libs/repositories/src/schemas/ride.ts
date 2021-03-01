@@ -21,12 +21,12 @@ import { util } from "@app/helpers";
 import { Operational } from "../connections";
 import {
   IRide,
-  RideStatus,
-  RideTypes,
-  RidePayMethods,
+  ERideStatus,
+  ERideTypes,
+  ERidePayMethods,
   IRoute,
   IRoutePoint,
-} from "@core/interfaces";
+} from "@core/domain/ride";
 import { UserModel } from "./user";
 
 class Route extends mongoose.SchemaType {
@@ -99,24 +99,19 @@ export const RideSchema: Schema = new Schema(
       required: true,
       ref: UserModel,
     },
-    type: { type: Number, enum: Object.values(RideTypes), required: true },
+    type: { type: Number, enum: Object.values(ERideTypes), required: true },
     payMethod: {
-      type: Number,
-      enum: Object.values(RidePayMethods),
+      type: String,
+      enum: Object.values(ERidePayMethods),
       required: true,
     },
     route: { type: Route, required: true },
     driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {
       type: String,
-      enum: Object.values(RideStatus),
-      default: RideStatus.CREATED,
-    },
-    pendencies: {
-      type: Array,
-      of: Schema.Types.ObjectId,
-      ref: "Pendencie",
-    },
+      enum: Object.values(ERideStatus),
+      default: ERideStatus.Created,
+    }
   },
   { collection: "rides" },
 );

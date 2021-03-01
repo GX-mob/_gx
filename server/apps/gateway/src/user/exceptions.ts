@@ -3,76 +3,32 @@ import {
   UnprocessableEntityException,
   ConflictException,
 } from "@nestjs/common";
-import { HTTP_EXCEPTIONS_MESSAGES } from "@core/exceptions-messages-codes";
+import { HttpCommonExceptionsMessages } from "@core/exceptions-messages";
+
+export class UserNotFoundHTTPException extends NotFoundException {}
+export class WrongPasswordException extends UnprocessableEntityException {}
+export class UnchangedPasswordException extends ConflictException {}
 
 export class UserNotFoundException extends NotFoundException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.USER_NOT_FOUND);
-  }
-}
-
-export class WrongPasswordException extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.WRONG_PASSWORD);
-  }
-}
-
-export class UnchangedPasswordException extends ConflictException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.UNCHANGED_DATA);
+    super(HttpCommonExceptionsMessages.UserNotFound);
   }
 }
 
 export class ContactVerificationFailedException extends UnprocessableEntityException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.CONTACT_VERIFICATION_FAILED);
+    super(HttpCommonExceptionsMessages.ContactVerificationFailed);
   }
 }
 
 export class ContactRegistredException extends ConflictException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.CONTACT_ALREADY_REGISTRED);
+    super(HttpCommonExceptionsMessages.ContactAlreadyRegistred);
   }
 }
 
-export class InvalidCPFException extends UnprocessableEntityException {
+export class FederalIdAlreadyRegistredException extends ConflictException {
   constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.INVALID_CPF);
-  }
-}
-
-export class CPFRegistredException extends ConflictException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.CPF_REGISTRED);
-  }
-}
-
-export class TermsNotAcceptedException extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.TERMS_NOT_ACCEPTED);
-  }
-}
-
-export class PasswordRequiredException extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.PASSWORD_REQUIRED);
-  }
-}
-
-export class NotOwnContactException extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.NOT_OWN_CONTACT);
-  }
-}
-
-export class InvalidContactException extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.INVALID_CONTACT);
-  }
-}
-
-export class RemoveContactNotAllowed extends UnprocessableEntityException {
-  constructor() {
-    super(HTTP_EXCEPTIONS_MESSAGES.REMOVE_CONTACT_NOT_ALLOWED);
+    super(HttpCommonExceptionsMessages.FederalIdAlreadyRegistred);
   }
 }

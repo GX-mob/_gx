@@ -166,7 +166,7 @@ export class DriversService {
       connectionData = await this.connectionService.get(socketId);
     }
 
-    const vehicle = await this.vehicleRepository.get({ _id: setup.vehicleId });
+    const vehicle = await this.vehicleRepository.find({ _id: setup.vehicleId });
 
     if (!vehicle) {
       throw new VehicleNotFoundException(setup.vehicleId);

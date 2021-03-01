@@ -1,17 +1,14 @@
-import { IUser } from "../../interfaces";
-import { IAccountVerification } from "../../interfaces/models/account-verifiations.interface";
+import { IAccountVerification } from "../../interfaces/models/account-verifications.interface";
 import { FederalIDObject } from "../value-objects/federial-id.value-object";
+import { UserBasic } from "./user.basic";
 
-export class UserAccount {
+export class UserAccount extends UserBasic {
   public setFederalID(value: string) {
     const federalIDObject = new FederalIDObject(value, this.userData.country);
-
-    federalIDObject.validate();
-
     this.userData.federalID = federalIDObject.value;
   }
 
-  public setAccountVerification(accountVerification: IAccountVerification ) {
-    this.userData.accountVerificationId = accountVerification._id;
+  public setAccountVerification(accountVerification: IAccountVerification) {
+    this.userData.accountVerifications.push(accountVerification._id);
   }
 }

@@ -12,6 +12,7 @@
     "@brazilian-utils/brazilian-utils": "^1.0.0-rc.12",
     "@nestjs/common": "^7.6.13",
     "@types/secure-password": "^3.1.0",
+    "date-fns-tz": "^1.1.3",
     "secure-password": "^4.0.0",
     "typescript": "^4.2.2",
     "validator": "^13.5.2"

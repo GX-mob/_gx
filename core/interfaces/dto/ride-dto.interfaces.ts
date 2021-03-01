@@ -1,10 +1,9 @@
-//import { IPendencie } from "../models/pendencie.interface";
 import {
   IRide,
   IRoute,
-  RidePayMethods,
-  RideTypes,
-} from "../models/ride.interface";
+  ERidePayMethods,
+  ERideTypes,
+} from "../../domain/ride";
 
 export interface IGetRideInfoDto {
   pid: IRide["pid"];
@@ -17,8 +16,8 @@ export interface IGetRidePricesDto {
 
 export interface ICreateRideDto {
   route: IRoute;
-  type: RideTypes;
-  payMethod: RidePayMethods;
+  type: ERideTypes;
+  payMethod: ERidePayMethods;
   country: IRide["country"];
   area: IRide["area"];
   subArea: IRide["subArea"];
@@ -27,5 +26,4 @@ export interface ICreateRideDto {
 export interface ICreatedRideDto {
   pid: IRide["pid"];
   costs: IRide["costs"];
-  //pendencies: IPendencie[];
 }

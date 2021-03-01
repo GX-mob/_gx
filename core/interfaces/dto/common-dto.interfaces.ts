@@ -1,6 +1,5 @@
 export interface IContactDto {
-  email?: string;
-  mobilePhone?: string;
+  contact: string;
 }
 
 export interface IContactVerificationCheckDto extends IContactDto {
