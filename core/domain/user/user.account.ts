@@ -9,6 +9,6 @@ export class UserAccount extends UserBasic {
   }
 
   public setAccountVerification(accountVerification: IAccountVerification) {
-    this.userData.accountVerifications.push(accountVerification._id);
+    //this.userData.accountVerifications.push(accountVerification._id);
   }
 }

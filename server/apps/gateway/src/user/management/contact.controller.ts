@@ -8,8 +8,8 @@ import {
   Param,
   HttpCode,
 } from "@nestjs/common";
-import { AuthGuard, User } from "@app/auth";
-import { IUser } from "@core/domain/user";
+import { AuthGuard, DUser } from "@app/auth";
+import { User } from "@core/domain/user";
 import { ContactDto, ContactVerificationCheckDto } from "../user.dto";
 import { UserService } from "../user.service";
 import { RemoveContactDto } from "../user.dto";
@@ -28,7 +28,7 @@ export class UserContactController {
   @Put("confirm")
   @HttpCode(201)
   async addContact(
-    @User() user: IUser,
+    @DUser() user: User,
     @Body() { contact, code }: ContactVerificationCheckDto,
   ) {
     await this.usersService.addContact(user, contact, code);
@@ -36,7 +36,7 @@ export class UserContactController {
 
   @Delete()
   async removeContact(
-    @User() user: IUser,
+    @DUser() user: User,
     @Body() { contact, password }: RemoveContactDto,
   ) {
     await this.usersService.removeContact(user, contact, password);

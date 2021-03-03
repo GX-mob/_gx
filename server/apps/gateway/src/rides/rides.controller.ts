@@ -9,7 +9,7 @@ import {
   ClassSerializerInterceptor,
   SerializeOptions,
 } from "@nestjs/common";
-import { AuthGuard, Driver, User } from "@app/auth";
+import { AuthGuard, Driver, DUser } from "@app/auth";
 import { RidesService } from "./rides.service";
 import {
   GetRideInfoDto,
@@ -17,7 +17,7 @@ import {
   CreateRideDto,
   RideInfoDto,
 } from "./rides.dto";
-import { IUser, EUserRoles } from "@core/domain/user";
+import { IUser, EUserRoles, User } from "@core/domain/user";
 import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 
 @Controller("rides/")
@@ -38,10 +38,10 @@ export class RidesController {
   })
   @Get(":pid")
   async getRideDataHandler(
-    @User() user: IUser,
+    @DUser() user: User,
     @Param() { pid }: GetRideInfoDto,
   ) {
-    const { pid: driverPid } = user;
+    const driverPid = user.getID();
     const ride = await this.rideService.getRideByPid(pid);
 
     if (!ride) throw new RideNotFoundException();
@@ -57,7 +57,7 @@ export class RidesController {
     excludePrefixes: ["_"],
     groups: [EUserRoles.Voyager],
   })
-  async createRideHandler(@User() user: IUser, @Body() body: CreateRideDto) {
+  async createRideHandler(@DUser() user: User, @Body() body: CreateRideDto) {
     const ride = await this.rideService.create(user, body);
     return new RideInfoDto(ride);
   }

@@ -1,5 +1,3 @@
-import { IAccountVerification } from "@core/interfaces/models/account-verifications.interface";
-
 export enum EUserRoles {
   Voyager = "voyager",
   Driver = "driver",
@@ -21,7 +19,6 @@ export interface IUser {
    */
   pid: string;
   parentAccount?: IUser;
-  accountVerifications: IAccountVerification[];
   country: EAvailableCountries;
   firstName: string;
   lastName: string;

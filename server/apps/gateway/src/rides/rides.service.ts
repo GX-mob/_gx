@@ -6,7 +6,7 @@ import {
 } from "@app/repositories";
 import { util } from "@app/helpers";
 import { UnsupportedAreaException } from "@core/domain/ride";
-import { IUser } from "@core/domain/user";
+import { IUser, User } from "@core/domain/user";
 import {
   IRide,
   IRideAreaConfiguration,
@@ -40,10 +40,8 @@ export class RidesService {
     return this.rideRepository.find({ pid });
   }
 
-  async create(user: IUser, data: ICreateRideDto) {
-    const rideCreate = new RideCreate(user, this.areas, data);
-
-    return this.rideRepository.create(rideCreate);
+  async create(user: User, data: ICreateRideDto) {
+    return this.rideRepository.create(new RideCreate(user, this.areas, data));
   }
 
   /**

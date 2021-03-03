@@ -117,9 +117,9 @@ export class UpdateProfileDto {
 }
 
 export class UpdatePasswordDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  current!: string;
+  current?: string;
 
   @IsNotEmpty()
   @IsString()

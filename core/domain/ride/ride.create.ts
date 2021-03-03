@@ -1,7 +1,7 @@
 import { ICreateRideDto } from "../../interfaces";
 import { RideCosts } from "./ride.costs";
 import { IRide, IRideAreaConfiguration } from "./ride.types";
-import { IUser } from "../user"
+import { User } from "../user"
 
 export type TRideCreate = Pick<IRide,
   | "country"
@@ -18,7 +18,7 @@ export class RideCreate {
 
   public readonly rideCostsObject: RideCosts;
 
-  constructor(private user: IUser, areas: IRideAreaConfiguration[], private ride: ICreateRideDto){
+  constructor(private user: User, areas: IRideAreaConfiguration[], private ride: ICreateRideDto){
     this.rideCostsObject = new RideCosts(areas, ride);
   }
 
@@ -31,7 +31,7 @@ export class RideCreate {
       route: this.ride.route,
       costs: this.rideCostsObject.toJSON(),
       payMethod: this.ride.payMethod,
-      voyager: this.user._id
+      voyager: this.user.getID()
     }
   }
 }

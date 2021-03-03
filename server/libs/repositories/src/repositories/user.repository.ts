@@ -38,14 +38,12 @@ export class UserRepository extends RepositoryFactory<
     return this.insert(user.getCreationData());
   }
 
-  public findByContact(value: string) {
-    const contact = new ContactObject(value);
-
+  public findByContact(contact: ContactObject) {
     switch(contact.getType()){
       case "email":
-        return this.findByEmail(value);
+        return this.findByEmail(contact.value);
       case "phone":
-        return this.findByPhone(value);
+        return this.findByPhone(contact.value);
     }
   }
 

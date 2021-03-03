@@ -6,3 +6,4 @@ export * from "./user.create";
 export * from "./user.exceptions";
 export * from "./user.profile";
 export * from "./user.security";
+export * from "./user"

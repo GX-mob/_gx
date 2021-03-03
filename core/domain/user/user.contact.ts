@@ -55,7 +55,7 @@ export class UserContact extends UserSecurity {
     this.userData.primaryMobilePhone = contactObj.value;
   }
 
-  public async addContact(contact: string) {
+  public addContact(contact: string) {
     const contactObject = new ContactObject(contact);
 
     switch (contactObject.getType()) {

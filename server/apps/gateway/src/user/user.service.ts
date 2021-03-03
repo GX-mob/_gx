@@ -11,13 +11,9 @@ import {
   UserNotFoundException,
 } from "./exceptions";
 import { util } from "@app/helpers";
-import {
-  IUser,
-  UserSecurity,
-  UserContact,
-  UserCreate,
-} from "@core/domain/user";
+import { UserCreate, User } from "@core/domain/user";
 import { ContactObject } from "@core/domain/value-objects/contact.value-object";
+import { UpdateProfileDto, UserRegisterDto } from "./user.dto";
 
 @Injectable()
 export class UserService {
@@ -29,10 +25,11 @@ export class UserService {
 
   /**
    * @throws [HTTP] UserNotFoundException
-   * @returns <UserInterface> User
+   * @returns User
    */
   async findByContact(value: string) {
-    const user = await this.userRepository.findByContact(value);
+    const contactObj = new ContactObject(value);
+    const user = await this.userRepository.findByContact(contactObj);
 
     if (!user) {
       throw new UserNotFoundException();
@@ -71,63 +68,80 @@ export class UserService {
     }
   }
 
-  public async create(userCreate: UserCreate): Promise<IUser> {
-    return this.userRepository.create(userCreate);
+  public async create(userCreateDto: UserRegisterDto): Promise<User> {
+    const userCreate = new UserCreate(userCreateDto, "");
+
+    /**
+     * Ensures security checks
+     */
+    //await this.usersService.checkInUseContact(userCreate.contactObject.value);
+    await this.checkContactVerification(
+      userCreate.contactObject.value,
+      userCreateDto.code,
+    );
+
+    return new User(await this.userRepository.create(userCreate));
   }
 
-  async updateById(id: IUser["_id"], data: TUserUpdate) {
-    await this.userRepository.updateByQuery({ _id: id }, data);
-    return this.sessionRepository.updateCache({ user: id });
+  async update(user: User, data: TUserUpdate) {
+    await this.userRepository.updateByQuery({ _id: user.getID() }, data);
+    return this.sessionRepository.updateCache({ user: user.getID() });
+  }
+
+  async updateAvatar(user: User, avatarUrl: string) {
+    user.setProfileAvatar(avatarUrl);
+    await this.userRepository.update(user);
+  }
+
+  async updateProfile(user: User, updateProfileDto: UpdateProfileDto) {
+    const { firstName, lastName } = updateProfileDto;
+
+    if (firstName) {
+      user.setFirstName(firstName);
+    }
+
+    if (lastName) {
+      user.setLastName(lastName);
+    }
+
+    await this.userRepository.update(user);
   }
 
   async updatePassword(
-    userData: IUser,
-    currentRawPassword: string,
+    user: User,
     newRawPassword: string,
+    currentRawPassword?: string,
   ) {
-    const user = new UserSecurity(userData);
-
-    await user.upsertPassword(currentRawPassword, newRawPassword);
-
-    this.userRepository.update(user);
+    await user.upsertPassword(newRawPassword, currentRawPassword);
+    await this.userRepository.update(user);
   }
 
-  enable2FA(userData: IUser, target: string) {
-    const user = new UserSecurity(userData);
-
+  public enable2FA(user: User, target: string) {
     user.enable2FA(target);
 
     return this.userRepository.update(user);
   }
 
-  async disable2FA(userData: IUser, rawSentPassword: string) {
-    const user = new UserSecurity(userData);
-
+  async disable2FA(user: User, rawSentPassword: string) {
     await user.disable2FA(rawSentPassword);
     await this.userRepository.update(user);
   }
 
   async checkInUseContact(contact: string) {
     const contactObj = new ContactObject(contact);
-    const user = await this.userRepository.findByContact(contactObj.value);
+    const user = await this.userRepository.findByContact(contactObj);
 
     if (user) {
       throw new ContactRegistredException();
     }
   }
 
-  async addContact(userData: IUser, contact: string, code: string) {
-    const user = new UserContact(userData);
+  async addContact(user: User, contact: string, code: string) {
     user.addContact(contact);
     return this.userRepository.update(user);
   }
 
-  async removeContact(
-    userData: IUser,
-    contact: string,
-    rawSentPassword: string,
-  ) {
-    const user = new UserContact(userData);
+  async removeContact(user: User, contact: string, rawSentPassword: string) {
     await user.removeContact(contact, rawSentPassword);
     await this.userRepository.update(user);
   }

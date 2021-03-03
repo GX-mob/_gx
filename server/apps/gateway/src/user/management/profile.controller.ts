@@ -13,9 +13,8 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { IUser } from "@core/domain/user";
-import { ISession } from "@core/interfaces"
-import { AuthGuard, User, Session } from "@app/auth";
+import { User, IUser } from "@core/domain/user";
+import { AuthGuard, DUser } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { util } from "@app/helpers";
 import { PinoLogger } from "nestjs-pino";
@@ -39,21 +38,21 @@ export class UserProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getProfileHandler(@User() user: IUser): IUser {
-    return new UserDto(user);
+  getProfileHandler(@DUser() user: User): IUser {
+    return new UserDto(user.getData());
   }
 
   @Patch()
   async updateHandler(
-    @Session() session: ISession,
+    @DUser() user: User,
     @Body() body: UpdateProfileDto,
   ) {
-    await this.usersService.updateById(session.user._id, body);
+    await this.usersService.updateProfile(user, body);
   }
 
   @Patch("avatar")
   async uploadAvatar(
-    @User() user: IUser,
+    @DUser() user: User,
     @Request() request: FastifyRequest,
   ): Promise<{ url: string }> {
     if (!request.isMultipart()) {
@@ -73,7 +72,7 @@ export class UserProfileController {
       handling = true;
 
       const fileExtension = filename.split(".").pop() as string;
-      const fileName = `${user._id}.${Date.now()}.${fileExtension}`;
+      const fileName = `${user.getID()}.${Date.now()}.${fileExtension}`;
       url = `${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/${fileName}`;
 
       try {
@@ -103,17 +102,19 @@ export class UserProfileController {
           return reject(new InternalServerErrorException());
         }
 
-        if (user.avatar) {
+        const userCurrentAvatar = user.getData().avatar;
+
+        if (userCurrentAvatar) {
           util.retryUnderHood(() =>
             this.storage.delete(
               STORAGE_BUCKETS.USERS_AVATARTS,
-              user.avatar as string,
+              userCurrentAvatar,
             ),
           );
         }
 
         util.retryUnderHood(() =>
-          this.usersService.updateById(user._id, { avatar: url }),
+          this.usersService.updateAvatar(user, url),
         );
 
         // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.

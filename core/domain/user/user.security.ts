@@ -7,7 +7,7 @@ import { checkIfHasContact } from "./user.contact";
 import { PasswordObject } from "../value-objects/password.value-object";
 
 export class UserSecurity extends UserBasic {
-  enable2FA(userContactTarget: string) {
+  public enable2FA(userContactTarget: string) {
     this.passwordRequired();
 
     checkIfHasContact(this.userData, userContactTarget);
@@ -27,13 +27,17 @@ export class UserSecurity extends UserBasic {
     }
   }
 
-  public async upsertPassword(currentRawPassword: string, newRawPassword: string) {
+  public async upsertPassword(newRawPassword: string, currentRawPassword?: string) {
     const newPasswordObject = new PasswordObject(newRawPassword);
     await newPasswordObject.makeHash();
 
     if (!this.userData.password) {
       this.userData.password = newPasswordObject.toString("base64");
       return;
+    }
+
+    if(!currentRawPassword) {
+      throw new PasswordRequiredException();
     }
 
     const { rightPasswordObject } = await this.assertPassword(currentRawPassword);

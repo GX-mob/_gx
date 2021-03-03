@@ -1,4 +1,4 @@
-export enum EAccountVerificationMode {
+export enum EAccountVerificationType {
   FederalID = "federal-id",
   DriverAccess = "driver-access"
   //DocumentUpload = "document-upload"
@@ -6,13 +6,14 @@ export enum EAccountVerificationMode {
 
 export enum EAccountVerificationStatus {
   Verified = "verified",
-  NotVerified = "not-verified",
-  Analyzing = "analyzing"
+  Analyzing = "analyzing",
+  Requested = "requested"
 }
 
 export interface IAccountVerification {
   _id: any;
-  mode: EAccountVerificationMode;
+  userId: string;
+  type: EAccountVerificationType;
   createdAt: Date;
   updatedAt?: Date;
   status: EAccountVerificationStatus;

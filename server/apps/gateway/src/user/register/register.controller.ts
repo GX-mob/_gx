@@ -51,25 +51,18 @@ export class UserRegisterController {
   async signUp(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
-    @Body() body: UserRegisterDto,
+    @Body() userCreateDto: UserRegisterDto,
   ): Promise<IUserRegisterSuccessDto> {
-    const userCreate = new UserCreate(body, "");
-
-    /**
-     * Ensures security checks
-     */
-    //await this.usersService.checkInUseContact(userCreate.contactObject.value);
-    await this.usersService.checkContactVerification(
-      userCreate.contactObject.value,
-      body.code,
+    const user = await this.usersService.create(userCreateDto);
+    const session = await this.sessionService.create(
+      user.getID(),
+      userAgent,
+      ip,
     );
-
-    const user = await this.usersService.create(userCreate);
-    const session = await this.sessionService.create(user._id, userAgent, ip);
 
     return {
       user: {
-        id: user._id,
+        id: user.getID(),
       },
       session: {
         token: session.token,
