@@ -1,40 +1,42 @@
 import {
-  IGetRideInfoDto,
-  IGetRidePricesDto,
-  ICreateRideDto,
-} from "@core/interfaces";
-
-import {
-  IRide,
-  ERideTypes,
   ERidePayMethods,
   ERideStatus,
+  ERideTypes,
+  IRide,
+  IRideCosts,
   IRoute,
   IRoutePoint,
-} from "@core/domain/ride"
-
+} from "@core/domain/ride";
+import { EUserRoles } from "@core/domain/user";
 import {
-  ValidateNested,
-  IsNotEmpty,
-  IsString,
+  TCreateRideDto,
+  TGetRideInfoDto,
+  TGetRidePricesDto,
+} from "@core/interfaces";
+import { Exclude, Expose } from "class-transformer";
+import {
+  IsArray,
   IsEnum,
   IsInt,
-  IsArray,
+  IsNotEmpty,
+  IsString,
+  ValidateNested,
 } from "class-validator";
-import { Exclude, Expose } from "class-transformer";
-import { EUserRoles } from "@core/domain/user";
 
 class Point implements IRoutePoint {
   @IsArray()
   coord!: [number, number];
 
   @IsNotEmpty()
+  @IsString()
   primary!: string;
 
   @IsNotEmpty()
+  @IsString()
   secondary!: string;
 
   @IsNotEmpty()
+  @IsString()
   district!: string;
 }
 
@@ -43,6 +45,7 @@ class Route implements IRoute {
   start!: Point;
 
   @ValidateNested()
+  @IsArray()
   waypoints?: Point[];
 
   @ValidateNested()
@@ -58,20 +61,20 @@ class Route implements IRoute {
   duration!: number;
 }
 
-export class GetRideInfoDto implements IGetRideInfoDto {
+export class GetRideInfoDto implements TGetRideInfoDto {
   @IsNotEmpty()
-  pid!: IRide["pid"];
+  pid!: string;
 }
 
-export class GetRidesPricesDto implements IGetRidePricesDto {
+export class GetRidesPricesDto implements TGetRidePricesDto {
   @IsNotEmpty()
-  area!: IRide["area"];
+  area!: string;
 
   @IsString()
-  subArea?: IRide["subArea"];
+  subArea!: string;
 }
 
-export class CreateRideDto implements ICreateRideDto {
+export class CreateRideDto implements TCreateRideDto {
   @ValidateNested()
   route!: Route;
 
@@ -82,13 +85,13 @@ export class CreateRideDto implements ICreateRideDto {
   payMethod!: ERidePayMethods;
 
   @IsNotEmpty()
-  country!: IRide["country"];
+  country!: string;
 
   @IsNotEmpty()
-  area!: IRide["area"];
+  area!: string;
 
   @IsNotEmpty()
-  subArea!: IRide["subArea"];
+  subArea!: string;
 }
 
 export class RideInfoDto implements IRide {
@@ -107,7 +110,7 @@ export class RideInfoDto implements IRide {
   @Expose({ groups: [EUserRoles.Driver] })
   payMethod!: ERidePayMethods;
 
-  costs!: IRide["costs"];
+  costs!: IRideCosts;
 
   @Exclude()
   country!: string;

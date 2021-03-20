@@ -1,5 +1,5 @@
 export enum DomainExceptionsMessages {
-  // User namespace
+  // User
   InvalidContactType = "invalid-contact-type",
   WrongPassword = "wrong-password",
   TermsNotAccepted = "terms-not-accepted",
@@ -11,7 +11,9 @@ export enum DomainExceptionsMessages {
   UnchagedData = "unchanged-data",
   RemoveContactNotAllowed = "remove-contact-not-allowed",
 
-  // Ride namespace
+  // Ride
   UnsupportedArea = "unsupported-area",
-  InvalidRideType = "invalid-ride-type"
+  InvalidRideType = "invalid-ride-type",
+  IncompleteRouteData = "incomplete-route-data",
+  InvalidRoutePoint = "invalid-route-point"
 }

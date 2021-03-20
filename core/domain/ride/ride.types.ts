@@ -1,4 +1,3 @@
-
 import { IUser } from "../user";
 
 export interface IRoutePoint {
@@ -63,31 +62,6 @@ export interface IRide {
   driver?: IUser;
 }
 
-export interface IRideTypeConfiguration {
-  type: ERideTypes;
-  available: boolean;
-  perKilometer: number;
-  perMinute: number;
-  kilometerMultipler: number;
-  minuteMultipler: number;
-  overBusinessTimeKmAdd: number;
-  overBusinessTimeMinuteAdd: number;
-}
-
-export interface IRideAreaConfiguration {
-  area: string;
-  currency: string;
-  timezone: string;
-  businessTimeHourStart: number;
-  businessTimeHourEnd: number;
-  longRideConditions: {
-    distanceKm: number;
-    minutes: number;
-  };
-  general: IRideTypeConfiguration[];
-  subAreas: { [subArea: string]: IRideTypeConfiguration[] };
-}
-
 export type TCalculatedPriceAspect = {
   total: number;
   aditionalForLongRide: number;
@@ -99,3 +73,10 @@ export type TRideBasePrices = {
   distance: TCalculatedPriceAspect;
   total: number;
 };
+
+export interface IRideCreate
+  extends Pick<IRide, "country" | "area" | "subArea"> {
+  route: IRoute;
+  type: ERideTypes;
+  payMethod: ERidePayMethods;
+}

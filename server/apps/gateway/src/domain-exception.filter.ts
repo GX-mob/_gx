@@ -1,5 +1,4 @@
 import { DomainException } from "@core/domain/base-classes/domain.exception";
-import { InvalidRideTypeException, UnsupportedAreaException } from "@core/domain/ride";
 import {
   InvalidFederalIDException,
   NotOwnContactException,
@@ -7,6 +6,10 @@ import {
   RemoveContactNotAllowed,
   WrongPasswordException,
 } from "@core/domain/user";
+import {
+  InvalidRideTypeException,
+  UnsupportedAreaException,
+} from "@core/domain/ride-areas";
 import { InvalidContactException } from "@core/domain/value-objects/contact.value-object";
 import {
   ExceptionFilter,

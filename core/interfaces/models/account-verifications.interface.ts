@@ -1,7 +1,6 @@
 export enum EAccountVerificationType {
   FederalID = "federal-id",
   DriverAccess = "driver-access"
-  //DocumentUpload = "document-upload"
 }
 
 export enum EAccountVerificationStatus {
@@ -17,5 +16,5 @@ export interface IAccountVerification {
   createdAt: Date;
   updatedAt?: Date;
   status: EAccountVerificationStatus;
-  documentsURI: string[]
+  documentsIds: string[]
 }

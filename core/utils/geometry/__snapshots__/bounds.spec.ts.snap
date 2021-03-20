@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Helpers/Geometry: Distance boundsOfPath should return bounds of decoded path 1`] = `
+Object {
+  "east": 41.83800999999994,
+  "north": -87.63041,
+  "south": -87.64421,
+  "west": 41.857759999999985,
+}
+`;
+
+exports[`Helpers/Geometry: Distance boundsOfPath should return bounds of string path 1`] = `
+Object {
+  "east": 41.83800999999994,
+  "north": -87.63041,
+  "south": -87.64421,
+  "west": 41.857759999999985,
+}
+`;
+
+exports[`Helpers/Geometry: Distance boundsOfRunningPath should return bounds of decoded path 1`] = `
+Object {
+  "east": 41.83800999999994,
+  "north": -87.63041,
+  "south": -87.63041,
+  "west": 41.83800999999994,
+}
+`;
+
+exports[`Helpers/Geometry: Distance boundsOfRunningPath should return bounds of string path 1`] = `
+Object {
+  "east": 41.83800999999994,
+  "north": -87.63041,
+  "south": -87.63041,
+  "west": 41.83800999999994,
+}
+`;
+
+exports[`Helpers/Geometry: Distance latLngBounds should return bounds 1`] = `
+Object {
+  "east": 41.84622000000002,
+  "north": -87.61329,
+  "south": -87.61604,
+  "west": 41.875620000000026,
+}
+`;
+
+exports[`Helpers/Geometry: Distance latLngBounds should return bounds 2`] = `
+Object {
+  "east": 41.84622000000002,
+  "north": -87.61329,
+  "south": -87.61604,
+  "west": 41.875620000000026,
+}
+`;

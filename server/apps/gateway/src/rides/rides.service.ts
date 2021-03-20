@@ -1,22 +1,24 @@
 import { Injectable } from "@nestjs/common";
-import { ICreateRideDto } from "@core/interfaces";
+import { TCreateRideDto } from "@core/interfaces";
 import {
   RideRepository,
   RideAreaConfigurationRepository,
 } from "@app/repositories";
-import { util } from "@app/helpers";
-import { UnsupportedAreaException } from "@core/domain/ride";
-import { IUser, User } from "@core/domain/user";
+import { User } from "@core/domain/user";
 import {
   IRide,
-  IRideAreaConfiguration,
-  IRideTypeConfiguration,
   RideCreate,
 } from "@core/domain/ride";
+import {
+  IRideAreaConfiguration,
+  IRideTypeConfiguration,
+  RideAreas
+} from "@core/domain/ride-areas";
 
 @Injectable()
 export class RidesService {
-  readonly areas: IRideAreaConfiguration[] = [];
+  
+  private rideAreas!: RideAreas;
 
   constructor(
     private rideRepository: RideRepository,
@@ -29,25 +31,23 @@ export class RidesService {
     /**
      * Get and store all area and subArea configuration for all rides types and prices in memory
      */
-    const prices = await this.rideAreaConfigurationRepository.model
+    const rideAreas = await this.rideAreaConfigurationRepository.model
       .find()
       .lean<IRideAreaConfiguration>();
 
-    this.areas.push(...prices);
+    this.rideAreas = new RideAreas(rideAreas);
   }
 
   async getRideByPid(pid: IRide["pid"]) {
     return this.rideRepository.find({ pid });
   }
 
-  async create(user: User, data: ICreateRideDto) {
-    return this.rideRepository.create(new RideCreate(user, this.areas, data));
+  async create(user: User, data: TCreateRideDto) {
+    return this.rideRepository.create(new RideCreate(user, this.rideAreas, data));
   }
 
   /**
    * Returns the rides types and respective prices of the requested area
-   * or the price for the respective area for the ride type, if provided a type
-   * fallback to $area if not have results for $area.$subArea
    * @param area
    * @param subArea
    * @returns {IRideTypeConfiguration} Price list, price for provided ride type or undefined
@@ -56,19 +56,6 @@ export class RidesService {
     area: string,
     subArea?: string,
   ): IRideTypeConfiguration[] {
-    const areaPrices = this.areas.find(
-      (areaConfig) => areaConfig.area === area,
-    );
-
-    if (!areaPrices) {
-      throw new UnsupportedAreaException();
-    }
-
-    const response =
-      subArea && util.hasProp(areaPrices.subAreas, subArea)
-        ? areaPrices.subAreas[subArea]
-        : areaPrices.general;
-
-    return response;
+    return this.rideAreas.getPricesForArea(area, subArea);
   }
 }

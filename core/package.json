@@ -13,11 +13,18 @@
     "@nestjs/common": "^7.6.13",
     "@types/secure-password": "^3.1.0",
     "date-fns-tz": "^1.1.3",
+    "google-polyline": "^1.0.3",
     "secure-password": "^4.0.0",
-    "typescript": "^4.2.2",
+    "spherical-geometry-js": "^2.0.0",
+    "typescript": "^4.2.3",
     "validator": "^13.5.2"
   },
   "devDependencies": {
-    "@types/validator": "^13.1.3"
+    "@types/jest": "^26.0.21",
+    "@types/validator": "^13.1.3",
+    "jest": "^26.6.3",
+    "jest-runner-groups": "^2.0.1",
+    "ts-jest": "^26.5.4",
+    "ts-loader": "^8.0.18"
   }
 }

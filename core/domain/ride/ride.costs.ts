@@ -1,60 +1,38 @@
 import { utcToZonedTime } from "date-fns-tz";
+import { TCalculatedPriceAspect, TRideBasePrices } from "./ride.types";
+import { TCreateRideDto } from "../../interfaces";
+import { AMOUT_DECIMAL_ADJUST } from "./constants";
+import { decimalAdjust } from "../../utils";
 import {
   IRideAreaConfiguration,
   IRideTypeConfiguration,
-  TCalculatedPriceAspect,
-  TRideBasePrices,
-} from "./ride.types";
-import { ICreateRideDto } from "../../interfaces";
-import {
-  UnsupportedAreaException,
-  InvalidRideTypeException,
-} from "./ride.exceptions";
-import { AMOUT_DECIMAL_ADJUST } from "./constants";
-
-// TODO Move utils to core
-declare var util: any;
+  RideAreas,
+} from "../ride-areas";
 
 export class RideCosts {
-  private rideAreaConfig: IRideAreaConfiguration;
-  private rideTypeConfiguration: IRideTypeConfiguration;
+  private rideAreaConfig!: IRideAreaConfiguration;
+  private rideTypeConfiguration!: IRideTypeConfiguration;
   private _isBusinessTime!: boolean;
 
   private durationPrice!: TCalculatedPriceAspect;
   private distancePrice!: TCalculatedPriceAspect;
 
-  constructor(
-    rideAreasConfig: IRideAreaConfiguration[],
-    private ride: ICreateRideDto,
-  ) {
-
-    const rideAreaConfig = rideAreasConfig.find( config => config.area === ride.area );
-
-    if (!rideAreaConfig) throw new UnsupportedAreaException();
-
-    this.rideAreaConfig = rideAreaConfig;
-
-    const { subArea, type } = ride;
-
-    const rideTypesConfiguration: IRideTypeConfiguration[] =
-      subArea && subArea in rideAreaConfig.subAreas
-        ? rideAreaConfig.subAreas[subArea]
-        : rideAreaConfig.general;
-
-    const rideTypeConfiguration = rideTypesConfiguration.find(
-      (config) => config.type === type,
-    );
-
-    if (!rideTypeConfiguration) {
-      throw new InvalidRideTypeException();
-    }
-
-    this.rideTypeConfiguration = rideTypeConfiguration;
-
-    this._isBusinessTime = this.isBusinessTime();
-
+  constructor(private rideAreas: RideAreas, private ride: TCreateRideDto) {
+    this.getAreaConfig();
+    this.checkIfIsBusinessTime();
     this.calculateDurationPrice();
     this.calculateDistancePrice();
+  }
+
+  private getAreaConfig() {
+    const { area, subArea, type } = this.ride;
+
+    this.rideAreaConfig = this.rideAreas.getAreaConfig(area);
+    this.rideTypeConfiguration = this.rideAreas.getRidePricesForType(
+      area,
+      type,
+      subArea,
+    );
   }
 
   public toJSON(): TRideBasePrices {
@@ -65,7 +43,11 @@ export class RideCosts {
     };
   }
 
-  public isBusinessTime(date: Date = new Date()) {
+  private checkIfIsBusinessTime() {
+    this._isBusinessTime = this.isBusinessTime();
+  }
+
+  private isBusinessTime(date: Date = new Date()) {
     const zonedDate = utcToZonedTime(date, this.rideAreaConfig.timezone);
     const hour = zonedDate.getHours();
     const isSunday = zonedDate.getDay() === 0;
@@ -80,7 +62,7 @@ export class RideCosts {
     );
   }
 
-  calculateDurationPrice() {
+  private calculateDurationPrice() {
     /**
      * Default price multiplier
      */
@@ -115,7 +97,7 @@ export class RideCosts {
     };
   }
 
-  calculateDistancePrice() {
+  private calculateDistancePrice() {
     /**
      * Default price multiplier
      */
@@ -144,12 +126,12 @@ export class RideCosts {
     }
 
     this.distancePrice = {
-      total: util.decimalAdjust(multipler * distance, AMOUT_DECIMAL_ADJUST),
-      aditionalForLongRide: util.decimalAdjust(
+      total: decimalAdjust(multipler * distance, AMOUT_DECIMAL_ADJUST),
+      aditionalForLongRide: decimalAdjust(
         aditionalForLongRide,
         AMOUT_DECIMAL_ADJUST,
       ),
-      aditionalForOutBusinessTime: util.decimalAdjust(
+      aditionalForOutBusinessTime: decimalAdjust(
         aditionalForOutBusinessTime,
         AMOUT_DECIMAL_ADJUST,
       ),
