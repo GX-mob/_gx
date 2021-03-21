@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsSemVer,
   IsDate,
+  IsEnum,
 } from "class-validator";
 import {
   IAuthPasswordDto,
@@ -20,7 +21,7 @@ import {
   EAvailableCountries,
 } from "@core/domain/user";
 import { Exclude } from "class-transformer";
-import { IAccountVerification } from "@core/interfaces/models/account-verifications.interface";
+import { IVerification } from "@core/domain/verification";
 
 export class ContactDto implements IContactDto {
   @IsNotEmpty()
@@ -45,6 +46,10 @@ export class AuthPasswordDto extends ContactDto implements IAuthPasswordDto {
 export class UserRegisterDto
   extends ContactVerificationCheckDto
   implements IUserRegisterDto {
+  @IsNotEmpty()
+  @IsEnum(EAccountMode)
+  mode!: EAccountMode;
+
   @IsNotEmpty()
   @IsString()
   firstName!: string;
@@ -78,6 +83,7 @@ export class UserRegisterDto
 export class UserDto implements IUser {
   _id!: string;
   pid!: string;
+  mode!: EAccountMode;
   country!: EAvailableCountries;
   accountMode!: EAccountMode;
   firstName!: string;
@@ -97,7 +103,7 @@ export class UserDto implements IUser {
   password!: string;
 
   @Exclude()
-  accountVerifications!: IAccountVerification[];
+  accountVerifications!: IVerification[];
 
   constructor(partial: Partial<IUser>) {
     Object.assign(this, partial);

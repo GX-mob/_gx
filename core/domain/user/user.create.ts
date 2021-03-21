@@ -16,10 +16,11 @@ export type TUserCreate = Omit<
   | "accountVerifications"
   | "primaryEmail"
   | "primaryMobilePhone"
-> & Partial<Pick<IUser, "primaryEmail" | "primaryMobilePhone">>;
+> &
+  Partial<Pick<IUser, "primaryEmail" | "primaryMobilePhone">>;
 
 export class UserCreate {
-  static currentTermsVersion = "0.0.0"
+  static currentTermsVersion = "0.0.0";
   private userData!: TUserCreate;
 
   public readonly termsVersionObject: TermsVersionObject;
@@ -27,7 +28,10 @@ export class UserCreate {
   public readonly federalIDObject: FederalIDObject;
 
   constructor(userCreateDto: IUserRegisterDto, currentTermsVersion: string) {
-    this.termsVersionObject = new TermsVersionObject(userCreateDto.termsAcceptedVersion, currentTermsVersion)
+    this.termsVersionObject = new TermsVersionObject(
+      userCreateDto.termsAcceptedVersion,
+      currentTermsVersion,
+    );
     this.contactObject = new ContactObject(userCreateDto.contact);
     this.federalIDObject = new FederalIDObject(
       userCreateDto.federalID,
@@ -36,6 +40,7 @@ export class UserCreate {
 
     this.userData = {
       federalID: this.federalIDObject.value,
+      mode: userCreateDto.mode,
       country: userCreateDto.country,
       termsAcceptedVersion: userCreateDto.termsAcceptedVersion,
       firstName: userCreateDto.firstName,
@@ -46,7 +51,7 @@ export class UserCreate {
         : { primaryMobilePhone: this.contactObject.value }),
     };
 
-    if(userCreateDto.password){
+    if (userCreateDto.password) {
       const passwordObject = new PasswordObject(userCreateDto.password);
       this.userData.password = passwordObject.value;
     }

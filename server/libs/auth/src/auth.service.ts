@@ -13,7 +13,7 @@ import {
   SessionNotFoundException,
   SessionDeactivatedException,
 } from "./exceptions";
-import { UserBasic } from "@core/domain/user";
+import { User } from "@core/domain/user";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
   jwt.verify,
@@ -49,7 +49,7 @@ export class AuthService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user: UserBasic,
+    user: User,
     userAgent?: string | null,
     ip?: string | null,
   ): Promise<{ token: string; session: ISession }> {

@@ -1,13 +1,16 @@
 import { utcToZonedTime } from "date-fns-tz";
-import { TCalculatedPriceAspect, TRideBasePrices } from "./ride.types";
-import { TCreateRideDto } from "../../interfaces";
-import { AMOUT_DECIMAL_ADJUST } from "./constants";
 import { decimalAdjust } from "../../utils";
 import {
   IRideAreaConfiguration,
   IRideTypeConfiguration,
   RideAreas,
 } from "../ride-areas";
+import { AMOUT_DECIMAL_ADJUST } from "./constants";
+import {
+  TCalculatedPriceAspect,
+  TRideBasePrices,
+  TRideCostDescriptors,
+} from "./ride.types";
 
 export class RideCosts {
   private rideAreaConfig!: IRideAreaConfiguration;
@@ -17,15 +20,22 @@ export class RideCosts {
   private durationPrice!: TCalculatedPriceAspect;
   private distancePrice!: TCalculatedPriceAspect;
 
-  constructor(private rideAreas: RideAreas, private ride: TCreateRideDto) {
+  constructor(
+    private rideAreas: RideAreas,
+    private rideCostsDescriptors: TRideCostDescriptors,
+  ) {
     this.getAreaConfig();
     this.checkIfIsBusinessTime();
     this.calculateDurationPrice();
     this.calculateDistancePrice();
   }
 
+  public setRideCostsDescriptors(ride: TRideCostDescriptors) {
+    this.rideCostsDescriptors = ride;
+  }
+
   private getAreaConfig() {
-    const { area, subArea, type } = this.ride;
+    const { area, subArea, type } = this.rideCostsDescriptors;
 
     this.rideAreaConfig = this.rideAreas.getAreaConfig(area);
     this.rideTypeConfiguration = this.rideAreas.getRidePricesForType(
@@ -68,7 +78,7 @@ export class RideCosts {
      */
     const {
       route: { duration },
-    } = this.ride;
+    } = this.rideCostsDescriptors;
     const prices = this.rideTypeConfiguration;
     let multipler = prices.perMinute;
     let aditionalForLongRide = 0;
@@ -103,7 +113,7 @@ export class RideCosts {
      */
     const {
       route: { distance },
-    } = this.ride;
+    } = this.rideCostsDescriptors;
     const prices = this.rideTypeConfiguration;
     let multipler = prices.perKilometer;
     let aditionalForLongRide = 0;

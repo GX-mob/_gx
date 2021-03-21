@@ -1,3 +1,5 @@
+import { IVerification } from "../verification";
+
 export enum EUserRoles {
   Voyager = "voyager",
   Driver = "driver",
@@ -18,7 +20,9 @@ export interface IUser {
    * Public ID
    */
   pid: string;
+  mode: EAccountMode;
   parentAccount?: IUser;
+  accountVerifications: IVerification[];
   country: EAvailableCountries;
   firstName: string;
   lastName: string;

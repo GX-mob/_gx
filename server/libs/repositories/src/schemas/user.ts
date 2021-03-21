@@ -18,8 +18,8 @@
 import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
 import { IUser, EUserRoles, EAccountMode, EAvailableCountries } from "@core/domain/user";
-import { AccountVerificationModel } from "./account-verification.model";
 import shortid from "shortid";
+import { VerificationModel } from "./verification";
 
 export interface UserDocument extends IUser, Document {}
 
@@ -31,8 +31,9 @@ const RolesSchema: Schema = new Schema({
 export const UserSchema: Schema = new Schema<IUser>(
   {
     pid: { type: String, default: shortid.generate, unique: true },
+    mode: { type: String, enum: Object.values(EAccountMode), default: EAccountMode.ParentAccount },
     parentAccount: { type: Types.ObjectId, ref: "Users" },
-    accountVerifications: { type: [Types.ObjectId], ref: AccountVerificationModel, default: [] },
+    accountVerifications: { type: [Types.ObjectId], ref: VerificationModel, default: [] },
     country: { type: String, enum: Object.values(EAvailableCountries), required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },

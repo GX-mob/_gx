@@ -1,6 +1,6 @@
 export * from "./user.types";
 export * from "./user.account";
-export * from "./user.basic";
+export * from "./user.base";
 export * from "./user.contact";
 export * from "./user.create";
 export * from "./user.exceptions";

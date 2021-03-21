@@ -26,7 +26,7 @@ export const SessionSchema: Schema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, required: true, ref: UserModel },
     userAgent: { type: String, required: true },
-    ips: { type: Array, of: String, default: [null] },
+    ips: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     active: { type: Boolean, default: true },
   },

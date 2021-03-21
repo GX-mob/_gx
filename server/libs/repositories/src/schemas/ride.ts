@@ -15,81 +15,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import mongoose, { Document, Schema } from "mongoose";
+import { Document, Schema } from "mongoose";
 import shortid from "shortid";
-import { util } from "@app/helpers";
 import { Operational } from "../connections";
 import {
   IRide,
   ERideStatus,
   ERideTypes,
   ERidePayMethods,
-  IRoute,
-  IRoutePoint,
 } from "@core/domain/ride";
 import { UserModel } from "./user";
 
-class Route extends mongoose.SchemaType {
-  constructor(key: any, options: any) {
-    super(key, options, "Route");
-  }
-
-  cast(route: IRoute) {
-    if (!(route instanceof Object) || Object.keys(route).length < 3) {
-      throw new Error(
-        'Route must be an object with "start", "path", "end" and "distance" props',
-      );
-    }
-
-    if (
-      !util.hasProp(route, "start") ||
-      !util.hasProp(route, "path") ||
-      !util.hasProp(route, "distance") ||
-      !util.hasProp(route, "end")
-    ) {
-      throw new Error(
-        'Route object must have "start", "path", "end" and "distance" props',
-      );
-    }
-
-    if (typeof route.distance !== "number") {
-      throw new Error("Distance must be a number");
-    }
-
-    if (typeof route.path !== "string") {
-      throw new Error("Path must be an encoded polyline, like as string.");
-    }
-
-    this.checkPoint("start", route.start);
-    this.checkPoint("end", route.end);
-
-    if (util.hasProp(route, "waypoints")) {
-      for (let i = 0; i < (route.waypoints as IRoutePoint[]).length; ++i)
-        this.checkPoint(
-          `waypoints[${i}]`,
-          (route.waypoints as IRoutePoint[])[i],
-        );
-    }
-
-    return route;
-  }
-
-  checkPoint(name: string, point: IRoutePoint) {
-    if (
-      !util.hasProp(point, "coord") ||
-      !util.hasProp(point, "primary") ||
-      !util.hasProp(point, "secondary")
-    ) {
-      throw new Error(
-        `"${name}" object must have "coord", "primary" and "secondary" props`,
-      );
-    }
-  }
-}
-
-(mongoose.Schema.Types as any).Route = Route;
-
 export interface RideDocument extends IRide, Document {}
+
+export const RoutePoint = new Schema({
+  coord: { type: [Number], required: true },
+  primary: { type: String, required: true },
+  secondary: { type: String, required: true },
+  district: String,
+});
+
+export const RouteSchema = new Schema({
+  start: { type: RoutePoint, required: true },
+  waypoints: { type: [RoutePoint], default: [] },
+  end: { type: RoutePoint, required: true },
+  path: { type: String, required: true },
+  distance: { type: Number, required: true },
+  duration: { type: Number, required: true },
+});
 
 export const RideSchema: Schema = new Schema(
   {
@@ -99,19 +52,19 @@ export const RideSchema: Schema = new Schema(
       required: true,
       ref: UserModel,
     },
-    type: { type: Number, enum: Object.values(ERideTypes), required: true },
+    type: { type: String, enum: Object.values(ERideTypes), required: true },
     payMethod: {
       type: String,
       enum: Object.values(ERidePayMethods),
       required: true,
     },
-    route: { type: Route, required: true },
+    route: { type: RouteSchema, required: true },
     driver: { type: Schema.Types.ObjectId, ref: UserModel },
     status: {
       type: String,
       enum: Object.values(ERideStatus),
       default: ERideStatus.Created,
-    }
+    },
   },
   { collection: "rides" },
 );

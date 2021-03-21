@@ -1,4 +1,4 @@
-import { IVehicleMetadata, VehicleTypes } from "@core/interfaces";
+import { IVehicleMetadata, EVehicleTypes } from "@core/domain/vehicle";
 import { Document, Schema } from "mongoose";
 import { Entities } from "../connections";
 
@@ -8,9 +8,9 @@ export const VehicleMetadataSchema = new Schema(
   {
     name: { type: String, required: true },
     manufacturer: { type: String, required: true },
-    type: { type: String, enum: Object.values(VehicleTypes), required: true },
+    type: { type: String, enum: Object.values(EVehicleTypes), required: true },
   },
-  { collection: "vehicles_models" },
+  { collection: "vehicles_metadata" },
 );
 
 export const VehicleMetadataModel = Entities.model<VehicleMetadataDocument>(

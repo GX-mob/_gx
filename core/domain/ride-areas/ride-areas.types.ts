@@ -11,6 +11,12 @@ export interface IRideTypeConfiguration {
   overBusinessTimeMinuteAdd: number;
 }
 
+export interface IOfferConfig {
+  initialRadiusSize: number;
+  additionalRadiusSizeByEachIteration: number;
+  maxRadiusSize: number;
+}
+
 export interface IRideAreaConfiguration {
   area: string;
   currency: string;
@@ -21,6 +27,7 @@ export interface IRideAreaConfiguration {
     distanceKm: number;
     minutes: number;
   };
-  general: IRideTypeConfiguration[];
-  subAreas: { [subArea: string]: IRideTypeConfiguration[] };
+  offerConfig: IOfferConfig;
+  ridesTypes: IRideTypeConfiguration[];
+  subAreas: { [subArea: string]: IRideAreaConfiguration };
 }

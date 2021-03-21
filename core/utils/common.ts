@@ -56,10 +56,11 @@ export async function retry<T>(
 
 /**
  * Check if object has own property securely
+ * for check user input provided prop.
  * @param obj
  * @param prop
  */
-export function hasProp<T extends Object>(obj: T, prop: keyof T) {
+export function hasProp<T extends object>(obj: T, prop: keyof T) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 

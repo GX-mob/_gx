@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { IRideAreaConfiguration } from "@core/interfaces";
+import { IRideAreaConfiguration } from "@core/domain/ride-areas";
 import {
   RideAreaConfigurationModel,
   RideAreaConfigurationDocument,
@@ -12,7 +12,7 @@ export type TRideAreaConfigurationQuery = Partial<
 >;
 export type TRideAreaConfigurationUpdate = Pick<
   IRideAreaConfiguration,
-  "general" | "longRideConditions" | "subAreas"
+  "ridesTypes" | "longRideConditions" | "subAreas"
 >;
 export type TRideAreaConfigurationCreate = Omit<IRideAreaConfiguration, "_id">;
 

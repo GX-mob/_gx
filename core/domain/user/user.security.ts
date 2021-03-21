@@ -2,27 +2,27 @@ import {
   PasswordRequiredException,
   UnchangedPasswordException,
 } from "./user.exceptions";
-import { UserBasic } from "./user.basic";
+import { UserBase } from "./user.base";
 import { checkIfHasContact } from "./user.contact";
 import { PasswordObject } from "../value-objects/password.value-object";
 
-export class UserSecurity extends UserBasic {
+export class UserSecurity extends UserBase {
   public enable2FA(userContactTarget: string) {
     this.passwordRequired();
 
-    checkIfHasContact(this.userData, userContactTarget);
+    checkIfHasContact(this.data, userContactTarget);
 
-    this.userData["2fa"] = userContactTarget;
+    this.data["2fa"] = userContactTarget;
   }
 
   public async disable2FA(rawSentPassword: string) {
     await this.assertPassword(rawSentPassword);
 
-    this.userData["2fa"] = "";
+    this.data["2fa"] = "";
   }
 
   private passwordRequired() {
-    if (!this.userData.password) {
+    if (!this.data.password) {
       throw new PasswordRequiredException();
     }
   }
@@ -31,8 +31,8 @@ export class UserSecurity extends UserBasic {
     const newPasswordObject = new PasswordObject(newRawPassword);
     await newPasswordObject.makeHash();
 
-    if (!this.userData.password) {
-      this.userData.password = newPasswordObject.toString("base64");
+    if (!this.data.password) {
+      this.data.password = newPasswordObject.toString("base64");
       return;
     }
 
@@ -46,7 +46,7 @@ export class UserSecurity extends UserBasic {
       throw new UnchangedPasswordException();
     }
 
-    this.userData.password = rightPasswordObject.toString("base64");
+    this.data.password = rightPasswordObject.toString("base64");
   }
 
   public async assertPassword(
@@ -56,7 +56,7 @@ export class UserSecurity extends UserBasic {
     rightPasswordObject: PasswordObject;
   }> {
     const leftPasswordObject = new PasswordObject(
-      this.userData.password as string,
+      this.data.password as string,
       "base64",
     );
     const rightPasswordObject = new PasswordObject(rawSentPassword);
@@ -64,7 +64,7 @@ export class UserSecurity extends UserBasic {
     await leftPasswordObject.compare(rightPasswordObject);
 
     if (leftPasswordObject.neededReHash) {
-      this.userData.password = leftPasswordObject.toString();
+      this.data.password = leftPasswordObject.toString();
     }
 
     return { leftPasswordObject, rightPasswordObject };

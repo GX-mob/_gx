@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { IUser } from "@core/domain/user/user.types";
-import { UserBasic } from "@core/domain/user/user.basic";
+import { UserBase } from "@core/domain/user/user.base";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
 import { UserModel, UserDocument } from "../schemas/user";
@@ -27,10 +27,11 @@ export class UserRepository extends RepositoryFactory<
     super(cacheService, UserModel, {
       namespace: UserRepository.name,
       linkingKeys: ["pid", "primaryEmail", "primaryMobilePhone"],
+      autoPopulate: ["accountVerifications"]
     });
   }
 
-  public update(user: UserBasic) {
+  public update(user: UserBase) {
     return super.updateByQuery({ _id: user.getID() }, user.getUpdatedData());
   }
 

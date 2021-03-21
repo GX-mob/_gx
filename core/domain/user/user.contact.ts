@@ -36,23 +36,23 @@ export function checkIfHasContact(
 
 export class UserContact extends UserSecurity {
   public setPrimaryEmail(contact: string) {
-    const contactObj = checkIfHasContact(this.userData, contact);
+    const contactObj = checkIfHasContact(this.data, contact);
 
     if (contactObj.getType() !== "email") {
       throw new InvalidContactException();
     }
 
-    this.userData.primaryEmail = contactObj.value;
+    this.data.primaryEmail = contactObj.value;
   }
 
   public setPrimaryMobilePhone(contact: string) {
-    const contactObj = checkIfHasContact(this.userData, contact);
+    const contactObj = checkIfHasContact(this.data, contact);
 
     if (contactObj.getType() !== "phone") {
       throw new InvalidContactException();
     }
 
-    this.userData.primaryMobilePhone = contactObj.value;
+    this.data.primaryMobilePhone = contactObj.value;
   }
 
   public addContact(contact: string) {
@@ -69,19 +69,19 @@ export class UserContact extends UserSecurity {
   }
 
   private addEmail(value: string) {
-    this.userData.secondariesEmails.push(value);
+    this.data.secondariesEmails.push(value);
   }
 
   private addMobilePhone(value: string) {
-    this.userData.secondariesMobilePhones.push(value);
+    this.data.secondariesMobilePhones.push(value);
   }
 
   public async removeContact(contact: string, rawSentPassword: string) {
     const isPrimaryPhoneOrEmail =
-      contact === this.userData.primaryEmail ||
-      contact === this.userData.primaryMobilePhone;
+      contact === this.data.primaryEmail ||
+      contact === this.data.primaryMobilePhone;
     const is2FATarget =
-      this.userData["2fa"] && contact === this.userData["2fa"];
+      this.data["2fa"] && contact === this.data["2fa"];
 
     if (isPrimaryPhoneOrEmail || is2FATarget) {
       throw new RemoveContactNotAllowed();
@@ -102,16 +102,16 @@ export class UserContact extends UserSecurity {
   }
 
   private removeEmail(email: string) {
-    const index = this.userData.secondariesEmails.indexOf(email);
-    this.userData.secondariesEmails.splice(index, 1);
+    const index = this.data.secondariesEmails.indexOf(email);
+    this.data.secondariesEmails.splice(index, 1);
   }
 
   private removeMobilePhone(mobileNumber: string) {
-    const index = this.userData.secondariesMobilePhones.indexOf(mobileNumber);
-    this.userData.secondariesMobilePhones.splice(index, 1);
+    const index = this.data.secondariesMobilePhones.indexOf(mobileNumber);
+    this.data.secondariesMobilePhones.splice(index, 1);
   }
 
   public hasContact(value: string): ContactObject {
-    return checkIfHasContact(this.userData, value);
+    return checkIfHasContact(this.data, value);
   }
 }

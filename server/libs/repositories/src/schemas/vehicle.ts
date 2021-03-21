@@ -1,4 +1,4 @@
-import { IVehicle } from "@core/interfaces";
+import { IVehicle } from "@core/domain/vehicle";
 import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
 import { UserModel } from "./user";
@@ -22,6 +22,7 @@ export const VehicleSchema = new Schema(
       of: Schema.Types.ObjectId,
       ref: UserModel,
     },
+    verificationId: String
   },
   { collection: "vehicles" },
 );

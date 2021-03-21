@@ -1,11 +1,11 @@
 import { IUser } from "./user.types";
-import { UserBasic } from "./user.basic";
+import { UserBase } from "./user.base";
 import { UserContact } from "./user.contact";
 import { UserProfile } from "./user.profile";
 import { UserSecurity } from "./user.security";
 import { UserAccount } from "./user.account";
 
-export class User extends UserBasic {
+export class User extends UserBase {
   private userContact: UserContact;
   private userProfile: UserProfile;
   private userSecurity: UserSecurity;

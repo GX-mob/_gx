@@ -9,7 +9,7 @@ export interface IRoutePoint {
 
 export interface IRoute {
   start: IRoutePoint;
-  waypoints?: IRoutePoint[];
+  waypoints: IRoutePoint[];
   end: IRoutePoint;
   path: string;
   distance: number;
@@ -80,3 +80,12 @@ export interface IRideCreate
   type: ERideTypes;
   payMethod: ERidePayMethods;
 }
+
+export interface IRideOffer {
+  pid: string;
+}
+
+export type TRideCostDescriptors = Pick<
+  IRide,
+  "type" | "area" | "subArea" | "route"
+>;

@@ -1,24 +1,24 @@
-import { UserBasic } from "./user.basic";
+import { UserBase } from "./user.base";
 
-export class UserProfile extends UserBasic {
+export class UserProfile extends UserBase {
   // @TODO: name validations
   private throwIfInvalidName(_value: string) {}
 
   setFirstName(value: string) {
     this.throwIfInvalidName(value);
-    this.userData.firstName = value;
+    this.data.firstName = value;
   }
 
   setLastName(value: string) {
     this.throwIfInvalidName(value);
-    this.userData.firstName = value;
+    this.data.firstName = value;
   }
 
   setBirthDate(value: Date) {
-    this.userData.birth = value;
+    this.data.birth = value;
   }
 
   setProfileAvatar(value: string) {
-    this.userData.avatar = value;
+    this.data.avatar = value;
   }
 }

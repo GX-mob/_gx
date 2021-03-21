@@ -8,6 +8,7 @@ import {
   IRoutePoint,
 } from "@core/domain/ride";
 import { EUserRoles } from "@core/domain/user";
+import { TVehicleCreate } from "@core/domain/vehicle";
 import {
   TCreateRideDto,
   TGetRideInfoDto,
@@ -19,6 +20,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsString,
   ValidateNested,
 } from "class-validator";
@@ -46,7 +48,7 @@ class Route implements IRoute {
 
   @ValidateNested()
   @IsArray()
-  waypoints?: Point[];
+  waypoints!: Point[];
 
   @ValidateNested()
   end!: Point;
@@ -126,4 +128,18 @@ export class RideInfoDto implements IRide {
   constructor(ride: IRide) {
     Object.assign(this, ride);
   }
+}
+
+export class CreateVehicleDto implements TVehicleCreate<string, string> {
+  @IsString()
+  @IsNotEmpty()
+  metadata!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  plate!: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  year!: number;
 }

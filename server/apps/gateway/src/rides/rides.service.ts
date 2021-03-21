@@ -56,6 +56,6 @@ export class RidesService {
     area: string,
     subArea?: string,
   ): IRideTypeConfiguration[] {
-    return this.rideAreas.getPricesForArea(area, subArea);
+    return this.rideAreas.getAreaConfig(area, subArea).ridesTypes;
   }
 }
