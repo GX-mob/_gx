@@ -2,7 +2,7 @@ import {
   IContactDto,
   IContactVerificationCheckDto,
 } from "./common-dto.interfaces";
-import { IUser, TUserCreate } from "../../domain/user";
+import { TUserCreate } from "../../domain/user";
 
 export interface IUserRegisterDto
   extends IContactDto,

@@ -2,8 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import { Types } from "mongoose";
-import { EUserRoles } from "@core/domain/user"
-import { ISession } from "@core/interfaces";
 import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
 import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
@@ -13,7 +11,8 @@ import {
   SessionNotFoundException,
   SessionDeactivatedException,
 } from "./exceptions";
-import { User } from "@core/domain/user";
+import { EUserRoles, User } from "@core/domain/user";
+import { ISession, Session } from "@core/domain/session";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
   jwt.verify,
@@ -57,6 +56,7 @@ export class AuthService {
       user: user.getID(),
       userAgent: userAgent || "",
       ips: ip ? [ip] : [],
+      history: [],
     });
 
     const token = await this.signToken({ sid: session._id, uid: user.getID() });
@@ -76,9 +76,9 @@ export class AuthService {
    * @param token
    * @returns session data
    */
-  async verify(token: string, ip: string | null) {
+  async verify(token: string, ip?: string) {
     const tokenBody = await this.verifyToken(token);
-    const session_id = Types.ObjectId(tokenBody.sid);
+    const session_id = tokenBody.sid;
 
     return this.checkState(session_id, ip);
   }
@@ -101,29 +101,14 @@ export class AuthService {
   }
 
   private async checkState(
-    session_id: Types.ObjectId,
-    ip: string | null,
-  ): Promise<ISession> {
-    const sessionData = await this.get(session_id);
+    session_id: string,
+    ip?: string,
+  ): Promise<Session> {
+    const session = await this.get(session_id);
 
-    if (!sessionData) {
-      throw new SessionNotFoundException();
-    }
+    ip && session.addIp(ip);
 
-    if (!sessionData.active) {
-      throw new SessionDeactivatedException();
-    }
-
-    const session = { ...sessionData };
-
-    if (!ip || session.ips.includes(ip)) {
-      return session;
-    }
-
-    session.ips.push(ip);
-
-    const update = this.update(session_id, { ips: session.ips });
-    util.handleRejectionByUnderHood(update);
+    util.handleRejectionByUnderHood(this.update(session));
 
     return session;
   }
@@ -132,15 +117,18 @@ export class AuthService {
     return !!roles.find((role) => session.user.roles.includes(role));
   }
 
-  async get(_id: Types.ObjectId) {
-    return this.sessionRepository.find({ _id });
+  async get(_id: string): Promise<Session> {
+    const sessionData = await this.sessionRepository.find({ _id });
+
+    if (!sessionData) {
+      throw new SessionNotFoundException();
+    }
+
+    return new Session(sessionData);
   }
 
-  async update(
-    session_id: Types.ObjectId,
-    data: Partial<Omit<ISession, "_id" | "user" | "createdAt">>,
-  ) {
-    await this.sessionRepository.updateByQuery({ _id: session_id }, data);
+  async update(session: Session) {
+    await this.sessionRepository.update(session);
   }
 
   async delete(session_id: string) {

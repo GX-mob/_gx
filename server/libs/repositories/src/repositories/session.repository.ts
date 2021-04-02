@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { ISession } from "@core/interfaces";
+import { ISession, Session } from "@core/domain/session";
 import { SessionModel, SessionDocument } from "../schemas/session";
 
 export type TSessionQuery = Partial<Pick<ISession, "_id" | "user">>
@@ -21,5 +21,9 @@ export class SessionRepository extends RepositoryFactory<
       namespace: SessionRepository.name,
       autoPopulate: ["user"],
     });
+  }
+
+  update(session: Session) {
+    return this.updateByQuery({ _id: session.getID() }, session.getUpdatedData());
   }
 }

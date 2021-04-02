@@ -6,12 +6,12 @@ export enum EUserRoles {
 }
 
 export enum EAccountMode {
-  ParentAccount = 'parent-account',
-  ChildAccount = 'child-account'
+  ParentAccount = "parent-account",
+  ChildAccount = "child-account",
 }
 
 export enum EAvailableCountries {
-  BR = "BR"
+  BR = "BR",
 }
 
 export interface IUser {

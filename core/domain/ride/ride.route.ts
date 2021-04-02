@@ -16,6 +16,8 @@ export class RideRoute {
   }
 
   public addWaypoint(point: IRoutePoint, index?: number) {
+    this.validateRoutePoint(point);
+
     if (!index) {
       this.rideData.route.waypoints.push(point);
     } else {
@@ -49,7 +51,7 @@ export class RideRoute {
       !hasProp(route, "distance") ||
       !hasProp(route, "end")
     ) {
-      throw new IncompleteRouteDataException();
+      throw new IncompleteRouteDataException(ERouteExceptionCodes.EmptyField);
     }
   }
 
@@ -58,19 +60,22 @@ export class RideRoute {
 
     this.validateRoutePoint(route.start);
     this.validateRoutePoint(route.end);
-    route.waypoints.forEach((point) => this.validateRoutePoint(point));
+
+    for (const point of route.waypoints) {
+      this.validateRoutePoint(point);
+    }
   }
 
   private validateRoutePoint(point: IRoutePoint) {
     if (!point.coord || !point.primary || !point.secondary || !point.district) {
-      throw new InvalidRoutePointException();
+      throw new InvalidRoutePointException(ERouteExceptionCodes.EmptyField);
     }
 
-    const hasValidCoordinate =
+    const hasInvalidCoordinate =
       !Array.isArray(point.coord) ||
       point.coord.some((coord) => typeof coord !== "number");
 
-    if (hasValidCoordinate) {
+    if (hasInvalidCoordinate) {
       throw new InvalidRoutePointException(ERouteExceptionCodes.InvalidField);
     }
   }

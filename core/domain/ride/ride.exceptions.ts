@@ -7,13 +7,13 @@ export enum ERouteExceptionCodes {
 }
 
 export class IncompleteRouteDataException extends DomainException {
-  constructor(code: ERouteExceptionCodes = ERouteExceptionCodes.EmptyField) {
+  constructor(code: ERouteExceptionCodes) {
     super(DomainExceptionsMessages.IncompleteRouteData, code);
   }
 }
 
 export class InvalidRoutePointException extends DomainException {
-  constructor(code: ERouteExceptionCodes = ERouteExceptionCodes.EmptyField) {
+  constructor(code: ERouteExceptionCodes) {
     super(DomainExceptionsMessages.InvalidRoutePoint, code);
   }
 }

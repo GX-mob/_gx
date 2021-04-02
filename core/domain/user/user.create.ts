@@ -1,9 +1,11 @@
+import { nanoid } from "nanoid";
 import { IUserRegisterDto } from "../../interfaces/dto/user-register-dto.interfaces";
 import { IUser } from "./user.types";
 import { FederalIDObject } from "../value-objects/federial-id.value-object";
 import { ContactObject } from "../value-objects/contact.value-object";
 import { PasswordObject } from "../value-objects/password.value-object";
 import { TermsVersionObject } from "../value-objects/terms-version.value-object";
+import { USER_PID_LENGTH } from "../../constants";
 
 export type TUserCreate = Omit<
   IUser,
@@ -21,7 +23,7 @@ export type TUserCreate = Omit<
 
 export class UserCreate {
   static currentTermsVersion = "0.0.0";
-  private userData!: TUserCreate;
+  private userData!: TUserCreate & Pick<IUser, "pid">;
 
   public readonly termsVersionObject: TermsVersionObject;
   public readonly contactObject: ContactObject;
@@ -39,6 +41,7 @@ export class UserCreate {
     );
 
     this.userData = {
+      pid: nanoid(USER_PID_LENGTH),
       federalID: this.federalIDObject.value,
       mode: userCreateDto.mode,
       country: userCreateDto.country,

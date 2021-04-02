@@ -33,9 +33,9 @@ export class AuthGuard implements CanActivate {
 
     const ip = getClientIp(request.raw);
     const token = request.headers.authorization.replace("Bearer ", "");
-    const session = await this.sessionService.verify(token, ip);
+    const session = await this.sessionService.verify(token, ip || undefined);
 
-    if (roles && !this.sessionService.hasPermission(session, roles)) {
+    if (session.hasPermission(roles)) {
       throw new ForbiddenException();
     }
 

@@ -64,5 +64,4 @@ export class User extends UserBase {
   public async disable2FA(rawSentPassword: string) {
     return this.userSecurity.disable2FA(rawSentPassword);
   }
-
 }

@@ -15,5 +15,8 @@ export enum DomainExceptionsMessages {
   UnsupportedArea = "unsupported-area",
   InvalidRideType = "invalid-ride-type",
   IncompleteRouteData = "incomplete-route-data",
-  InvalidRoutePoint = "invalid-route-point"
+  InvalidRoutePoint = "invalid-route-point",
+
+  // Session
+  SessionDeactivated = "session-deactivated",
 }

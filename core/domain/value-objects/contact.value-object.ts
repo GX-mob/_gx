@@ -21,7 +21,7 @@ export class ContactObject implements ValueObject<string> {
     return this.contactType;
   }
 
-  public validate(){
+  public validate() {
     if (validator.isMobilePhone(this._value)) {
       this.contactType = "phone";
     }
@@ -30,9 +30,7 @@ export class ContactObject implements ValueObject<string> {
       this.contactType = "email";
     }
 
-
-    if(!this.contactType)
-      throw new InvalidContactException();
+    if (!this.contactType) throw new InvalidContactException();
   }
 
   public get value(): string {

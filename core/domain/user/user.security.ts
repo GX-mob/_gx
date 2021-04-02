@@ -27,7 +27,10 @@ export class UserSecurity extends UserBase {
     }
   }
 
-  public async upsertPassword(newRawPassword: string, currentRawPassword?: string) {
+  public async upsertPassword(
+    newRawPassword: string,
+    currentRawPassword?: string,
+  ) {
     const newPasswordObject = new PasswordObject(newRawPassword);
     await newPasswordObject.makeHash();
 
@@ -36,11 +39,13 @@ export class UserSecurity extends UserBase {
       return;
     }
 
-    if(!currentRawPassword) {
+    if (!currentRawPassword) {
       throw new PasswordRequiredException();
     }
 
-    const { rightPasswordObject } = await this.assertPassword(currentRawPassword);
+    const { rightPasswordObject } = await this.assertPassword(
+      currentRawPassword,
+    );
 
     if (newPasswordObject.isEqual(rightPasswordObject.toBuffer())) {
       throw new UnchangedPasswordException();
