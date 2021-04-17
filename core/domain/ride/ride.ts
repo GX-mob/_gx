@@ -1,4 +1,4 @@
-import { User } from "../user";
+import { Account } from "../account";
 import { RideBase } from "./ride.base";
 import { RideCosts } from "./ride.costs";
 import { RideRoute } from "./ride.route";
@@ -15,7 +15,7 @@ export class Ride extends RideBase {
     this.data.status = status;
   }
 
-  setDriver(driver: User) {
+  setDriver(driver: Account) {
     this.data.driver = driver.getID();
   }
 

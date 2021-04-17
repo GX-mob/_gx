@@ -18,19 +18,20 @@
 import { Document, Schema } from "mongoose";
 import { Sessions } from "../connections";
 import { ISession } from "@core/domain/session";
-import { UserModel } from "./user";
+import { AccountModel } from "./account";
+import { EDatabaseCollectionsNames } from "../constants";
 
 export interface SessionDocument extends ISession, Document {}
 
 export const SessionSchema: Schema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, required: true, ref: UserModel },
+    user: { type: Schema.Types.ObjectId, required: true, ref: AccountModel },
     userAgent: { type: String, required: true },
     ips: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
     active: { type: Boolean, default: true },
   },
-  { collection: "sessions" },
+  { collection: EDatabaseCollectionsNames.Sessions },
 );
 
 export const SessionModel = Sessions.model<SessionDocument>(

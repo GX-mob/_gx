@@ -7,7 +7,7 @@ import { LoggerModule } from "nestjs-pino";
 import { IUser, ISession } from "@shared/interfaces";
 import {
   RepositoryModule,
-  UserModel,
+  AccountModel,
   UserRepository,
   SessionRepository,
 } from "@app/repositories";
@@ -96,7 +96,7 @@ describe("RepositoryFactory", () => {
   });
 
   it("should get non-cached record", async () => {
-    const nonCached = await UserModel.create(mockUser());
+    const nonCached = await AccountModel.create(mockUser());
 
     const user = (await userRepository.find({
       _id: nonCached._id,
@@ -125,7 +125,7 @@ describe("RepositoryFactory", () => {
 
     await userRepository.update(query, { firstName: "Second" });
 
-    const persistent = (await UserModel.findOne(query)) as IUser;
+    const persistent = (await AccountModel.findOne(query)) as IUser;
     const fromCache = await cacheService.get(UserRepository.name, query);
 
     expect(persistent.firstName).toBe("Second");

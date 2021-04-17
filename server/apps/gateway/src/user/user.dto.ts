@@ -15,11 +15,11 @@ import {
   IUserRegisterDto,
 } from "@core/interfaces";
 import {
-  IUser,
-  EUserRoles,
+  IAccount,
+  EAccountRoles,
   EAccountMode,
   EAvailableCountries,
-} from "@core/domain/user";
+} from "@core/domain/account";
 import { Exclude } from "class-transformer";
 import { IVerification } from "@core/domain/verification";
 
@@ -80,7 +80,7 @@ export class UserRegisterDto
   country!: EAvailableCountries;
 }
 
-export class UserDto implements IUser {
+export class UserDto implements IAccount {
   _id!: string;
   pid!: string;
   mode!: EAccountMode;
@@ -95,7 +95,7 @@ export class UserDto implements IUser {
   federalID!: string;
   birth!: Date;
   avatar!: string;
-  roles!: EUserRoles[];
+  roles!: EAccountRoles[];
   averageEvaluation!: number;
   termsAcceptedVersion!: string;
 
@@ -105,7 +105,7 @@ export class UserDto implements IUser {
   @Exclude()
   accountVerifications!: IVerification[];
 
-  constructor(partial: Partial<IUser>) {
+  constructor(partial: Partial<IAccount>) {
     Object.assign(this, partial);
   }
 }

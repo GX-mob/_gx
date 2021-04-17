@@ -7,7 +7,7 @@ import {
   IRoute,
   IRoutePoint,
 } from "@core/domain/ride";
-import { EUserRoles } from "@core/domain/user";
+import { EAccountRoles } from "@core/domain/account";
 import { TVehicleCreate } from "@core/domain/vehicle";
 import {
   TCreateRideDto,
@@ -100,16 +100,16 @@ export class RideInfoDto implements IRide {
   _id!: any;
   pid!: string;
 
-  @Expose({ groups: [EUserRoles.Driver] })
+  @Expose({ groups: [EAccountRoles.Driver] })
   voyager!: any;
 
-  @Expose({ groups: [EUserRoles.Driver] })
+  @Expose({ groups: [EAccountRoles.Driver] })
   route!: IRoute;
 
-  @Expose({ groups: [EUserRoles.Driver] })
+  @Expose({ groups: [EAccountRoles.Driver] })
   type!: ERideTypes;
 
-  @Expose({ groups: [EUserRoles.Driver] })
+  @Expose({ groups: [EAccountRoles.Driver] })
   payMethod!: ERidePayMethods;
 
   costs!: IRideCosts;
@@ -122,7 +122,7 @@ export class RideInfoDto implements IRide {
   subArea!: string;
   @Exclude()
   status!: ERideStatus;
-  @Expose({ groups: [EUserRoles.Voyager] })
+  @Expose({ groups: [EAccountRoles.Voyager] })
   driver?: any;
 
   constructor(ride: IRide) {

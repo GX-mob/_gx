@@ -11,7 +11,7 @@ import { EUserRoles, ISession } from "@core/interfaces";
 import {
   SessionRepository,
   RepositoryModule,
-  UserModel,
+  AccountModel,
 } from "@app/repositories";
 import {
   SessionNotFoundException,
@@ -30,7 +30,7 @@ describe("AuthService", () => {
     birth: new Date("06/13/1994"),
   };
 
-  let user = new UserModel(mockUser);
+  let user = new AccountModel(mockUser);
   const sid = Types.ObjectId();
   const ua = "test";
   const ip = "127.0.0.1";

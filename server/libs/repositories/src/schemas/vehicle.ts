@@ -1,14 +1,15 @@
 import { IVehicle } from "@core/domain/vehicle";
 import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
-import { UserModel } from "./user";
+import { EDatabaseCollectionsNames } from "../constants";
+import { AccountModel } from "./account";
 import { VehicleMetadataModel } from "./vehicle-metadata";
 
 export interface VehicleDocument extends IVehicle, Document {}
 
 export const VehicleSchema = new Schema(
   {
-    owner: { type: Types.ObjectId, ref: UserModel, required: true },
+    owner: { type: Types.ObjectId, ref: AccountModel, required: true },
     plate: { type: String, required: true },
     year: { type: Number, required: true },
     inUse: Boolean,
@@ -20,11 +21,11 @@ export const VehicleSchema = new Schema(
     permissions: {
       type: Array,
       of: Schema.Types.ObjectId,
-      ref: UserModel,
+      ref: AccountModel,
     },
     verificationId: String
   },
-  { collection: "vehicles" },
+  { collection: EDatabaseCollectionsNames.Vehicles },
 );
 
 export const VehicleModel = Entities.model<VehicleDocument>(

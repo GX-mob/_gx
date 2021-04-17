@@ -1,7 +1,7 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import {
   RepositoryService,
-  UserModel,
+  AccountModel,
   RideModel,
   VehicleMetadataModel,
   VehicleModel,
@@ -103,7 +103,7 @@ export async function seedDatabase(logging: boolean = true) {
 
   logging && log("MongoDB", chalk`{yellow Seeding users...}`);
   // Create voyager user
-  const voyager = await UserModel.create({
+  const voyager = await AccountModel.create({
     pid: "1",
     firstName: faker.name.firstName(),
     lastName: faker.name.lastName(),
@@ -116,7 +116,7 @@ export async function seedDatabase(logging: boolean = true) {
   });
 
   // Create driver user
-  const driver = await UserModel.create({
+  const driver = await AccountModel.create({
     pid: "2",
     firstName: faker.name.firstName(),
     lastName: faker.name.lastName(),
@@ -132,7 +132,7 @@ export async function seedDatabase(logging: boolean = true) {
   });
 
   // Create driver user
-  const driver2 = await UserModel.create({
+  const driver2 = await AccountModel.create({
     pid: "3",
     firstName: faker.name.firstName(),
     lastName: faker.name.lastName(),

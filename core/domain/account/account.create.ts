@@ -1,14 +1,14 @@
 import { nanoid } from "nanoid";
 import { IUserRegisterDto } from "../../interfaces/dto/user-register-dto.interfaces";
-import { IUser } from "./user.types";
+import { IAccount } from "./account.types";
 import { FederalIDObject } from "../value-objects/federial-id.value-object";
 import { ContactObject } from "../value-objects/contact.value-object";
 import { PasswordObject } from "../value-objects/password.value-object";
 import { TermsVersionObject } from "../value-objects/terms-version.value-object";
 import { USER_PID_LENGTH } from "../../constants";
 
-export type TUserCreate = Omit<
-  IUser,
+export type TAccountCreate = Omit<
+  IAccount,
   | "_id"
   | "pid"
   | "averageEvaluation"
@@ -19,11 +19,11 @@ export type TUserCreate = Omit<
   | "primaryEmail"
   | "primaryMobilePhone"
 > &
-  Partial<Pick<IUser, "primaryEmail" | "primaryMobilePhone">>;
+  Partial<Pick<IAccount, "primaryEmail" | "primaryMobilePhone">>;
 
-export class UserCreate {
+export class AccountCreate {
   static currentTermsVersion = "0.0.0";
-  private userData!: TUserCreate & Pick<IUser, "pid">;
+  private userData!: TAccountCreate & Pick<IAccount, "pid">;
 
   public readonly termsVersionObject: TermsVersionObject;
   public readonly contactObject: ContactObject;
@@ -60,7 +60,7 @@ export class UserCreate {
     }
   }
 
-  getCreationData(): TUserCreate {
+  getCreationData(): TAccountCreate {
     return this.userData;
   }
 }

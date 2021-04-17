@@ -1,4 +1,4 @@
-export * from "./user.repository";
+export * from "./account.repository";
 export * from "./session.repository";
 export * from "./ride.repository";
 export * from "./vehicle.repository";

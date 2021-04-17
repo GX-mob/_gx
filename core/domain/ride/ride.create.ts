@@ -1,6 +1,6 @@
 import { TCreateRideDto } from "../../interfaces";
 import { RideAreas } from "../ride-areas";
-import { User } from "../user";
+import { Account } from "../account";
 import { RideCosts } from "./ride.costs";
 import { RideRoute } from "./ride.route";
 import { IRide } from "./ride.types";
@@ -22,7 +22,7 @@ export class RideCreate {
   public readonly rideCostsObject: RideCosts;
 
   constructor(
-    private user: User,
+    private user: Account,
     areas: RideAreas,
     private ride: TCreateRideDto,
   ) {

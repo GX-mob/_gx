@@ -1,21 +1,31 @@
 version: "3"
 
-x-gxweb-dev: &gxweb-dev
-  build:
-    context: ../
-    dockerfile: ./server/Dockerfile
-  volumes:
-    - .:/usr/src/app:z
-  networks:
-    - gxnet
-  environment:
-    NODE_ENV: development
-    DATABASE_URI: mongodb://gx-mongo:27017/
-    REDIS_URI: redis://gx-redis:6379/
+# x-gxweb-dev: &gxweb-dev
+#   build:
+#     context: ../
+#     dockerfile: ./server/Dockerfile
+#   volumes:
+#     - .:/usr/src/app:z
+#   networks:
+#     - gxnet
+#   environment:
+#     NODE_ENV: development
+#     DATABASE_URI: mongodb://gx-mongo:27017/
+#     REDIS_URI: redis://gx-redis:6379/
 
 services:
   gx-webservices:
-    <<: *gxweb-dev
+    build:
+      context: ../
+      dockerfile: ./server/Dockerfile
+    volumes:
+      - .:/usr/src/app:z
+    networks:
+      - gxnet
+    environment:
+      NODE_ENV: development
+      DATABASE_URI: mongodb://gx-mongo:27017/
+      REDIS_URI: redis://gx-redis:6379/
     depends_on:
       - gx-mongo
       - gx-redis

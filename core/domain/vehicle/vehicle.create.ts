@@ -1,11 +1,11 @@
-import { IUser, UserBase } from "../user";
+import { IAccount, AccountBase } from "../account";
 import { IVehicle, TVehicleCreate } from "./vehicle.types";
 
 export class VehicleCreate {
-  private ownerId!: IUser["_id"];
+  private ownerId!: IAccount["_id"];
   constructor(private vehicleData: TVehicleCreate) {}
 
-  public setOwner(user: UserBase) {
+  public setOwner(user: AccountBase) {
     this.ownerId = user.getID();
   }
 

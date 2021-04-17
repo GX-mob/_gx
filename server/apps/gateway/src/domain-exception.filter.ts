@@ -5,7 +5,7 @@ import {
   PasswordRequiredException,
   RemoveContactNotAllowed,
   WrongPasswordException,
-} from "@core/domain/user";
+} from "@core/domain/account";
 import {
   InvalidRideTypeException,
   UnsupportedAreaException,

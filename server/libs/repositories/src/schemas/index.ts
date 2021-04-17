@@ -1,4 +1,4 @@
-export * from "./user";
+export * from "./account";
 export * from "./vehicle-metadata";
 export * from "./vehicle";
 export * from "./ride";

@@ -1,12 +1,12 @@
 import {
   PasswordRequiredException,
   UnchangedPasswordException,
-} from "./user.exceptions";
-import { UserBase } from "./user.base";
-import { checkIfHasContact } from "./user.contact";
+} from "./account.exceptions";
+import { AccountBase } from "./account.base";
+import { checkIfHasContact } from "./account.contact";
 import { PasswordObject } from "../value-objects/password.value-object";
 
-export class UserSecurity extends UserBase {
+export class AccountSecurity extends AccountBase {
   public enable2FA(userContactTarget: string) {
     this.passwordRequired();
 

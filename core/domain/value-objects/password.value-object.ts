@@ -1,6 +1,6 @@
 import SecurePassword from "secure-password";
 import { ValueObject } from "../base-classes/value-object";
-import { WrongPasswordException } from "../user/user.exceptions";
+import { WrongPasswordException } from "../account/account.exceptions";
 
 const securePassword = new SecurePassword();
 

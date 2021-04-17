@@ -4,7 +4,7 @@ import {
   RideRepository,
   RideAreaConfigurationRepository,
 } from "@app/repositories";
-import { User } from "@core/domain/user";
+import { Account } from "@core/domain/account";
 import {
   IRide,
   RideCreate,
@@ -42,7 +42,7 @@ export class RidesService {
     return this.rideRepository.find({ pid });
   }
 
-  async create(user: User, data: TCreateRideDto) {
+  async create(user: Account, data: TCreateRideDto) {
     return this.rideRepository.create(new RideCreate(user, this.rideAreas, data));
   }
 

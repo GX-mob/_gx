@@ -1,16 +1,16 @@
-import { IUser } from "./user.types";
+import { IAccount } from "./account.types";
 import {
   NotOwnContactException,
   RemoveContactNotAllowed,
-} from "./user.exceptions";
-import { UserSecurity } from "./user.security";
+} from "./account.exceptions";
+import { AccountSecurity } from "./account.security";
 import {
   ContactObject,
   InvalidContactException,
 } from "../value-objects/contact.value-object";
 
 export function checkIfHasContact(
-  userData: IUser,
+  userData: IAccount,
   value: string,
 ): ContactObject {
   const contact = new ContactObject(value);
@@ -34,7 +34,7 @@ export function checkIfHasContact(
   return contact;
 }
 
-export class UserContact extends UserSecurity {
+export class AccountContact extends AccountSecurity {
   public setPrimaryEmail(contact: string) {
     const contactObj = checkIfHasContact(this.data, contact);
 

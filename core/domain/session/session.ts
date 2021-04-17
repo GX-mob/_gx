@@ -1,4 +1,4 @@
-import { EUserRoles } from "../user";
+import { EAccountRoles } from "../account";
 import { SessionBase } from "./session.base";
 import { SessionDeactivatedException } from "./session.exceptions";
 import { ESessionActions, ISession } from "./session.types";
@@ -27,7 +27,7 @@ export class Session extends SessionBase {
     this.addHistory(ESessionActions.Deactivated);
   }
 
-  public hasPermission(roles: EUserRoles[]) {
+  public hasPermission(roles: EAccountRoles[]) {
     return !!roles.find((role) => this.data.user.roles.includes(role));
   }
 

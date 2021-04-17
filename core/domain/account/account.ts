@@ -1,22 +1,21 @@
-import { IUser } from "./user.types";
-import { UserBase } from "./user.base";
-import { UserContact } from "./user.contact";
-import { UserProfile } from "./user.profile";
-import { UserSecurity } from "./user.security";
-import { UserAccount } from "./user.account";
+import { IAccount } from "./account.types";
+import { AccountBase } from "./account.base";
+import { AccountContact } from "./account.contact";
+import { AccountProfile } from "./account.profile";
+import { AccountSecurity } from "./account.security";
+import { FederalIDObject } from "../value-objects/federial-id.value-object";
+import { Verification } from "../verification";
 
-export class User extends UserBase {
-  private userContact: UserContact;
-  private userProfile: UserProfile;
-  private userSecurity: UserSecurity;
-  private userAccount: UserAccount;
+export class Account extends AccountBase {
+  private userContact: AccountContact;
+  private userProfile: AccountProfile;
+  private userSecurity: AccountSecurity;
 
-  constructor(protected userData: IUser) {
+  constructor(protected userData: IAccount) {
     super(userData);
-    this.userContact = new UserContact(userData);
-    this.userProfile = new UserProfile(userData);
-    this.userSecurity = new UserSecurity(userData);
-    this.userAccount = new UserAccount(userData);
+    this.userContact = new AccountContact(userData);
+    this.userProfile = new AccountProfile(userData);
+    this.userSecurity = new AccountSecurity(userData);
   }
 
   // Contact
@@ -63,5 +62,15 @@ export class User extends UserBase {
 
   public async disable2FA(rawSentPassword: string) {
     return this.userSecurity.disable2FA(rawSentPassword);
+  }
+
+  //
+  public setFederalID(value: string) {
+    const federalIDObject = new FederalIDObject(value, this.data.country);
+    this.data.federalID = federalIDObject.value;
+  }
+
+  public setAccountVerification(verification: Verification) {
+    this.data.accountVerifications.push(verification.getID());
   }
 }

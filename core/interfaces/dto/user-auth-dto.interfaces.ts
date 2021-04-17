@@ -1,27 +1,36 @@
 import { IContactDto } from "./common-dto.interfaces";
 
-export interface IAuthBasicResponse<Next> {
+export enum EAuthorizationNextSteps {
+  Password = "password",
+  Code = "code",
+  Authorized = "authorized",
+}
+
+export interface IAuthBasicResponse<Next extends EAuthorizationNextSteps> {
   next: Next;
 }
 
-export interface IAuthResponseStruct<Next, Body>
+export interface IAuthResponseStruct<Next extends EAuthorizationNextSteps, Body>
   extends IAuthBasicResponse<Next> {
   body: Body;
 }
 
 export type IAuthIdentifyResponse =
-  | IAuthBasicResponse<"password">
-  | IAuthBasicResponse<"code">;
+  | IAuthBasicResponse<EAuthorizationNextSteps.Password>
+  | IAuthBasicResponse<EAuthorizationNextSteps.Code>;
 
 export type IAuthPasswordResponse =
-  | IAuthResponseStruct<"authorized", { token: string }>
-  | IAuthResponseStruct<"code", { target: string }>;
+  | IAuthResponseStruct<EAuthorizationNextSteps.Authorized, { token: string }>
+  | IAuthResponseStruct<EAuthorizationNextSteps.Code, { target: string }>;
 
 export type IAuthCodeResponse = IAuthResponseStruct<
-  "authorized",
+  EAuthorizationNextSteps.Authorized,
   { token: string }
 >;
-export type IAuthSuccessfulResponse = { next: "authorized"; token: string };
+export type IAuthSuccessfulResponse = {
+  next: EAuthorizationNextSteps.Authorized;
+  token: string;
+};
 
 export interface IAuthPasswordDto extends IContactDto {
   password: string;

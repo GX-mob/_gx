@@ -1,4 +1,4 @@
-import { IUser } from "../user";
+import { IAccount } from "../account";
 
 export enum ESessionActions {
   IpAdded = "ip-added",
@@ -14,7 +14,7 @@ export type TSessionCreate = Pick<ISession, "user" | "userAgent" | "ips">;
 
 export interface ISession {
   _id: any;
-  user: IUser;
+  user: IAccount;
   userAgent: string;
   ips: (string | null)[];
   createdAt: Date;

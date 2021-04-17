@@ -1,4 +1,4 @@
-import { IUser } from "../user";
+import { IAccount } from "../account";
 
 export enum EVehicleTypes {
   HATCH = "HATCH",
@@ -16,7 +16,7 @@ export interface IVehicleUsagePermissions {
   expiration: number;
 }
 
-export interface IVehicle<UserType = IUser, MetadataType = IVehicleMetadata> {
+export interface IVehicle<UserType = IAccount, MetadataType = IVehicleMetadata> {
   _id: any;
   owner: UserType;
   plate: string;
@@ -28,6 +28,6 @@ export interface IVehicle<UserType = IUser, MetadataType = IVehicleMetadata> {
 }
 
 export type TVehicleCreate<
-  UserType = IUser,
+  UserType = IAccount,
   MetadataType = IVehicleMetadata
 > = Pick<IVehicle<UserType, MetadataType>, "plate" | "year" | "metadata">;

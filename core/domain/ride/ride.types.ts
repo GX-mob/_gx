@@ -1,4 +1,4 @@
-import { IUser } from "../user";
+import { IAccount } from "../account";
 
 export interface IRoutePoint {
   coord: [number, number];
@@ -50,7 +50,7 @@ export interface IRideCosts {
 export interface IRide {
   _id: any;
   pid: string;
-  voyager: IUser;
+  voyager: IAccount;
   route: IRoute;
   type: ERideTypes;
   payMethod: ERidePayMethods;
@@ -59,7 +59,7 @@ export interface IRide {
   area: string;
   subArea: string;
   status: ERideStatus;
-  driver?: IUser;
+  driver?: IAccount;
 }
 
 export type TCalculatedPriceAspect = {

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   UserRepository,
-  TUserUpdate,
+  TAccountUpdate,
   SessionRepository,
 } from "@app/repositories";
 import { ContactVerificationService } from "@app/contact-verification";
@@ -11,7 +11,7 @@ import {
   UserNotFoundException,
 } from "./exceptions";
 import { util } from "@app/helpers";
-import { UserCreate, User } from "@core/domain/user";
+import { AccountCreate, Account } from "@core/domain/account";
 import { ContactObject } from "@core/domain/value-objects/contact.value-object";
 import { UpdateProfileDto, UserRegisterDto } from "./user.dto";
 
@@ -68,8 +68,8 @@ export class UserService {
     }
   }
 
-  public async create(userCreateDto: UserRegisterDto): Promise<User> {
-    const userCreate = new UserCreate(userCreateDto, "");
+  public async create(userCreateDto: UserRegisterDto): Promise<Account> {
+    const userCreate = new AccountCreate(userCreateDto, "");
 
     /**
      * Ensures security checks
@@ -80,20 +80,20 @@ export class UserService {
       userCreateDto.code,
     );
 
-    return new User(await this.userRepository.create(userCreate));
+    return new Account(await this.userRepository.create(userCreate));
   }
 
-  async update(user: User, data: TUserUpdate) {
+  async update(user: Account, data: TAccountUpdate) {
     await this.userRepository.updateByQuery({ _id: user.getID() }, data);
     return this.sessionRepository.updateCache({ user: user.getID() });
   }
 
-  async updateAvatar(user: User, avatarUrl: string) {
+  async updateAvatar(user: Account, avatarUrl: string) {
     user.setProfileAvatar(avatarUrl);
     await this.userRepository.update(user);
   }
 
-  async updateProfile(user: User, updateProfileDto: UpdateProfileDto) {
+  async updateProfile(user: Account, updateProfileDto: UpdateProfileDto) {
     const { firstName, lastName } = updateProfileDto;
 
     if (firstName) {
@@ -108,7 +108,7 @@ export class UserService {
   }
 
   async updatePassword(
-    user: User,
+    user: Account,
     newRawPassword: string,
     currentRawPassword?: string,
   ) {
@@ -116,13 +116,13 @@ export class UserService {
     await this.userRepository.update(user);
   }
 
-  public enable2FA(user: User, target: string) {
+  public enable2FA(user: Account, target: string) {
     user.enable2FA(target);
 
     return this.userRepository.update(user);
   }
 
-  async disable2FA(user: User, rawSentPassword: string) {
+  async disable2FA(user: Account, rawSentPassword: string) {
     await user.disable2FA(rawSentPassword);
     await this.userRepository.update(user);
   }
@@ -136,12 +136,12 @@ export class UserService {
     }
   }
 
-  async addContact(user: User, contact: string, code: string) {
+  async addContact(user: Account, contact: string, code: string) {
     user.addContact(contact);
     return this.userRepository.update(user);
   }
 
-  async removeContact(user: User, contact: string, rawSentPassword: string) {
+  async removeContact(user: Account, contact: string, rawSentPassword: string) {
     await user.removeContact(contact, rawSentPassword);
     await this.userRepository.update(user);
   }

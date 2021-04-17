@@ -1,6 +1,6 @@
 import { isValidCPF } from "@brazilian-utils/brazilian-utils";
 import { ValueObject } from "../base-classes/value-object";
-import { EAvailableCountries, InvalidFederalIDException } from "../user";
+import { EAvailableCountries, InvalidFederalIDException } from "../account";
 
 type TFederalIDValidationFunction = (value: string) => boolean;
 type TFederalIDsValidationFunctions = {

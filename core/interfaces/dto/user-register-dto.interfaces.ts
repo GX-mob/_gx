@@ -2,11 +2,11 @@ import {
   IContactDto,
   IContactVerificationCheckDto,
 } from "./common-dto.interfaces";
-import { TUserCreate } from "../../domain/user";
+import { TAccountCreate } from "../../domain/account";
 
 export interface IUserRegisterDto
   extends IContactDto,
-    IContactVerificationCheckDto, Omit<TUserCreate, "primaryMobilePhone" | "primaryEmail"> {
+    IContactVerificationCheckDto, Omit<TAccountCreate, "primaryMobilePhone" | "primaryEmail"> {
 }
 
 export interface IUserRegisterSuccessDto {

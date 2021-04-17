@@ -33,10 +33,11 @@ import {
   IAuthIdentifyResponse,
   IAuthPasswordResponse,
   IAuthCodeResponse,
+  EAuthorizationNextSteps,
 } from "@core/interfaces";
 import { AuthService } from "@app/auth";
 import { UserService } from "../user.service";
-import { UserSecurity } from "@core/domain/user";
+import { AccountSecurity } from "@core/domain/account";
 
 @Controller("user/auth")
 export class UserAuthController {
@@ -45,38 +46,38 @@ export class UserAuthController {
     private sessionService: AuthService,
   ) {}
 
-  @Get(":contact")
+  @Get("status")
   async identifyHandler(
-    @Param() { contact }: ContactDto,
+    @Body() { contact }: ContactDto,
   ): Promise<IAuthIdentifyResponse> {
     const { password } = await this.usersService.findByContact(contact);
 
     if (!password) {
       await this.usersService.requestContactVerification(contact);
-      return { next: "code" };
+      return { next: EAuthorizationNextSteps.Code };
     }
 
-    return { next: "password" };
+    return { next: EAuthorizationNextSteps.Password };
   }
 
-  @Post()
+  @Post("credential")
   async passwordHandler(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
     @Body() { contact, password }: AuthPasswordDto,
   ): Promise<IAuthPasswordResponse> {
     const userData = await this.usersService.findByContact(contact);
-    const userSecurity = new UserSecurity(userData);
+    const userSecurity = new AccountSecurity(userData);
     
     await userSecurity.assertPassword(password);
 
     if (!userData["2fa"]) {
       const { token } = await this.sessionService.create(userData._id, userAgent, ip);
-      return { next: "authorized", body: { token } };
+      return { next: EAuthorizationNextSteps.Authorized, body: { token } };
     }
 
     const target = await this.usersService.requestContactVerification(userData["2fa"]);
-    return { next: "code", body: { target } };
+    return { next: EAuthorizationNextSteps.Code, body: { target } };
   }
 
   @Post("code")
@@ -90,6 +91,6 @@ export class UserAuthController {
     const user = await this.usersService.findByContact(contact);
     const { token } = await this.sessionService.create(user._id, userAgent, ip);
 
-    return { next: "authorized", body: { token } };
+    return { next: EAuthorizationNextSteps.Authorized, body: { token } };
   }
 }

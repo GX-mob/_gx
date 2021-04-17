@@ -1,6 +1,6 @@
 import { IVerification } from "../verification";
 
-export enum EUserRoles {
+export enum EAccountRoles {
   Voyager = "voyager",
   Driver = "driver",
 }
@@ -14,14 +14,20 @@ export enum EAvailableCountries {
   BR = "BR",
 }
 
-export interface IUser {
+export interface IAccountProfile {
+  firstName: string;
+  lastName: string;
+  birth: Date;
+}
+
+export interface IAccount {
   _id: any;
   /**
    * Public ID
    */
   pid: string;
   mode: EAccountMode;
-  parentAccount?: IUser;
+  parentAccount?: IAccount;
   accountVerifications: IVerification[];
   country: EAvailableCountries;
   firstName: string;
@@ -37,7 +43,7 @@ export interface IUser {
   avatar?: string;
   createdAt?: Date;
   updatedAt?: Date;
-  roles: EUserRoles[];
+  roles: EAccountRoles[];
   password?: string;
   ["2fa"]?: string;
 }

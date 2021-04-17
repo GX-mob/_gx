@@ -17,7 +17,7 @@ import {
   CreateRideDto,
   RideInfoDto,
 } from "./rides.dto";
-import { IUser, EUserRoles, User } from "@core/domain/user";
+import { IAccount, EAccountRoles, Account } from "@core/domain/account";
 import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 
 @Controller("rides/")
@@ -34,11 +34,11 @@ export class RidesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     excludePrefixes: ["_"],
-    groups: [EUserRoles.Driver],
+    groups: [EAccountRoles.Driver],
   })
   @Get(":pid")
   async getRideDataHandler(
-    @DUser() user: User,
+    @DUser() user: Account,
     @Param() { pid }: GetRideInfoDto,
   ) {
     const driverPid = user.getID();
@@ -55,9 +55,9 @@ export class RidesController {
   @UseInterceptors(ClassSerializerInterceptor)
   @SerializeOptions({
     excludePrefixes: ["_"],
-    groups: [EUserRoles.Voyager],
+    groups: [EAccountRoles.Voyager],
   })
-  async createRideHandler(@DUser() user: User, @Body() body: CreateRideDto) {
+  async createRideHandler(@DUser() user: Account, @Body() body: CreateRideDto) {
     const ride = await this.rideService.create(user, body);
     return new RideInfoDto(ride);
   }

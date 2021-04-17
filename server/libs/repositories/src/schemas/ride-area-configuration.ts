@@ -2,6 +2,7 @@ import { Document, Schema } from "mongoose";
 import { Configuration } from "../connections";
 import { ERideTypes } from "@core/domain/ride";
 import { IRideAreaConfiguration } from "@core/domain/ride-areas";
+import { EDatabaseCollectionsNames } from "../constants";
 
 export interface RideAreaConfigurationDocument
   extends IRideAreaConfiguration,
@@ -26,7 +27,7 @@ const OfferConfigSchema = new Schema({
 
 export const RideAreaConfigurationSchema = new Schema(
   {},
-  { collection: "ride_areas_configurations" },
+  { collection: EDatabaseCollectionsNames.AreasConfigurations },
 );
 
 RideAreaConfigurationSchema.add({

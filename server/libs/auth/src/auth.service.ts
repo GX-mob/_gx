@@ -11,7 +11,7 @@ import {
   SessionNotFoundException,
   SessionDeactivatedException,
 } from "./exceptions";
-import { EUserRoles, User } from "@core/domain/user";
+import { EAccountRoles, Account } from "@core/domain/account";
 import { ISession, Session } from "@core/domain/session";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
@@ -48,7 +48,7 @@ export class AuthService {
    * @return {Object} { token: string, session: SessionModel }
    */
   async create(
-    user: User,
+    user: Account,
     userAgent?: string | null,
     ip?: string | null,
   ): Promise<{ token: string; session: ISession }> {
@@ -113,7 +113,7 @@ export class AuthService {
     return session;
   }
 
-  public hasPermission(session: ISession, roles: EUserRoles[]) {
+  public hasPermission(session: ISession, roles: EAccountRoles[]) {
     return !!roles.find((role) => session.user.roles.includes(role));
   }
 

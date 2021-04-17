@@ -1,6 +1,6 @@
-import { UserBase } from "./user.base";
+import { AccountBase } from "./account.base";
 
-export class UserProfile extends UserBase {
+export class AccountProfile extends AccountBase {
   // @TODO: name validations
   private throwIfInvalidName(_value: string) {}
 

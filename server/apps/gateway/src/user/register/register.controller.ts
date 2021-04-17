@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Controller, Body, Post, HttpCode, Ip, Headers } from "@nestjs/common";
-import { UserService } from "../user.service";
 import { AuthService } from "@app/auth";
+import { IUserRegisterSuccessDto } from "@core/interfaces";
+import { AccountRoute } from "@core/routes"
+import { Body, Controller, Headers, HttpCode, Ip, Post } from "@nestjs/common";
 import {
   ContactDto,
   ContactVerificationCheckDto,
   UserRegisterDto,
 } from "../user.dto";
-import { IUserRegisterSuccessDto } from "@core/interfaces";
-import { UserCreate } from "@core/domain/user";
+import { UserService } from "../user.service";
 
-@Controller("user/register")
+@Controller(AccountRoute.Register())
 export class UserRegisterController {
   constructor(
     private usersService: UserService,
@@ -34,13 +34,13 @@ export class UserRegisterController {
   ) {}
 
   @HttpCode(202)
-  @Post("verify")
+  @Post(AccountRoute.Register.Verify())
   async phoneVerificationRequest(@Body() { contact }: ContactDto) {
     await this.usersService.checkInUseContact(contact);
     await this.usersService.requestContactVerification(contact);
   }
 
-  @Post("check")
+  @Post(AccountRoute.Register.Check())
   async contactVerificationCheck(
     @Body() { contact, code }: ContactVerificationCheckDto,
   ) {

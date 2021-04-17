@@ -1,41 +1,41 @@
 import { Injectable } from "@nestjs/common";
-import { IUser } from "@core/domain/user/user.types";
-import { UserBase } from "@core/domain/user/user.base";
+import { IAccount } from "@core/domain/account/account.types";
+import { AccountBase } from "@core/domain/account/account.base";
 import { CacheService } from "@app/cache";
 import { RepositoryFactory } from "../repository.factory";
-import { UserModel, UserDocument } from "../schemas/user";
+import { AccountModel, AccountDocument } from "../schemas/account";
 import { ContactObject } from "@core/domain/value-objects/contact.value-object";
-import { TUserCreate, UserCreate } from "@core/domain/user";
+import { TAccountCreate, AccountCreate } from "@core/domain/account";
 
-export type TUserQuery = Partial<
+export type TAccountQuery = Partial<
   Pick<
-    IUser,
+    IAccount,
     "_id" | "pid" | "primaryEmail" | "primaryMobilePhone" | "federalID"
   >
 >;
-export type TUserUpdate = Partial<Omit<IUser, "_id" | "pid">>;
+export type TAccountUpdate = Partial<Omit<IAccount, "_id" | "pid">>;
 
 @Injectable()
 export class UserRepository extends RepositoryFactory<
-  IUser,
-  UserDocument,
-  TUserCreate,
-  TUserQuery,
-  TUserUpdate
+  IAccount,
+  AccountDocument,
+  TAccountCreate,
+  TAccountQuery,
+  TAccountUpdate
 > {
   constructor(cacheService: CacheService) {
-    super(cacheService, UserModel, {
+    super(cacheService, AccountModel, {
       namespace: UserRepository.name,
       linkingKeys: ["pid", "primaryEmail", "primaryMobilePhone"],
       autoPopulate: ["accountVerifications"]
     });
   }
 
-  public update(user: UserBase) {
+  public update(user: AccountBase) {
     return super.updateByQuery({ _id: user.getID() }, user.getUpdatedData());
   }
 
-  public async create(user: UserCreate) {
+  public async create(user: AccountCreate) {
     return this.insert(user.getCreationData());
   }
 

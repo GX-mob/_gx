@@ -17,17 +17,18 @@
  */
 import { Document, Schema, Types } from "mongoose";
 import { Entities } from "../connections";
-import { IUser, EUserRoles, EAccountMode, EAvailableCountries } from "@core/domain/user";
+import { IAccount, EAccountRoles, EAccountMode, EAvailableCountries } from "@core/domain/account";
 import { VerificationModel } from "./verification";
+import { EDatabaseCollectionsNames } from "../constants";
 
-export interface UserDocument extends IUser, Document {}
+export interface AccountDocument extends IAccount, Document {}
 
 const RolesSchema: Schema = new Schema({
   type: [String],
-  enum: Object.values(EUserRoles)
+  enum: Object.values(EAccountRoles)
 })
 
-export const UserSchema: Schema = new Schema<IUser>(
+export const AccountSchema: Schema = new Schema<IAccount>(
   {
     pid: { type: String, required: true, unique: true },
     mode: { type: String, enum: Object.values(EAccountMode), default: EAccountMode.ParentAccount },
@@ -65,15 +66,15 @@ export const UserSchema: Schema = new Schema<IUser>(
     avatar: String,
     createdAt: { type: Date, default: Date.now },
     updatedAt: Date,
-    roles: { type: RolesSchema, default: [EUserRoles.Voyager] },
+    roles: { type: [RolesSchema], default: [EAccountRoles.Voyager] },
     password: String,
     ["2fa"]: String,
   },
-  { collection: "users" },
+  { collection: EDatabaseCollectionsNames.Accounts },
 );
 
-UserSchema.pre<UserDocument>("updateOne", function () {
+AccountSchema.pre<AccountDocument>("updateOne", function () {
   this.set({ updatedAt: new Date() });
 });
 
-export const UserModel = Entities.model<UserDocument>("Users", UserSchema);
+export const AccountModel = Entities.model<AccountDocument>("Users", AccountSchema);

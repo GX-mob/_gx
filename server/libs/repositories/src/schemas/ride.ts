@@ -24,7 +24,8 @@ import {
   ERideTypes,
   ERidePayMethods,
 } from "@core/domain/ride";
-import { UserModel } from "./user";
+import { AccountModel } from "./account";
+import { EDatabaseCollectionsNames } from "../constants";
 
 export interface RideDocument extends IRide, Document {}
 
@@ -50,7 +51,7 @@ export const RideSchema: Schema = new Schema(
     voyager: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: UserModel,
+      ref: AccountModel,
     },
     type: { type: String, enum: Object.values(ERideTypes), required: true },
     payMethod: {
@@ -59,14 +60,14 @@ export const RideSchema: Schema = new Schema(
       required: true,
     },
     route: { type: RouteSchema, required: true },
-    driver: { type: Schema.Types.ObjectId, ref: UserModel },
+    driver: { type: Schema.Types.ObjectId, ref: AccountModel },
     status: {
       type: String,
       enum: Object.values(ERideStatus),
       default: ERideStatus.Created,
     },
   },
-  { collection: "rides" },
+  { collection: EDatabaseCollectionsNames.Rides },
 );
 
 export const RideModel = Operational.model<RideDocument>("Ride", RideSchema);

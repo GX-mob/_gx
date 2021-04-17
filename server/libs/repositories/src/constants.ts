@@ -7,6 +7,16 @@ export const DATABASES = {
   AUTHORIZATIONS: "auth",
 };
 
+export enum EDatabaseCollectionsNames {
+  Accounts = "accounts",
+  Verifications = "verifications",
+  Sessions = "sessions",
+  Vehicles = "vehicles",
+  VehiclesMetadata = "vehicles_metadata",
+  Rides = "rides",
+  AreasConfigurations = "areas_configurations",
+}
+
 export const CONNECTION_OPTIONS: ConnectionOptions = {
   useNewUrlParser: true,
   keepAlive: true,

@@ -13,7 +13,7 @@ import {
   NotAcceptableException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { User, IUser } from "@core/domain/user";
+import { Account, IAccount } from "@core/domain/account";
 import { AuthGuard, DUser } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { util } from "@app/helpers";
@@ -38,13 +38,13 @@ export class UserProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getProfileHandler(@DUser() user: User): IUser {
+  getProfileHandler(@DUser() user: Account): IAccount {
     return new UserDto(user.getData());
   }
 
   @Patch()
   async updateHandler(
-    @DUser() user: User,
+    @DUser() user: Account,
     @Body() body: UpdateProfileDto,
   ) {
     await this.usersService.updateProfile(user, body);
@@ -52,7 +52,7 @@ export class UserProfileController {
 
   @Patch("avatar")
   async uploadAvatar(
-    @DUser() user: User,
+    @DUser() user: Account,
     @Request() request: FastifyRequest,
   ): Promise<{ url: string }> {
     if (!request.isMultipart()) {
