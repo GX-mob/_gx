@@ -6,6 +6,7 @@ import {
 import { AccountSecurity } from "./account.security";
 import {
   ContactObject,
+  EContactTypes,
   InvalidContactException,
 } from "../value-objects/contact.value-object";
 
@@ -17,11 +18,11 @@ export function checkIfHasContact(
   let hasContact: boolean;
 
   switch (contact.getType()) {
-    case "email":
+    case EContactTypes.Email:
       hasContact =
         userData.primaryEmail === contact.value ||
         userData.secondariesEmails.includes(contact.value);
-    case "phone":
+    case EContactTypes.Phone:
       hasContact =
         userData.primaryMobilePhone === contact.value ||
         userData.secondariesMobilePhones.includes(contact.value);
@@ -59,10 +60,10 @@ export class AccountContact extends AccountSecurity {
     const contactObject = new ContactObject(contact);
 
     switch (contactObject.getType()) {
-      case "email":
+      case EContactTypes.Email:
         this.addEmail(contactObject.value);
         break;
-      case "phone":
+      case EContactTypes.Phone:
         this.addMobilePhone(contactObject.value);
         break;
     }
@@ -76,12 +77,11 @@ export class AccountContact extends AccountSecurity {
     this.data.secondariesMobilePhones.push(value);
   }
 
-  public async removeContact(contact: string, rawSentPassword: string) {
+  public async removeContact(contact: string) {
     const isPrimaryPhoneOrEmail =
       contact === this.data.primaryEmail ||
       contact === this.data.primaryMobilePhone;
-    const is2FATarget =
-      this.data["2fa"] && contact === this.data["2fa"];
+    const is2FATarget = this.data["2fa"] && contact === this.data["2fa"];
 
     if (isPrimaryPhoneOrEmail || is2FATarget) {
       throw new RemoveContactNotAllowed();
@@ -89,13 +89,11 @@ export class AccountContact extends AccountSecurity {
 
     const contactObject = new ContactObject(contact);
 
-    await super.assertPassword(rawSentPassword);
-
     switch (contactObject.getType()) {
-      case "email":
+      case EContactTypes.Email:
         this.removeEmail(contactObject.value);
         break;
-      case "phone":
+      case EContactTypes.Phone:
         this.removeMobilePhone(contactObject.value);
         break;
     }

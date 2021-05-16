@@ -3,5 +3,9 @@ export interface IContactDto {
 }
 
 export interface IContactVerificationCheckDto extends IContactDto {
-  code: string;
+  verificationCode: string;
+}
+
+export interface IContactVerificationResponseDto {
+  verificationRequestId: string;
 }

@@ -15,8 +15,8 @@ export class AccountSecurity extends AccountBase {
     this.data["2fa"] = userContactTarget;
   }
 
-  public async disable2FA(rawSentPassword: string) {
-    await this.assertPassword(rawSentPassword);
+  public async disable2FA() {
+    //await this.assertPassword(rawSentPassword);
 
     this.data["2fa"] = "";
   }
@@ -33,25 +33,26 @@ export class AccountSecurity extends AccountBase {
   ) {
     const newPasswordObject = new PasswordObject(newRawPassword);
     await newPasswordObject.makeHash();
+    this.data.password = newPasswordObject.toString("base64");
 
-    if (!this.data.password) {
-      this.data.password = newPasswordObject.toString("base64");
-      return;
-    }
+    // if (!this.data.password) {
+    //   this.data.password = newPasswordObject.toString("base64");
+    //   return;
+    // }
 
-    if (!currentRawPassword) {
-      throw new PasswordRequiredException();
-    }
+    // if (!currentRawPassword) {
+    //   throw new PasswordRequiredException();
+    // }
 
-    const { rightPasswordObject } = await this.assertPassword(
-      currentRawPassword,
-    );
+    // const { rightPasswordObject } = await this.assertPassword(
+    //   currentRawPassword,
+    // );
 
-    if (newPasswordObject.isEqual(rightPasswordObject.toBuffer())) {
-      throw new UnchangedPasswordException();
-    }
+    // if (newPasswordObject.isEqual(rightPasswordObject.toBuffer())) {
+    //   throw new UnchangedPasswordException();
+    // }
 
-    this.data.password = rightPasswordObject.toString("base64");
+    // this.data.password = rightPasswordObject.toString("base64");
   }
 
   public async assertPassword(

@@ -16,7 +16,7 @@ import {
   TwilioService,
 } from "@app/contact-verification";
 import { UserModule } from "../user.module";
-import { UserService } from "../user.service";
+import { AccountService } from "../user.service";
 import {
   ContactDto,
   ContactVerificationCheckDto,
@@ -28,7 +28,7 @@ import { UserRegisterController } from "./register.controller";
 
 describe("SignUpController", () => {
   let controller: UserRegisterController;
-  let usersService: UserService;
+  let usersService: AccountService;
   let sessionService: AuthService;
 
   beforeEach(async () => {
@@ -53,7 +53,7 @@ describe("SignUpController", () => {
       .compile();
 
     sessionService = moduleRef.get<AuthService>(AuthService);
-    usersService = moduleRef.get<UserService>(UserService);
+    usersService = moduleRef.get<AccountService>(AccountService);
     controller = moduleRef.get<UserRegisterController>(UserRegisterController);
   });
 

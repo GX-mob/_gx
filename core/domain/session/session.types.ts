@@ -2,7 +2,7 @@ import { IAccount } from "../account";
 
 export enum ESessionActions {
   IpAdded = "ip-added",
-  Deactivated = "deactivated"
+  Deactivated = "deactivated",
 }
 
 export interface ISessionHistory {
@@ -21,4 +21,9 @@ export interface ISession {
   updatedAt?: Date;
   active: boolean;
   history: ISessionHistory[];
+}
+
+export interface ISuccessSignIn {
+  token: string;
+  session: ISession;
 }

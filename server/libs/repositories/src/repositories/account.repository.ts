@@ -1,11 +1,14 @@
-import { Injectable } from "@nestjs/common";
-import { IAccount } from "@core/domain/account/account.types";
-import { AccountBase } from "@core/domain/account/account.base";
 import { CacheService } from "@app/cache";
+import { AccountCreate, TAccountCreate } from "@core/domain/account";
+import { AccountBase } from "@core/domain/account/account.base";
+import { IAccount } from "@core/domain/account/account.types";
+import {
+  ContactObject,
+  EContactTypes
+} from "@core/domain/value-objects/contact.value-object";
+import { Injectable } from "@nestjs/common";
 import { RepositoryFactory } from "../repository.factory";
-import { AccountModel, AccountDocument } from "../schemas/account";
-import { ContactObject } from "@core/domain/value-objects/contact.value-object";
-import { TAccountCreate, AccountCreate } from "@core/domain/account";
+import { AccountDocument, AccountModel } from "../schemas/account";
 
 export type TAccountQuery = Partial<
   Pick<
@@ -16,7 +19,7 @@ export type TAccountQuery = Partial<
 export type TAccountUpdate = Partial<Omit<IAccount, "_id" | "pid">>;
 
 @Injectable()
-export class UserRepository extends RepositoryFactory<
+export class AccountRepository extends RepositoryFactory<
   IAccount,
   AccountDocument,
   TAccountCreate,
@@ -25,9 +28,9 @@ export class UserRepository extends RepositoryFactory<
 > {
   constructor(cacheService: CacheService) {
     super(cacheService, AccountModel, {
-      namespace: UserRepository.name,
+      namespace: AccountRepository.name,
       linkingKeys: ["pid", "primaryEmail", "primaryMobilePhone"],
-      autoPopulate: ["accountVerifications"]
+      autoPopulate: ["accountVerifications"],
     });
   }
 
@@ -40,19 +43,19 @@ export class UserRepository extends RepositoryFactory<
   }
 
   public findByContact(contact: ContactObject) {
-    switch(contact.getType()){
-      case "email":
+    switch (contact.getType()) {
+      case EContactTypes.Email:
         return this.findByEmail(contact.value);
-      case "phone":
+      case EContactTypes.Phone:
         return this.findByPhone(contact.value);
     }
   }
 
   public findByEmail(email: string) {
-    return this.find({ primaryEmail: email })
+    return this.find({ primaryEmail: email });
   }
 
   public findByPhone(phone: string) {
-    return this.find({ primaryMobilePhone: phone })
+    return this.find({ primaryMobilePhone: phone });
   }
 }

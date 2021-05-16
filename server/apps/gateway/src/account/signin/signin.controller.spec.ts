@@ -21,18 +21,18 @@ import {
   IAuthCodeResponse,
   IUser,
 } from "@core/interfaces";
-import { UserModule } from "../user.module";
-import { UserService } from "../user.service";
-import { ContactDto } from "../user.dto";
+import { UserModule } from "../account.module";
+import { AccountService } from "../account.service";
+import { ContactDto } from "../account.dto";
 import { mockUser, mockSession, mockPhone } from "@testing/testing";
 import { UserAuthController } from "./auth.controller";
 import faker from "faker";
-import { ContactVerificationCheckDto } from "../user.dto";
-import { AuthPasswordDto } from "../user.dto";
+import { ContactVerificationCheckDto } from "../account.dto";
+import { AuthPasswordDto } from "../account.dto";
 
 describe("SignInController", () => {
   let controller: UserAuthController;
-  let usersService: UserService;
+  let usersService: AccountService;
   let sessionService: AuthService;
 
   beforeEach(async () => {
@@ -57,7 +57,7 @@ describe("SignInController", () => {
       .compile();
 
     sessionService = moduleRef.get<AuthService>(AuthService);
-    usersService = moduleRef.get<UserService>(UserService);
+    usersService = moduleRef.get<AccountService>(AccountService);
     controller = moduleRef.get<UserAuthController>(UserAuthController);
   });
 

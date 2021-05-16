@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 import { Account } from "@core/domain/account"
 
-export const DUser = createParamDecorator(
+export const DAccount = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     return new Account(request.session.user);

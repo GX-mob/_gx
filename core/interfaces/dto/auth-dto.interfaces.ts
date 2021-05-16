@@ -39,3 +39,10 @@ export interface IAuthPasswordDto extends IContactDto {
 export interface IAuthCodeDto extends IContactDto {
   code: string;
 }
+
+export interface IDynamicAuthRequestDto {
+  password?: string;
+  contact?: string;
+  verificationCode?: string;
+  verificationId?: string;
+}

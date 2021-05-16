@@ -8,7 +8,7 @@ import { IUser, ISession } from "@shared/interfaces";
 import {
   RepositoryModule,
   AccountModel,
-  UserRepository,
+  AccountRepository,
   SessionRepository,
 } from "@app/repositories";
 import { CacheModule, CacheService } from "@app/cache";
@@ -17,7 +17,7 @@ import { mockUser, mockSession } from "@testing/testing";
 
 describe("RepositoryFactory", () => {
   let module: TestingModule;
-  let userRepository: UserRepository;
+  let userRepository: AccountRepository;
   let sessionRepository: SessionRepository;
   let cacheService: CacheService;
 
@@ -34,10 +34,10 @@ describe("RepositoryFactory", () => {
         RepositoryModule,
         CacheModule,
       ],
-      providers: [ConfigService, UserRepository, SessionRepository],
+      providers: [ConfigService, AccountRepository, SessionRepository],
     }).compile();
 
-    userRepository = module.get<UserRepository>(UserRepository);
+    userRepository = module.get<AccountRepository>(AccountRepository);
     sessionRepository = module.get<SessionRepository>(SessionRepository);
     cacheService = module.get<CacheService>(CacheService);
 
@@ -62,7 +62,7 @@ describe("RepositoryFactory", () => {
     const [persistent] = ((await userRepository.model.find({
       _id: userCached._id,
     })) as unknown) as IUser[];
-    const fromCache = (await cacheService.get(UserRepository.name, {
+    const fromCache = (await cacheService.get(AccountRepository.name, {
       _id: userCached._id,
     })) as IUser;
 
@@ -104,7 +104,7 @@ describe("RepositoryFactory", () => {
 
     expect(user.cpf).toBe(nonCached.cpf);
 
-    const fromCache = (await cacheService.get(UserRepository.name, {
+    const fromCache = (await cacheService.get(AccountRepository.name, {
       _id: nonCached._id,
     })) as IUser;
 
@@ -126,7 +126,7 @@ describe("RepositoryFactory", () => {
     await userRepository.update(query, { firstName: "Second" });
 
     const persistent = (await AccountModel.findOne(query)) as IUser;
-    const fromCache = await cacheService.get(UserRepository.name, query);
+    const fromCache = await cacheService.get(AccountRepository.name, query);
 
     expect(persistent.firstName).toBe("Second");
     expect(fromCache.firstName).toBe("Second");

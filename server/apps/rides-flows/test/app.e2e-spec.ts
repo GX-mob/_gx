@@ -36,7 +36,7 @@ import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 import { AuthService } from "@app/auth";
 import { BROADCASTED_EVENTS } from "../src/constants";
-import { UserRepository } from "@app/repositories";
+import { AccountRepository } from "@app/repositories";
 import { AddressInfo } from "net";
 import { mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
@@ -51,7 +51,7 @@ describe("RidesWSService (e2e)", () => {
   const appsNodes: {
     httpServer: HttpServer;
     app: INestApplication;
-    userRepository: UserRepository;
+    userRepository: AccountRepository;
     rideRepository: RideRepository;
     sessionService: AuthService;
     vehicleRepository: VehicleRepository;
@@ -116,7 +116,7 @@ describe("RidesWSService (e2e)", () => {
 
     const httpServer = app.getHttpServer();
     // Repositories
-    const userRepository = app.get(UserRepository);
+    const userRepository = app.get(AccountRepository);
     const rideRepository = app.get(RideRepository);
     const vehicleRepository = app.get(VehicleRepository);
     // Services

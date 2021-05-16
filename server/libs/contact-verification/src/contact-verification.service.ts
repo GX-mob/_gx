@@ -1,8 +1,8 @@
-import validator from "validator";
 import { Injectable } from "@nestjs/common";
 import { CacheService } from "@app/cache";
 import { TwilioService } from "./twilio.service";
 import { CACHE_NAMESPACE, CACHE_TTL, VERIFIED_TTL } from "./constants";
+import { EContactTypes } from "@core/domain/value-objects/contact.value-object";
 
 @Injectable()
 export class ContactVerificationService {
@@ -10,9 +10,9 @@ export class ContactVerificationService {
   /**
    * Request a contact verification
    * @param to Target to verify, can be an email or mobile phone number
-   * @returns {Promise<string>} The issuance date
+   * @returns {Promise<string>} Request verification id
    */
-  public async request(to: string): Promise<string> {
+  public async request(to: string, type: EContactTypes): Promise<string> {
     if (process.env.NODE_ENV === "development") {
       return "";
     }
@@ -23,11 +23,9 @@ export class ContactVerificationService {
       return previousRequest;
     }
 
-    const channel = this.checkChannel(to);
-
     const { sid } = await this.twilio.verify.verifications.create({
       to,
-      channel,
+      channel: type === EContactTypes.Email ? "email" : "sms",
     });
 
     const iat = new Date();
@@ -37,25 +35,19 @@ export class ContactVerificationService {
     return sid;
   }
 
-  checkChannel(target: string): string {
-    const emailVerify = validator.isEmail(target);
-
-    if (!emailVerify && !validator.isMobilePhone(target)) {
-      throw new Error(
-        "Verification target must be an email or mobile phone number",
-      );
-    }
-
-    return emailVerify ? "email" : "sms";
-  }
-
   /**
    * Validate a code
    * @param target
-   * @param code user sent code
+   * @param type EContactType
+   * @param code User provided code
+   * @param code Request verification id
    * @return {Promise} Promise
    */
-  public async verify(target: string, code: string): Promise<boolean> {
+  public async validate(
+    target: string,
+    code: string,
+    sid: string,
+  ): Promise<boolean> {
     if (process.env.NODE_ENV === "development") {
       if ("000000" === code) {
         return true;
@@ -64,23 +56,21 @@ export class ContactVerificationService {
       return false;
     }
 
-    this.checkChannel(target);
-
-    const cached = await this.getCache(`${target}:${code}`);
+    const cached = await this.getCache(`${target}:${code}:${sid}`);
 
     if (cached === true) {
       return true;
     }
 
-    const { status } = await this.twilio.verify.verificationChecks.create({
+    const { status, sid: _sid } = await this.twilio.verify.verificationChecks.create({
       to: target,
       code,
     });
 
-    const approved = status === "approved";
+    const approved = status === "approved" && _sid === sid;
 
     if (approved) {
-      await this.setCache(`${target}:${code}`, true, VERIFIED_TTL);
+      await this.setCache(`${target}:${code}:${_sid}`, true, VERIFIED_TTL);
     }
 
     return approved;

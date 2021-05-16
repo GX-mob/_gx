@@ -1,18 +1,16 @@
+import { CacheService } from "@app/cache";
+import { ContactVerificationService } from "@app/contact-verification";
+import { util } from "@app/helpers";
+import { SessionRepository } from "@app/repositories";
+import { Account, EAccountRoles } from "@core/domain/account";
+import { ISession, ISuccessSignIn, Session } from "@core/domain/session";
+import { IDynamicAuthRequestDto } from "@core/interfaces";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import jwt, { Secret, SignOptions, VerifyOptions } from "jsonwebtoken";
 import { PinoLogger } from "nestjs-pino";
-import { Types } from "mongoose";
-import { SessionRepository } from "@app/repositories";
 import { promisify } from "util";
-import jwt, { VerifyOptions, SignOptions, Secret } from "jsonwebtoken";
-import { CacheService } from "@app/cache";
-import { util } from "@app/helpers";
-import {
-  SessionNotFoundException,
-  SessionDeactivatedException,
-} from "./exceptions";
-import { EAccountRoles, Account } from "@core/domain/account";
-import { ISession, Session } from "@core/domain/session";
+import { SessionNotFoundException } from "./exceptions";
 
 const verify = promisify<string, Secret, VerifyOptions, object | string>(
   jwt.verify,
@@ -31,6 +29,7 @@ export class AuthService {
   constructor(
     private configService: ConfigService,
     private sessionRepository: SessionRepository,
+    private contactVerificationService: ContactVerificationService,
     private cache: CacheService,
     readonly logger: PinoLogger,
   ) {
@@ -51,7 +50,7 @@ export class AuthService {
     user: Account,
     userAgent?: string | null,
     ip?: string | null,
-  ): Promise<{ token: string; session: ISession }> {
+  ): Promise<ISuccessSignIn> {
     const session = await this.sessionRepository.insert({
       user: user.getID(),
       userAgent: userAgent || "",
@@ -100,10 +99,7 @@ export class AuthService {
     return tokenBody;
   }
 
-  private async checkState(
-    session_id: string,
-    ip?: string,
-  ): Promise<Session> {
+  private async checkState(session_id: string, ip?: string): Promise<Session> {
     const session = await this.get(session_id);
 
     ip && session.addIp(ip);
@@ -133,5 +129,33 @@ export class AuthService {
 
   async delete(session_id: string) {
     await this.sessionRepository.remove({ _id: session_id });
+  }
+
+  async authorizeRequest(
+    requestData: IDynamicAuthRequestDto,
+    account: Account,
+  ) {
+    this.preValidationRequestData(requestData);
+    if (requestData.password) {
+      // validate user pw
+      return;
+    }
+
+    await this.contactVerificationService.validate(
+      requestData.contact as string,
+      requestData.verificationCode as string,
+      requestData.verificationId as string,
+    );
+  }
+
+  public preValidationRequestData(requestData: IDynamicAuthRequestDto) {
+    if (
+      !requestData.password &&
+      !requestData.contact &&
+      !requestData.verificationId &&
+      !requestData.verificationCode
+    ) {
+      throw new Error("invalid request");
+    }
   }
 }

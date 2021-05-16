@@ -4,7 +4,7 @@ import { CacheModule } from "@app/cache";
 import { ConfigService } from "@nestjs/config";
 import { PinoLogger } from "nestjs-pino";
 import {
-  UserRepository,
+  AccountRepository,
   RideRepository,
   SessionRepository,
   VehicleRepository,
@@ -17,14 +17,14 @@ import { Connections } from "./connections";
 @Module({
   imports: [CacheModule],
   providers: [
-    UserRepository,
+    AccountRepository,
     RideRepository,
     SessionRepository,
     VehicleRepository,
     RideAreaConfigurationRepository,
   ],
   exports: [
-    UserRepository,
+    AccountRepository,
     RideRepository,
     SessionRepository,
     VehicleRepository,

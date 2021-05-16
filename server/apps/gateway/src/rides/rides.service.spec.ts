@@ -29,7 +29,7 @@ import {
   UnsupportedAreaException,
 } from "./exceptions";
 import { CreateRideDto } from "./rides.dto";
-import { UserService } from "../user/user.service";
+import { AccountService } from "../user/account.service";
 
 describe("RideService", () => {
   let ridesService: RidesService;

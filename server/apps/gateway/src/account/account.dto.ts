@@ -12,6 +12,7 @@ import {
   IAuthPasswordDto,
   IContactDto,
   IContactVerificationCheckDto,
+  IDynamicAuthRequestDto,
   IUserRegisterDto,
 } from "@core/interfaces";
 import {
@@ -34,7 +35,11 @@ export class ContactVerificationCheckDto
   implements IContactVerificationCheckDto {
   @IsNotEmpty()
   @IsString()
-  code!: string;
+  verificationCode!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  verificationRequestId!: string;
 }
 
 export class AuthPasswordDto extends ContactDto implements IAuthPasswordDto {
@@ -122,26 +127,49 @@ export class UpdateProfileDto {
   lastName?: string;
 }
 
-export class UpdatePasswordDto {
-  @IsOptional()
-  @IsString()
-  current?: string;
-
-  @IsNotEmpty()
-  @IsString()
-  intended!: string;
-}
-
 export class Enable2FADto extends ContactDto {}
 
-export class Disable2FADto {
-  @IsNotEmpty()
+export class Disable2FADto implements Partial<IContactVerificationCheckDto> {
   @IsString()
-  password!: string;
+  password?: string;
+
+  @IsString()
+  contact?: string;
+
+  @IsString()
+  verificationCode?: string;
 }
 
-export class RemoveContactDto extends ContactDto {
+export class DynamicAuthRequestDto implements IDynamicAuthRequestDto {
+  @ValidateIf(
+    (o) => !o.contact && o.contact && !o.verificationCode && !o.verificationId,
+  )
+  @IsString()
+  @IsNotEmpty()
+  password?: string;
+
+  @ValidateIf((o) => !o.password)
+  @IsString()
+  @IsNotEmpty()
+  contact?: string;
+
+  @ValidateIf((o) => !o.password)
+  @IsString()
+  @IsNotEmpty()
+  verificationCode?: string;
+
+  @ValidateIf((o) => !o.password)
+  @IsString()
+  @IsNotEmpty()
+  verificationId?: string;
+}
+
+export class UpdatePasswordDto extends DynamicAuthRequestDto {
   @IsNotEmpty()
   @IsString()
-  password!: string;
+  passwordIntended!: string;
+}
+
+export class RemoveContactDto extends DynamicAuthRequestDto {
+  target!: string;
 }

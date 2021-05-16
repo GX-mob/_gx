@@ -7,61 +7,61 @@ import { FederalIDObject } from "../value-objects/federial-id.value-object";
 import { Verification } from "../verification";
 
 export class Account extends AccountBase {
-  private userContact: AccountContact;
-  private userProfile: AccountProfile;
-  private userSecurity: AccountSecurity;
+  private contact: AccountContact;
+  private profile: AccountProfile;
+  private security: AccountSecurity;
 
   constructor(protected userData: IAccount) {
     super(userData);
-    this.userContact = new AccountContact(userData);
-    this.userProfile = new AccountProfile(userData);
-    this.userSecurity = new AccountSecurity(userData);
+    this.contact = new AccountContact(userData);
+    this.profile = new AccountProfile(userData);
+    this.security = new AccountSecurity(userData);
   }
 
   // Contact
   public setPrimaryEmail(contact: string) {
-    return this.userContact.setPrimaryEmail(contact);
+    return this.contact.setPrimaryEmail(contact);
   }
 
   public setPrimaryMobilePhone(contact: string) {
-    return this.userContact.setPrimaryMobilePhone(contact);
+    return this.contact.setPrimaryMobilePhone(contact);
   }
 
   public addContact(contact: string) {
-    return this.userContact.addContact(contact);
+    return this.contact.addContact(contact);
   }
-  public removeContact(contact: string, rawSentPassword: string) {
-    return this.userContact.removeContact(contact, rawSentPassword);
+  public removeContact(contact: string) {
+    return this.contact.removeContact(contact);
   }
 
   // Profile
   public setFirstName(value: string) {
-    return this.userProfile.setFirstName(value);
+    return this.profile.setFirstName(value);
   }
 
   public setLastName(value: string) {
-    return this.userProfile.setLastName(value);
+    return this.profile.setLastName(value);
   }
 
   public setBirthDate(value: Date) {
-    return this.userProfile.setBirthDate(value);
+    return this.profile.setBirthDate(value);
   }
 
   public setProfileAvatar(value: string) {
-    return this.userProfile.setProfileAvatar(value);
+    return this.profile.setProfileAvatar(value);
   }
 
   // Security
-  public upsertPassword(newRawPassword: string, currentRawPassword?: string) {
-    return this.userSecurity.upsertPassword(newRawPassword, currentRawPassword);
+  public upsertPassword(newRawPassword: string) {
+    return this.security.upsertPassword(newRawPassword);
   }
 
   public enable2FA(userContactTarget: string) {
-    return this.userSecurity.enable2FA(userContactTarget);
+    return this.security.enable2FA(userContactTarget);
   }
 
-  public async disable2FA(rawSentPassword: string) {
-    return this.userSecurity.disable2FA(rawSentPassword);
+  public async disable2FA() {
+    return this.security.disable2FA();
   }
 
   //
@@ -72,5 +72,15 @@ export class Account extends AccountBase {
 
   public setAccountVerification(verification: Verification) {
     this.data.accountVerifications.push(verification.getID());
+  }
+
+  public getContact() {
+    return this.contact;
+  }
+  public getProfile() {
+    return this.profile;
+  }
+  public getSecurity() {
+    return this.security;
   }
 }

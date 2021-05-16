@@ -3,7 +3,10 @@ import { ValueObject } from "../base-classes/value-object";
 import { DomainExceptionsMessages } from "../exceptions/messages";
 import { DomainException } from "../base-classes/domain.exception";
 
-export type ContactTypes = "email" | "phone";
+export enum EContactTypes {
+  Email = "email",
+  Phone = "phone"
+};
 export class InvalidContactException extends DomainException {
   constructor() {
     super(DomainExceptionsMessages.InvalidContactType);
@@ -11,23 +14,23 @@ export class InvalidContactException extends DomainException {
 }
 
 export class ContactObject implements ValueObject<string> {
-  private contactType!: ContactTypes;
+  private contactType!: EContactTypes;
 
   constructor(private _value: string) {
     this.validate();
   }
 
-  public getType(): ContactTypes {
+  public getType(): EContactTypes {
     return this.contactType;
   }
 
   public validate() {
     if (validator.isMobilePhone(this._value)) {
-      this.contactType = "phone";
+      this.contactType = EContactTypes.Phone;
     }
 
     if (validator.isEmail(this._value)) {
-      this.contactType = "email";
+      this.contactType = EContactTypes.Email;
     }
 
     if (!this.contactType) throw new InvalidContactException();

@@ -16,35 +16,59 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { AuthService } from "@app/auth";
-import { IUserRegisterSuccessDto } from "@core/interfaces";
-import { AccountRoute } from "@core/routes"
+import {
+  IContactVerificationResponseDto,
+  IUserRegisterSuccessDto,
+} from "@core/interfaces";
+import { AccountRoute } from "@core/routes";
 import { Body, Controller, Headers, HttpCode, Ip, Post } from "@nestjs/common";
 import {
   ContactDto,
   ContactVerificationCheckDto,
   UserRegisterDto,
-} from "../user.dto";
-import { UserService } from "../user.service";
+} from "../account.dto";
+import { AccountService } from "../account.service";
 
-@Controller(AccountRoute.Register())
-export class UserRegisterController {
+const registerBasePath = AccountRoute.route("register").basePath;
+const registerVerifyPath = AccountRoute.route("register").route("verify", {
+  endpointOnly: true,
+});
+const registerCheckPath = AccountRoute.route("register").route("check", {
+  endpointOnly: true,
+});
+
+@Controller(registerBasePath)
+export class AccountSignUpController {
   constructor(
-    private usersService: UserService,
+    private usersService: AccountService,
     private sessionService: AuthService,
   ) {}
 
   @HttpCode(202)
-  @Post(AccountRoute.Register.Verify())
-  async phoneVerificationRequest(@Body() { contact }: ContactDto) {
+  @Post(registerVerifyPath)
+  async phoneVerificationRequest(
+    @Body() { contact }: ContactDto,
+  ): Promise<IContactVerificationResponseDto> {
     await this.usersService.checkInUseContact(contact);
-    await this.usersService.requestContactVerification(contact);
+    const {
+      verificationRequestId,
+    } = await this.usersService.requestContactVerification(contact);
+
+    return {
+      verificationRequestId,
+    };
   }
 
-  @Post(AccountRoute.Register.Check())
+  @Post(registerCheckPath)
   async contactVerificationCheck(
-    @Body() { contact, code }: ContactVerificationCheckDto,
+    @Headers("verify-request-id") verifyRequestId: string,
+    @Body() { contact, verificationCode: code }: ContactVerificationCheckDto,
   ) {
-    await this.usersService.checkContactVerification(contact, code);
+    await this.usersService.checkContactVerification(
+      contact,
+      code,
+      verifyRequestId,
+    );
   }
 
   @Post()

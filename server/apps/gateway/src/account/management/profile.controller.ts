@@ -14,23 +14,23 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { Account, IAccount } from "@core/domain/account";
-import { AuthGuard, DUser } from "@app/auth";
+import { AuthGuard, DAccount } from "@app/auth";
 import { StorageService } from "@app/storage";
 import { util } from "@app/helpers";
 import { PinoLogger } from "nestjs-pino";
-import { UserDto, UpdateProfileDto } from "../user.dto";
+import { UserDto, UpdateProfileDto } from "../account.dto";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
-import { UserService } from "../user.service";
+import { AccountService } from "../account.service";
 
 @Controller("user/profile")
 @UseGuards(AuthGuard)
-export class UserProfileController {
+export class AccountProfileController {
   constructor(
-    private usersService: UserService,
+    private usersService: AccountService,
     private storage: StorageService,
     private logger: PinoLogger,
   ) {
-    logger.setContext(UserProfileController.name);
+    logger.setContext(AccountProfileController.name);
   }
 
   @Get()
@@ -38,21 +38,21 @@ export class UserProfileController {
   @SerializeOptions({
     excludePrefixes: ["_"],
   })
-  getProfileHandler(@DUser() user: Account): IAccount {
+  getProfileHandler(@DAccount() user: Account): IAccount {
     return new UserDto(user.getData());
   }
 
   @Patch()
   async updateHandler(
-    @DUser() user: Account,
+    @DAccount() account: Account,
     @Body() body: UpdateProfileDto,
   ) {
-    await this.usersService.updateProfile(user, body);
+    await this.usersService.updateProfile(account, body);
   }
 
   @Patch("avatar")
   async uploadAvatar(
-    @DUser() user: Account,
+    @DAccount() account: Account,
     @Request() request: FastifyRequest,
   ): Promise<{ url: string }> {
     if (!request.isMultipart()) {
@@ -72,7 +72,7 @@ export class UserProfileController {
       handling = true;
 
       const fileExtension = filename.split(".").pop() as string;
-      const fileName = `${user.getID()}.${Date.now()}.${fileExtension}`;
+      const fileName = `${account.getID()}.${Date.now()}.${fileExtension}`;
       url = `${STORAGE_PREFIX_URLS.USERS_AVATARTS}/${STORAGE_BUCKETS.USERS_AVATARTS}/${fileName}`;
 
       try {
@@ -102,7 +102,7 @@ export class UserProfileController {
           return reject(new InternalServerErrorException());
         }
 
-        const userCurrentAvatar = user.getData().avatar;
+        const userCurrentAvatar = account.getData().avatar;
 
         if (userCurrentAvatar) {
           util.retryUnderHood(() =>
@@ -114,7 +114,7 @@ export class UserProfileController {
         }
 
         util.retryUnderHood(() =>
-          this.usersService.updateAvatar(user, url),
+          this.usersService.updateAvatar(account, url),
         );
 
         // TODO: Emit Pub/Sub event that fires a function to compress and generate usual sizes.

@@ -70,6 +70,6 @@ describe("ContactVerificationService", () => {
   });
 
   it("should validate a verification", async () => {
-    await expect(service.verify("foo@bar.com", "000000")).resolves.toBeTruthy();
+    await expect(service.validate("foo@bar.com", "000000", "")).resolves.toBeTruthy();
   });
 });

@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 import { ContactVerificationModule } from "@app/contact-verification";
 import { AuthModule } from "@app/auth";
-import { UserService } from "./user.service";
+import { AccountService } from "./account.service";
 
 @Module({
   imports: [ContactVerificationModule, AuthModule],
-  providers: [UserService],
-  exports: [UserService],
+  providers: [AccountService],
+  exports: [AccountService],
 })
 export class UserModule {}

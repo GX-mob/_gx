@@ -23,7 +23,7 @@ import {
   TwilioService,
 } from "@app/contact-verification";
 import { UserModule } from "../user.module";
-import { UserService } from "../user.service";
+import { AccountService } from "../user.service";
 import { mockUser, mockSession } from "@testing/testing";
 import { resolve } from "path";
 import { Readable } from "stream";
@@ -37,7 +37,7 @@ import {
 import { IUser } from "@shared/interfaces";
 
 describe("User: ProfileController", () => {
-  let usersService: UserService;
+  let usersService: AccountService;
   let storageService: StorageService;
   let pinoLogger: PinoLogger = {
     setContext: jest.fn(),
@@ -69,7 +69,7 @@ describe("User: ProfileController", () => {
       .useValue(pinoLogger)
       .compile();
 
-    usersService = moduleRef.get<UserService>(UserService);
+    usersService = moduleRef.get<AccountService>(AccountService);
     storageService = moduleRef.get<StorageService>(StorageService);
     controller = moduleRef.get<UserProfileController>(UserProfileController);
   });

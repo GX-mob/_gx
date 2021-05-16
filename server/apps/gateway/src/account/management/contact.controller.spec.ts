@@ -16,16 +16,16 @@ import {
   ContactVerificationModule,
   TwilioService,
 } from "@app/contact-verification";
-import { UserModule } from "../user.module";
-import { UserService } from "../user.service";
+import { UserModule } from "../account.module";
+import { AccountService } from "../account.service";
 import { mockUser, mockPhone } from "@testing/testing";
 
 import { UserContactController } from "./contact.controller";
-import { ContactDto, ContactVerificationCheckDto } from "../user.dto";
-import { RemoveContactDto } from "../user.dto";
+import { ContactDto, ContactVerificationCheckDto } from "../account.dto";
+import { RemoveContactDto } from "../account.dto";
 
 describe("User: ContactController", () => {
-  let usersService: UserService;
+  let usersService: AccountService;
   let controller: UserContactController;
 
   beforeEach(async () => {
@@ -49,7 +49,7 @@ describe("User: ContactController", () => {
       .useValue({})
       .compile();
 
-    usersService = moduleRef.get<UserService>(UserService);
+    usersService = moduleRef.get<AccountService>(AccountService);
     controller = moduleRef.get<UserContactController>(UserContactController);
   });
 

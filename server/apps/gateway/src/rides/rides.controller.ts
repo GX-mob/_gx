@@ -1,24 +1,24 @@
+import { AuthGuard, DAccount, Driver } from "@app/auth";
+import { Account, EAccountRoles } from "@core/domain/account";
 import {
-  Controller,
-  UseGuards,
-  Get,
-  Post,
-  Param,
   Body,
-  UseInterceptors,
   ClassSerializerInterceptor,
+  Controller,
+  Get,
+  Param,
+  Post,
   SerializeOptions,
+  UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
-import { AuthGuard, Driver, DUser } from "@app/auth";
-import { RidesService } from "./rides.service";
+import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
 import {
+  CreateRideDto,
   GetRideInfoDto,
   GetRidesPricesDto,
-  CreateRideDto,
   RideInfoDto,
 } from "./rides.dto";
-import { IAccount, EAccountRoles, Account } from "@core/domain/account";
-import { RideNoReadPermission, RideNotFoundException } from "./exceptions";
+import { RidesService } from "./rides.service";
 
 @Controller("rides/")
 @UseGuards(AuthGuard)
@@ -38,10 +38,10 @@ export class RidesController {
   })
   @Get(":pid")
   async getRideDataHandler(
-    @DUser() user: Account,
+    @DAccount() account: Account,
     @Param() { pid }: GetRideInfoDto,
   ) {
-    const driverPid = user.getID();
+    const driverPid = account.getID();
     const ride = await this.rideService.getRideByPid(pid);
 
     if (!ride) throw new RideNotFoundException();
@@ -57,8 +57,11 @@ export class RidesController {
     excludePrefixes: ["_"],
     groups: [EAccountRoles.Voyager],
   })
-  async createRideHandler(@DUser() user: Account, @Body() body: CreateRideDto) {
-    const ride = await this.rideService.create(user, body);
+  async createRideHandler(
+    @DAccount() account: Account,
+    @Body() body: CreateRideDto,
+  ) {
+    const ride = await this.rideService.create(account, body);
     return new RideInfoDto(ride);
   }
 }

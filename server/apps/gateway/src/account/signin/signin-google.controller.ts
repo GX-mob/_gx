@@ -1,4 +1,4 @@
 import { Controller } from "@nestjs/common";
 
 @Controller("user/auth/google")
-export class AuthGoogleController {}
+export class AccountSignInGoogleController {}

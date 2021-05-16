@@ -17,13 +17,13 @@ import {
   TwilioService,
 } from "@app/contact-verification";
 import { UserModule } from "../user.module";
-import { UserService } from "../user.service";
+import { AccountService } from "../user.service";
 import { mockUser } from "@testing/testing";
 import { UserSecurityController } from "./security.controller";
 import { UpdatePasswordDto, Enable2FADto, Disable2FADto } from "../user.dto";
 
 describe("User: SecurityController", () => {
-  let usersService: UserService;
+  let usersService: AccountService;
   let controller: UserSecurityController;
 
   beforeEach(async () => {
@@ -47,7 +47,7 @@ describe("User: SecurityController", () => {
       .useValue({})
       .compile();
 
-    usersService = moduleRef.get<UserService>(UserService);
+    usersService = moduleRef.get<AccountService>(AccountService);
     controller = moduleRef.get<UserSecurityController>(UserSecurityController);
   });
 

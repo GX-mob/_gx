@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { IUserRegisterDto } from "../../interfaces/dto/user-register-dto.interfaces";
+import { IUserRegisterDto } from "../../interfaces/dto/account-register-dto.interfaces";
 import { IAccount } from "./account.types";
 import { FederalIDObject } from "../value-objects/federial-id.value-object";
 import { ContactObject } from "../value-objects/contact.value-object";
