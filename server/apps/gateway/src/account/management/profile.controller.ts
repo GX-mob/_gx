@@ -21,8 +21,15 @@ import { PinoLogger } from "nestjs-pino";
 import { UserDto, UpdateProfileDto } from "../account.dto";
 import { STORAGE_BUCKETS, STORAGE_PREFIX_URLS } from "../../constants";
 import { AccountService } from "../account.service";
+import { AccountRoute } from "@core/routes";
 
-@Controller("user/profile")
+
+const basePath = AccountRoute.route("profile").basePath;
+const avatarPath = AccountRoute.route("profile").route("avatar", {
+  endpointOnly: true
+});
+
+@Controller(basePath)
 @UseGuards(AuthGuard)
 export class AccountProfileController {
   constructor(
@@ -50,7 +57,8 @@ export class AccountProfileController {
     await this.usersService.updateProfile(account, body);
   }
 
-  @Patch("avatar")
+  // TODO: Add stream resume support
+  @Patch(avatarPath)
   async uploadAvatar(
     @DAccount() account: Account,
     @Request() request: FastifyRequest,

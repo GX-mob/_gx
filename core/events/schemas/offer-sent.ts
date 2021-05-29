@@ -1,6 +1,6 @@
 import { SchemaObject } from "../../types/schemapack";
-import { userSchema, SendableUserData } from "./common";
+import { userSendableDataSchema, ISendableUserData } from "./common";
 
-export type OfferSent = SendableUserData;
+export interface IOfferSent extends ISendableUserData {}
 
-export const offerSentSchema: SchemaObject<OfferSent> = userSchema;
+export const offerSentSchema: SchemaObject<IOfferSent> = userSendableDataSchema;

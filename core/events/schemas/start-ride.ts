@@ -1,8 +1,12 @@
 import { SchemaObject } from "../../types/schemapack";
-import { Position, positionSchema } from "./position";
+import { IPositionData, positionSchema } from "./position";
 
-export type StartRide = { ridePID: string; latLng: Position["latLng"] };
-export const startRideSchema: SchemaObject<StartRide> = {
+export interface IStartRide {
+  ridePID: string;
+  latLng: IPositionData["latLng"];
+}
+
+export const startRideSchema: SchemaObject<IStartRide> = {
   ridePID: "string",
   latLng: positionSchema.latLng,
 };

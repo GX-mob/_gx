@@ -1,19 +1,19 @@
 import { Injectable } from "@nestjs/common";
-import { ConnectionData, EventsInterface } from "@shared/events";
+import { IConnectionData, IObserver, IRideFlowEvents } from "@core/events";
 import { CacheService } from "@app/cache";
 import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "../constants";
 import { ConnectionDataNotFoundException } from "../exceptions";
 import { SocketService } from "@app/socket";
-import { INodesEvents, NODES_EVENTS } from "../events/nodes";
+import { INodesEvents, EServerNodesEvents } from "../events/nodes";
 
 @Injectable()
 export class ConnectionService {
   constructor(
     private cacheService: CacheService,
-    readonly socketService: SocketService<EventsInterface, INodesEvents>,
+    readonly socketService: SocketService<IRideFlowEvents, INodesEvents>,
   ) {}
 
-  async set(pid: string, data: ConnectionData) {
+  async set(pid: string, data: IConnectionData) {
     await this.cacheService.set(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
       ex: CACHE_TTL.CONNECTIONS,
       link: [data.socketId as string],
@@ -22,14 +22,14 @@ export class ConnectionService {
   }
 
   find(pid: string) {
-    return this.cacheService.get<ConnectionData>(
+    return this.cacheService.get<IConnectionData>(
       CACHE_NAMESPACES.CONNECTIONS,
       pid,
     );
   }
 
-  async get(pid: string) {
-    const connection = await this.cacheService.get<ConnectionData>(
+  async getByPid(pid: string) {
+    const connection = await this.cacheService.get<IConnectionData>(
       CACHE_NAMESPACES.CONNECTIONS,
       pid,
     );
@@ -41,8 +41,8 @@ export class ConnectionService {
     return connection;
   }
 
-  async update(pid: string, data: Partial<ConnectionData>) {
-    return this.cacheService.update<ConnectionData>(
+  async updateByPid(pid: string, data: Partial<IConnectionData>) {
+    return this.cacheService.update<IConnectionData>(
       CACHE_NAMESPACES.CONNECTIONS,
       pid,
       data,
@@ -53,24 +53,25 @@ export class ConnectionService {
   }
 
   async insertObserver(
-    connectionPid: string | ConnectionData,
-    observer: ConnectionData["observers"][0],
+    connectionPid: string | IConnectionData,
+    observer: IObserver,
   ) {
     const connection =
       typeof connectionPid === "string"
-        ? await this.get(connectionPid)
+        ? await this.getByPid(connectionPid)
         : connectionPid;
-    const updatedObservers = [...connection.observers, observer];
+
+    connection.observers.push(observer);
 
     await this.set(connection.pid, {
       ...connection,
-      observers: updatedObservers,
+      observers: connection.observers,
     });
 
-    this.socketService.nodes.emit(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA, {
+    this.socketService.nodes.emit(EServerNodesEvents.UpdateLocalAccountData, {
       socketId: connection.socketId,
       namespace: NAMESPACES.VOYAGERS,
-      data: { observers: updatedObservers },
+      data: { observers: connection.observers },
     });
   }
 }

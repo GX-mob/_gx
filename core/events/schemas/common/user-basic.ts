@@ -1,14 +1,14 @@
 import { SchemaObject } from "../../../types/schemapack";
 
-export enum UserState {
+export enum EUserState {
   IDLE = 1,
   SEARCHING = 2,
-  PICKING_UP = 3,
+  GET_OVER_HERE = 3,
   RUNNING = 4,
   COMPLETING = 5,
 }
 
-export type UserBasic = {
+export interface IUserBasic {
   /**
    * User internal id
    */
@@ -29,11 +29,11 @@ export type UserBasic = {
    * User ride state;
    * IDLE = 1;
    * SEARCHING = 2; Seargin ride/ Searcing driver
-   * PICKING_UP = 3;
+   * GET_OVER_HERE = 3;
    * RUNNING = 4;
    * COMPLETING = 5;
    */
-  state: UserState;
+  state: EUserState;
   /**
    * SocketId
    * * Server only
@@ -41,9 +41,23 @@ export type UserBasic = {
   socketId: string;
 };
 
-export type SendableUserData = Pick<UserBasic, "pid" | "p2p">;
+export interface ISendableUserData extends Pick<IUserBasic, "pid" | "p2p" | "rate"> {
 
-export const userSchema: SchemaObject<SendableUserData> = {
+}
+
+export const userSendableDataSchema: SchemaObject<ISendableUserData> = {
+  p2p: "boolean",
+  pid: "bool",
+  rate: "int8"
+};
+
+
+export const userSchema: SchemaObject<IUserBasic> = {
+  ...userSendableDataSchema,
+  _id: "string",
   pid: "string",
   p2p: "bool",
+  rate: "string",
+  state: "string",
+  socketId: "string"
 };

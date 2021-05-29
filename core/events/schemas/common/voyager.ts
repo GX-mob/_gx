@@ -1,8 +1,8 @@
-import { UserBasic } from "./user-basic";
+import { IUserBasic } from "./user-basic";
 
-export type Voyager = UserBasic & {
+export interface IVoyager extends IUserBasic {
   /**
-   * To allow the voyager can creates multiple rides
+   * To allow the voyager creates simultaneous rides
    */
   rides: any[];
 };

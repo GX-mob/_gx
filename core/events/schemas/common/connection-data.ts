@@ -1,22 +1,26 @@
-import { Configuration } from "../configuration";
-import { UserBasic } from "./user-basic";
-import { Driver } from "./driver";
-import { UserRoles } from "../../../interfaces";
+import { configurationSchema, IConfiguration } from "../configuration";
+import { IUserBasic, userSchema } from "./user-basic";
+import { EAccountRoles } from "domain/account";
+import { SchemaObject } from "types/schemapack";
+import { IObserver, observerSchema } from "./observer";
 
-export type ConnectionData = UserBasic & {
-  mode: UserRoles;
+export interface IConnectionData extends IUserBasic {
+  mode: EAccountRoles;
   /**
    * Sockets that observe some events of this socket
    */
-  observers: { socketId: string; p2p: boolean }[];
-  config?: Configuration;
+  observers: IObserver[];
+  config?: IConfiguration;
   /**
    * Running user rides
    */
   rides: string[];
-  /**
-   * Driver state
-   * * Driver only
-   */
-  state?: Driver["state"];
+}
+
+export const connectionDataSchema: SchemaObject<IConnectionData> = {
+  ...userSchema,
+  mode: "string",
+  observers: [observerSchema],
+  config: configurationSchema,
+  rides: ["string"],
 };

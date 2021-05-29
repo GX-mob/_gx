@@ -6,32 +6,29 @@ import {
 } from "@nestjs/websockets";
 import { PinoLogger } from "nestjs-pino";
 import { Socket } from "socket.io";
-import { PendencieRepository } from "@app/repositories";
 import { CacheService } from "@app/cache";
 import { AuthService } from "@app/auth";
 import { SocketService } from "@app/socket";
-import { RideStatus, RidePayMethods, UserRoles } from "@shared/interfaces";
 import {
-  EVENTS,
-  EventsInterface,
-  Position,
-  OfferRequest,
-  CancelRide,
-  CanceledRide,
-  CANCELATION_RESPONSE,
-  DriverState,
-} from "@shared/events";
+  ERideFlowEvents,
+  IRideFlowEvents,
+  IPositionData,
+  IOfferRequest,
+  ICancelRide,
+  EUserState,
+} from "@core/events";
 import { UncancelableRideException } from "../exceptions";
 import { NAMESPACES } from "../constants";
 import { ConnectionService, DriversService, RidesService } from "../state";
 import { Common } from "./common";
+import { EAccountRoles } from "@core/domain/account";
+import { ERideStatus } from "@core/domain/ride";
 
 @WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
 export class VoyagersGateway extends Common {
-  role = UserRoles.VOYAGER;
+  role = EAccountRoles.Voyager;
   constructor(
-    readonly socketService: SocketService<EventsInterface>,
-    readonly pendencieRepository: PendencieRepository,
+    readonly socketService: SocketService<IRideFlowEvents>,
     readonly sessionService: AuthService,
     readonly cacheService: CacheService,
     readonly connectionService: ConnectionService,
@@ -41,7 +38,6 @@ export class VoyagersGateway extends Common {
   ) {
     super(
       socketService,
-      pendencieRepository,
       sessionService,
       connectionService,
       cacheService,
@@ -50,34 +46,33 @@ export class VoyagersGateway extends Common {
     logger.setContext(VoyagersGateway.name);
   }
 
-  @SubscribeMessage(EVENTS.POSITION)
+  @SubscribeMessage(ERideFlowEvents.Position)
   positionEventHandler(
-    @MessageBody() position: Position,
+    @MessageBody() position: IPositionData,
     @ConnectedSocket() socket: Socket,
   ) {
     super.positionEventHandler(position, socket);
   }
 
-  @SubscribeMessage(EVENTS.OFFER)
+  @SubscribeMessage(ERideFlowEvents.Offer)
   async offerEventHandler(
-    @MessageBody() offer: OfferRequest,
+    @MessageBody() offer: IOfferRequest,
     @ConnectedSocket() client: Socket,
   ) {
     await this.ridesService.createOffer(offer, client);
     return true;
   }
 
-  @SubscribeMessage(EVENTS.AM_I_RUNNING)
+  @SubscribeMessage(ERideFlowEvents.AmIRunning)
   amIRunningHandler(@ConnectedSocket() socket: Socket) {
     return socket.data.rides;
   }
 
-  @SubscribeMessage(EVENTS.CANCEL_RIDE)
+  @SubscribeMessage(ERideFlowEvents.CancelRide)
   async cancelRideEventHandler(
-    @MessageBody() ridePID: CancelRide,
+    @MessageBody() { ridePID }: ICancelRide,
     @ConnectedSocket() socket: Socket,
-  ): Promise<{ status: CanceledRide["status"] | "error"; error?: string }> {
-    const now = Date.now();
+  ) {
     const ride = await this.ridesService.getRide({ pid: ridePID });
 
     const { _id, rides } = socket.data;
@@ -85,12 +80,12 @@ export class VoyagersGateway extends Common {
     this.ridesService.checkIfInRide(ride, _id);
 
     // block cancel running ride
-    if (ride.status === RideStatus.RUNNING) {
+    if (ride.status === ERideStatus.Running) {
       throw new UncancelableRideException(ride.pid, "running");
     }
 
     const offer = await this.ridesService.getOfferData(ridePID);
-    const { driverSocketId, acceptTimestamp } = offer;
+    const { driverSocketId } = offer;
 
     // remove the ride from user rides list
     const rideIdx = rides.indexOf(ride.pid);
@@ -99,42 +94,19 @@ export class VoyagersGateway extends Common {
       rides.splice(rideIdx, 1);
     }
 
-    const isSafeCancel = this.ridesService.isSafeCancel(
-      acceptTimestamp as number,
-      now,
-    );
-    const isCreditPayment = ride.payMethod === RidePayMethods.CreditCard;
-    const status = isSafeCancel
-      ? CANCELATION_RESPONSE.SAFE
-      : isCreditPayment
-      ? CANCELATION_RESPONSE.CHARGE_REQUESTED
-      : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
-
     this.driversService.updateDriver(socket.id, {
-      state: DriverState.SEARCHING,
+      state: EUserState.SEARCHING,
     });
-    this.socketService.emit(driverSocketId as string, EVENTS.CANCELED_RIDE, {
-      ridePID,
-      status,
-    });
+    this.socketService.emit(
+      driverSocketId as string,
+      ERideFlowEvents.CancelRide,
+      {
+        ridePID,
+      },
+    );
     this.ridesService.updateRide(
       { pid: ridePID },
-      { status: RideStatus.CANCELED },
+      { status: ERideStatus.Canceled },
     );
-
-    switch (status) {
-      case CANCELATION_RESPONSE.CHARGE_REQUESTED:
-        // TODO: this.paymentService.requestCharge();
-        break;
-      case CANCELATION_RESPONSE.PENDENCIE_ISSUED:
-        this.createPendencie({
-          ride: ride._id,
-          issuer: ride.voyager,
-          affected: ride.driver,
-        });
-        break;
-    }
-
-    return { status };
   }
 }

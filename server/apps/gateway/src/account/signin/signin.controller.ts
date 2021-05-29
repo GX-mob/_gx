@@ -23,18 +23,31 @@ import {
   IAuthIdentifyResponse,
   IAuthPasswordResponse,
 } from "@core/interfaces";
+import { AuthRoute } from "@core/routes";
 import { Body, Controller, Get, Headers, Ip, Post } from "@nestjs/common";
 import { ContactDto, DynamicAuthRequestDto } from "../account.dto";
 import { AccountService } from "../account.service";
 
-@Controller("user/auth")
+
+const signinBasePath = AuthRoute.route("signin").basePath;
+const signinStatusPath = AuthRoute.route("signin").route("status", {
+  endpointOnly: true,
+});
+const signinCredentialPath = AuthRoute.route("signin").route("credential", {
+  endpointOnly: true,
+});
+const signinCodePath = AuthRoute.route("signin").route("code", {
+  endpointOnly: true,
+});
+
+@Controller(signinBasePath)
 export class AccountSignInController {
   constructor(
     private accountService: AccountService,
     private authService: AuthService,
   ) {}
 
-  @Get("status")
+  @Get(signinStatusPath)
   async identifyHandler(
     @Body() { contact }: ContactDto,
   ): Promise<IAuthIdentifyResponse> {
@@ -48,7 +61,7 @@ export class AccountSignInController {
     return { next: EAuthorizationNextSteps.Password };
   }
 
-  @Post("credential")
+  @Post(signinCredentialPath)
   async passwordHandler(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,
@@ -84,7 +97,7 @@ export class AccountSignInController {
     };
   }
 
-  @Post("code")
+  @Post(signinCodePath)
   async codeHandler(
     @Ip() ip: string,
     @Headers("user-agent") userAgent: string,

@@ -3,7 +3,7 @@ import { SchemaObject } from "../../types/schemapack";
 /**
  * User state event schema
  */
-export type State = {
+export interface IState {
   /**
    * State:
    * * 0 = Offline
@@ -17,7 +17,7 @@ export type State = {
   pid: string;
 };
 
-export const stateSchema: SchemaObject<State> = {
+export const stateSchema: SchemaObject<IState> = {
   state: "int8",
   pid: "string",
 };

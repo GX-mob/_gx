@@ -1,16 +1,15 @@
-import { IVehicleMetadata } from "../../../interfaces";
-import { UserBasic, UserState } from "./user-basic";
-import { Position } from "../position";
-import { Configuration } from "../configuration";
 
-export const DriverState = UserState;
+import { IUserBasic } from "./user-basic";
+import { IPositionData } from "../position";
+import { IConfiguration } from "../configuration";
+import { EVehicleTypes } from "domain/vehicle";
 
-export type Driver = UserBasic & {
-  position: Position;
+export interface IDriverData extends IUserBasic {
+  position: IPositionData;
   /**
    * Driver ride match configuration
    */
-  config: Configuration;
+  config: IConfiguration;
   updatedAt: number;
-  vehicleType: IVehicleMetadata["type"];
+  vehicleType: EVehicleTypes;
 };

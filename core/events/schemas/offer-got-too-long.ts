@@ -1,2 +1,5 @@
-export type OfferGotTooLong = boolean;
-export const offerGotTooLong = "boolean";
+import { SchemaObject } from "types/schemapack";
+
+export interface IOfferGotTooLong {};
+
+export const offerGotTooLong: SchemaObject<IOfferGotTooLong>  = {};

@@ -1,2 +1,4 @@
-export type AmIRunning = number;
-export const amIRunningSchema = "uint8";
+import { SchemaObject } from "types/schemapack";
+
+export interface IAmIRunning {};
+export const amIRunningSchema: SchemaObject<IAmIRunning> = {};

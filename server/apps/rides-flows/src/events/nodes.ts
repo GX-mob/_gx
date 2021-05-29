@@ -1,34 +1,40 @@
-import { ConnectionData, Driver } from "@shared/events";
+import { IConnectionData, IDriverData } from "@core/events";
 import { NAMESPACES } from "../constants";
 
-type ServiceNodeSocketEvent<Struct> = {
+interface IServiceNodeBroadcastedSocketEvent {
   /**
-   * The node id of event emissor
+   * The server node id of event emissor
    */
   socketId: string;
-} & Struct;
-
-export enum NODES_EVENTS {
-  UPDATE_DRIVER_STATE = "UPDATE_DRIVER_STATE",
-  UPDATE_LOCAL_SOCKET_DATA = "UPDATE_LOCAL_SOCKET_DATA",
-  TELL_ME_YOUR_DRIVERS_STATE = "TELL_ME_YOUR_STATE",
 }
 
-export type UpdateDriverState = ServiceNodeSocketEvent<{
-  state: Partial<Driver>;
-}>;
+export enum EServerNodesEvents {
+  PutDriverState,
+  UpdateDriverState,
+  UpdateLocalAccountData,
+  TellMeYourDriversState,
+}
 
-export type UpdateLocalSocketData = ServiceNodeSocketEvent<{
+export interface IPutDriverState extends IServiceNodeBroadcastedSocketEvent {
+  state: IDriverData;
+}
+
+export interface IUpdateDriverState extends IServiceNodeBroadcastedSocketEvent {
+  state: Partial<IDriverData>;
+}
+
+export interface IUpdateLocalSocketData extends IServiceNodeBroadcastedSocketEvent {
   namespace: NAMESPACES;
-  data: Partial<ConnectionData>;
-}>;
+  data: Partial<IConnectionData>;
+}
 
 export type TellMeYourDriversState = {
-  drivers: Driver[];
+  drivers: IDriverData[];
 };
 
 export interface INodesEvents {
-  [NODES_EVENTS.UPDATE_DRIVER_STATE]: UpdateDriverState;
-  [NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA]: UpdateLocalSocketData;
-  [NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE]: TellMeYourDriversState;
+  [EServerNodesEvents.PutDriverState]: IPutDriverState;
+  [EServerNodesEvents.UpdateDriverState]: IUpdateDriverState;
+  [EServerNodesEvents.UpdateLocalAccountData]: IUpdateLocalSocketData;
+  [EServerNodesEvents.TellMeYourDriversState]: TellMeYourDriversState;
 }

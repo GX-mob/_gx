@@ -20,7 +20,7 @@ import {
   IContactVerificationResponseDto,
   IUserRegisterSuccessDto,
 } from "@core/interfaces";
-import { AccountRoute } from "@core/routes";
+import { AuthRoute } from "@core/routes";
 import { Body, Controller, Headers, HttpCode, Ip, Post } from "@nestjs/common";
 import {
   ContactDto,
@@ -29,15 +29,15 @@ import {
 } from "../account.dto";
 import { AccountService } from "../account.service";
 
-const registerBasePath = AccountRoute.route("register").basePath;
-const registerVerifyPath = AccountRoute.route("register").route("verify", {
+const signupBasePath = AuthRoute.route("signup").basePath;
+const signupVerifyPath = AuthRoute.route("signup").route("verify", {
   endpointOnly: true,
 });
-const registerCheckPath = AccountRoute.route("register").route("check", {
+const signupCheckPath = AuthRoute.route("signup").route("check", {
   endpointOnly: true,
 });
 
-@Controller(registerBasePath)
+@Controller(signupBasePath)
 export class AccountSignUpController {
   constructor(
     private usersService: AccountService,
@@ -45,7 +45,7 @@ export class AccountSignUpController {
   ) {}
 
   @HttpCode(202)
-  @Post(registerVerifyPath)
+  @Post(signupVerifyPath)
   async phoneVerificationRequest(
     @Body() { contact }: ContactDto,
   ): Promise<IContactVerificationResponseDto> {
@@ -59,7 +59,7 @@ export class AccountSignUpController {
     };
   }
 
-  @Post(registerCheckPath)
+  @Post(signupCheckPath)
   async contactVerificationCheck(
     @Headers("verify-request-id") verifyRequestId: string,
     @Body() { contact, verificationCode: code }: ContactVerificationCheckDto,

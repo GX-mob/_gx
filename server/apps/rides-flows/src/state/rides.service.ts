@@ -1,20 +1,15 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { CacheService } from "@app/cache";
-import { IRide, IUser } from "@shared/interfaces";
-import {
-  TRideQuery,
-  RideRepository,
-  TRideUpdate,
-} from "@app/repositories";
+import { TRideQuery, RideRepository, TRideUpdate } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import {
   // Events interface,
-  EventsInterface,
-  EVENTS,
-  OfferServer,
-  OfferRequest,
-} from "@shared/events";
+  ERideFlowEvents,
+  IOfferServer,
+  IOfferRequest,
+  IRideFlowEvents,
+} from "@core/events";
 import { CACHE_NAMESPACES, CACHE_TTL } from "../constants";
 import { INodesEvents } from "../events/nodes";
 import { PinoLogger } from "nestjs-pino";
@@ -26,18 +21,20 @@ import {
 import { Socket } from "socket.io";
 import { DriversService } from "./drivers.service";
 import { retryUnderHood } from "@app/helpers/util";
+import { IRide } from "@core/domain/ride";
+import { IAccount } from "@core/domain/account";
 
 @Injectable()
 export class RidesService {
   /**
    * Offers list
    */
-  public offers = new Map<string, OfferServer>();
+  public offers = new Map<string, IOfferServer>();
 
   constructor(
     readonly cacheService: CacheService,
     readonly rideRepository: RideRepository,
-    readonly socketService: SocketService<EventsInterface, INodesEvents>,
+    readonly socketService: SocketService<IRideFlowEvents, INodesEvents>,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
     @Inject(forwardRef(() => DriversService))
@@ -46,14 +43,14 @@ export class RidesService {
     logger.setContext(RidesService.name);
   }
 
-  async createOffer(offer: OfferRequest, client: Socket, startOffer = true) {
+  async createOffer(offer: IOfferRequest, client: Socket, startOffer = true) {
     const ride = await this.getRide({ pid: offer.ridePID });
 
     if (!ride) {
       throw new RideNotFoundException();
     }
 
-    const offerObject: OfferServer = {
+    const offerObject: IOfferServer = {
       ridePID: offer.ridePID,
       requesterSocketId: client.id,
       ignoreds: [],
@@ -82,7 +79,7 @@ export class RidesService {
    * @param {OfferServer} offer
    * @param {IRide} ride ride data
    */
-  async startOffer(offer: OfferServer, ride: IRide): Promise<void> {
+  async startOffer(offer: IOfferServer, ride: IRide): Promise<void> {
     const driver = await this.driversService.match(offer, ride);
 
     /**
@@ -93,7 +90,7 @@ export class RidesService {
     if (!driver) {
       this.socketService.emit(
         offer.requesterSocketId,
-        EVENTS.OFFER_GOT_TOO_LONG,
+        ERideFlowEvents.OfferGotTooLong,
         true,
       );
       return;
@@ -107,14 +104,18 @@ export class RidesService {
     /**
      * Emit the offer to driver
      */
-    this.socketService.emit(driver.socketId, EVENTS.OFFER, {
+    this.socketService.emit(driver.socketId, ERideFlowEvents.Offer, {
       ridePID: offer.ridePID,
     });
 
     /**
      * Inform the user that we have a compatible driver and we're awaiting the driver response
      */
-    this.socketService.emit(offer.requesterSocketId, EVENTS.OFFER_SENT, driver);
+    this.socketService.emit(
+      offer.requesterSocketId,
+      ERideFlowEvents.OfferSent,
+      driver,
+    );
 
     // TODO: ?maybe delegate to user the responsability of re-start an offer
     /**
@@ -134,8 +135,8 @@ export class RidesService {
 
   setOfferData(
     ridePID: string,
-    data: Partial<Omit<OfferServer, "offerResponseTimeout">>,
-  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
+    data: Partial<Omit<IOfferServer, "offerResponseTimeout">>,
+  ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
     return this.cacheService.update(CACHE_NAMESPACES.OFFERS, ridePID, data, {
       ex: CACHE_TTL.OFFERS,
     });
@@ -143,7 +144,7 @@ export class RidesService {
 
   getOfferData(
     ridePID: string,
-  ): Promise<Omit<OfferServer, "offerResponseTimeout">> {
+  ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
     const data = this.cacheService.get(CACHE_NAMESPACES.OFFERS, ridePID);
 
     if (!data) {
@@ -163,7 +164,7 @@ export class RidesService {
     return ride;
   }
 
-  checkIfInRide(ride: IRide, _id: IUser["_id"]) {
+  checkIfInRide(ride: IRide, _id: IAccount["_id"]) {
     if (ride.voyager._id !== _id && ride.driver?._id !== _id) {
       throw new NotInRideException(ride.pid, _id);
     }
@@ -177,6 +178,6 @@ export class RidesService {
   }
 
   public updateRide(query: TRideQuery, data: TRideUpdate) {
-    return retryUnderHood(() => this.rideRepository.update(query, data));
+    return retryUnderHood(() => this.rideRepository.updateByQuery(query, data));
   }
 }

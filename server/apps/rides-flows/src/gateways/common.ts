@@ -1,36 +1,28 @@
 import { ForbiddenException } from "@nestjs/common";
-import {
-  MessageBody,
-  SubscribeMessage,
-  OnGatewayInit,
-  OnGatewayConnection,
-  ConnectedSocket,
-} from "@nestjs/websockets";
+import { OnGatewayInit, OnGatewayConnection } from "@nestjs/websockets";
 import { PinoLogger } from "nestjs-pino";
 import { Server, Socket } from "socket.io";
 import { auth, storageAdapters, unique } from "extensor";
 import { SocketService } from "@app/socket";
 import { AuthService } from "@app/auth";
 import { CacheService } from "@app/cache";
-import { retryUnderHood } from "@app/helpers/util";
-import { IUser, IRide, UserRoles } from "@shared/interfaces";
-import { PendencieRepository } from "@app/repositories";
 import {
-  EVENTS,
-  State,
-  Position,
-  EventsInterface,
-  UserState,
-} from "@shared/events";
-import { CANCELATION } from "../constants";
+  ERideFlowEvents,
+  IState,
+  IPositionData,
+  IRideFlowEvents,
+  EUserState,
+  IObserver,
+} from "@core/events";
 import { ConnectionService } from "../state";
+import { EAccountRoles } from "@core/domain/account";
 
 export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
-  public role!: UserRoles;
+  public role!: EAccountRoles;
 
   constructor(
-    readonly socketService: SocketService<EventsInterface>,
-    readonly pendencieRepository: PendencieRepository,
+    readonly socketService: SocketService<IRideFlowEvents>,
+    //readonly pendencieRepository: PendencieRepository,
     readonly sessionService: AuthService,
     readonly connectionService: ConnectionService,
     readonly cacheService: CacheService,
@@ -45,19 +37,20 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
         token,
         socket.handshake.address,
       );
-      const hasPermission = this.sessionService.hasPermission(session, [
-        this.role,
-      ]);
+      const hasPermission = this.sessionService.hasPermission(
+        session.getData(),
+        [this.role],
+      );
 
       if (!hasPermission) {
         throw new ForbiddenException();
       }
 
-      const { _id, pid, averageEvaluation } = session.user;
+      const { _id, pid, averageEvaluation } = session.getData().user;
       const previousData = await this.connectionService.find(pid);
 
       if (previousData) {
-        socket.data = await this.connectionService.update(pid, {
+        socket.data = await this.connectionService.updateByPid(pid, {
           socketId: socket.id,
         });
 
@@ -71,7 +64,7 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
         mode: this.role,
         rate: averageEvaluation,
         socketId: socket.id,
-        state: UserState.IDLE,
+        state: EUserState.IDLE,
         rides: [],
         observers: [],
       });
@@ -92,61 +85,39 @@ export class Common implements OnGatewayInit<Server>, OnGatewayConnection {
     socket.auth.catch(this.logger.warn);
   }
 
-  positionEventHandler(position: Position, socket: Socket) {
-    this.dispachToObervers(EVENTS.POSITION, socket, position);
+  positionEventHandler(position: IPositionData, socket: Socket) {
+    this.dispachToObervers(ERideFlowEvents.Position, socket, position);
   }
 
-  @SubscribeMessage(EVENTS.STATE)
-  stateEventHandler(
-    @MessageBody() state: State,
-    @ConnectedSocket() socket: Socket,
-  ) {
-    socket.state = state.state;
-    this.dispachToObervers(EVENTS.STATE, socket, state);
-  }
+  // @SubscribeMessage(CommonEvents.STATE)
+  // stateEventHandler(
+  //   @MessageBody() state: IState,
+  //   @ConnectedSocket() socket: Socket,
+  // ) {
+  //   socket.state = state.state;
+  //   this.dispachToObervers(CommonEvents.STATE, socket, state);
+  // }
 
-  dispachToObervers<K extends keyof EventsInterface>(
-    event: keyof EventsInterface,
+  dispachToObervers<K extends keyof IRideFlowEvents>(
+    event: keyof IRideFlowEvents,
     client: Socket,
-    data: EventsInterface[K],
+    data: IRideFlowEvents[K],
     considerP2P = true,
   ) {
     const { observers, p2p: selfP2P } = client.data;
 
     data = this.signObservableEvent(data, client);
 
-    observers.forEach((observer) => {
+    (observers as IObserver[]).forEach((observer) => {
       if (considerP2P && selfP2P && observer.p2p) {
         return;
       }
 
-      this.socketService.emit(observer.socketId, event, data);
+      this.socketService.emitByPid(observer.pid, event, data);
     });
   }
 
   signObservableEvent<T = any>(packet: T, socket: Socket): T {
     return { ...packet, pid: socket.data.pid };
-  }
-
-  public createPendencie({
-    ride,
-    issuer,
-    affected,
-  }: {
-    ride: IRide["_id"];
-    issuer: IUser["_id"];
-    affected: IUser["_id"];
-  }) {
-    return retryUnderHood(
-      () =>
-        this.pendencieRepository.create({
-          issuer,
-          affected,
-          amount: CANCELATION.FARE,
-          ride,
-        }),
-      3,
-      500,
-    );
   }
 }

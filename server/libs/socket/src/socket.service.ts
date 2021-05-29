@@ -203,6 +203,32 @@ export class SocketService<
     return (socket as any).emit(event, data, callback);
   }
 
+  /**
+   * Emits event to socket.
+   *
+   * If this node has the socket connection, it self emits the event, otherwise,
+   * dispatch to the others nodes and the one with the socket emits the event.
+   *
+   * @param {string} event
+   * @param {string} socketId
+   * @param {any} data
+   * @param {function | true} [ack] Acknowledgment
+   */
+   emitByPid<K extends keyof ClientEvents>(
+    socketId: string,
+    event: K,
+    data: ClientEvents[K],
+    callback?: Callback,
+  ) {
+    const socket = this.getSocket(socketId);
+
+    if (!socket) {
+      return this.dispatchSocketEvent(socketId, event, data, callback);
+    }
+
+    return (socket as any).emit(event, data, callback);
+  }
+
   getSocket(id: string): Socket | null {
     const split = id.split("#");
 

@@ -1,14 +1,14 @@
 import { SchemaObject } from "../../types/schemapack";
-import { PickingUpPath } from "./picking-up-path";
+import { IGetOverHere } from "./picking-up-path";
 
-export type OfferRequest = {
+export interface IOfferRequest {
   /**
    * The public ID of created ride.
    */
   ridePID: string;
 };
 
-export type OfferServer = {
+export interface IOfferServer {
   /**
    * Ride public id
    */
@@ -48,9 +48,9 @@ export type OfferServer = {
    * Accepted timestamp, used to define a safe cancelation without fares
    */
   acceptTimestamp?: number;
-  pickingUpPath?: PickingUpPath;
+  pickingUpPath?: IGetOverHere;
 };
 
-export const offerSchema: SchemaObject<OfferRequest> = {
+export const offerSchema: SchemaObject<IOfferRequest> = {
   ridePID: "string",
 };

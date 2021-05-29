@@ -41,7 +41,7 @@ import {
   RideNotFoundException,
   VehicleNotFoundException,
 } from "./exceptions";
-import { NODES_EVENTS } from "./events/nodes";
+import { EServerNodesEvents } from "./events/nodes";
 import { mockRide } from "@testing/testing";
 import ms from "ms";
 
@@ -715,7 +715,7 @@ describe("StateService", () => {
       ] = socketService.nodes.emit.mock.calls;
 
       expect(voyagerNodeEmitCall[0]).toBe(
-        NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA,
+        EServerNodesEvents.UpdateLocalAccountData,
       );
       expect(voyagerNodeEmitCall[1]).toStrictEqual({
         socketId: voyagerSocketId,
@@ -727,7 +727,7 @@ describe("StateService", () => {
         },
       });
 
-      expect(driverNodeEmitCall[0]).toBe(NODES_EVENTS.UPDATE_LOCAL_SOCKET_DATA);
+      expect(driverNodeEmitCall[0]).toBe(EServerNodesEvents.UpdateLocalAccountData);
       expect(driverNodeEmitCall[1]).toStrictEqual({
         socketId: driverSocketId,
         namespace: NAMESPACES.DRIVERS,
@@ -1083,7 +1083,7 @@ describe("StateService", () => {
       expect(service.drivers[0].state).toBe(DriverState.IDLE);
 
       socketService.nodesEmitter.emit(
-        NODES_EVENTS.UPDATE_DRIVER_STATE,
+        EServerNodesEvents.UpdateDriverState,
         {
           socketId: driverState.socketId,
           state: { state: DriverState.SEARCHING },
@@ -1115,7 +1115,7 @@ describe("StateService", () => {
 
       expect(service.drivers[0].state).toBe(DriverState.IDLE);
       expect(socketService.nodes.emit).toBeCalledWith(
-        NODES_EVENTS.UPDATE_DRIVER_STATE,
+        EServerNodesEvents.UpdateDriverState,
         {
           socketId: driverState.socketId,
           state: updateTo,

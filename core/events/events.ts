@@ -1,166 +1,163 @@
+import { SchemaObject } from "types/schemapack";
 import {
-  Configuration,
+  IConfiguration,
   configurationSchema,
   //
-  DriverRideAcceptedResponse,
+  IDriverRideAcceptedResponse,
   driverRideAcceptedResponseSchema,
   //
-  VoyagerRideAcceptedResponse,
+  IVoyagerRideAcceptedResponse,
   voyagerRideAcceptedResponseSchema,
   //
-  OfferRequest,
+  IOfferRequest,
   offerSchema,
   //
-  OfferResponse,
+  IOfferResponse,
   offerReponseSchema,
   //
-  OfferSent,
+  IOfferSent,
   offerSentSchema,
   //
-  Position,
+  IPositionData,
   positionSchema,
   //
-  Setup,
+  ISetup,
   driverSetupSchema,
   //
-  State,
+  IState,
   stateSchema,
   //
-  CancelRide,
+  ICancelRide,
   cancelRideSchema,
   //
-  CanceledRide,
-  canceledRideSchema,
-  //
-  DelayedOfferReponse,
+  IDelayedOfferReponse,
   delayedOfferReponse,
   //
-  AmIRunning,
+  IAmIRunning,
   amIRunningSchema,
   //
-  OfferGotTooLong,
+  IOfferGotTooLong,
   offerGotTooLong,
   //
-  PickingUpPath,
-  pickingUpPathSchema,
+  IGetOverHere,
+  getOverHereSchema,
   //
-  StartRide,
+  IStartRide,
   startRideSchema,
   //
-  FinishRide,
+  IFinishRide,
   finishRideSchema,
 } from "./schemas";
 
 export * from "./schemas";
 export * from "./schemas/common";
 
-export enum EVENTS {
-  CONFIGURATION = "CONFIGURATION",
-  DRIVER_RIDE_ACCEPTED_RESPONSE = "DRIVER_RIDE_ACCEPTED_RESPONSE",
-  VOYAGER_RIDE_ACCEPTED_RESPONSE = "VOYAGER_RIDE_ACCEPTED_RESPONSE",
-  OFFER = "OFFER",
-  OFFER_RESPONSE = "OFFER_RESPONSE",
-  OFFER_SENT = "OFFER_SENT",
-  POSITION = "POSITION",
-  DRIVER_SETUP = "DRIVER_SETUP",
-  STATE = "STATE",
-  AM_I_RUNNING = "AM_I_RUNNING",
-  CANCEL_RIDE = "CANCEL_RIDE",
-  CANCELED_RIDE = "CANCELED_RIDE",
-  DELAYED_OFFER_RESPONSE = "DELAYED_OFFER_RESPONSE",
-  OFFER_GOT_TOO_LONG = "OFFER_GOT_TOO_LONG",
-  PICKING_UP_PATH = "PICKING_UP_PATH",
-  START_RIDE = "START_RIDE",
-  FINISH_RIDE = "FINISH_RIDE",
+export enum ERideFlowEvents {
+  Configuration,
+  DriverRideAcceptedResponse,
+  VoyagerRideAcceptedResponse,
+  Offer,
+  OfferResponse,
+  OfferSent,
+  Position,
+  DriverSetup,
+  AccountState,
+  AmIRunning,
+  CancelRide,
+  DelayedOfferResponse,
+  OfferGotTooLong,
+  GetOverHere,
+  StartRide,
+  FinishRide,
 }
 
-export const serverEventsSchemas = {
-  [EVENTS.CONFIGURATION]: {
+export const serverEventsSchemas: {
+  [key in ERideFlowEvents]: {
+    id: number;
+    schema: SchemaObject<unknown>;
+  };
+} = {
+  [ERideFlowEvents.Configuration]: {
     id: 1,
     schema: configurationSchema,
   },
-  [EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE]: {
+  [ERideFlowEvents.DriverRideAcceptedResponse]: {
     id: 2,
     schema: driverRideAcceptedResponseSchema,
   },
-  [EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE]: {
+  [ERideFlowEvents.VoyagerRideAcceptedResponse]: {
     id: 3,
     schema: voyagerRideAcceptedResponseSchema,
   },
-  [EVENTS.OFFER]: {
+  [ERideFlowEvents.Offer]: {
     id: 4,
     schema: offerSchema,
   },
-  [EVENTS.OFFER_RESPONSE]: {
+  [ERideFlowEvents.OfferResponse]: {
     id: 5,
     schema: offerReponseSchema,
   },
-  [EVENTS.OFFER_SENT]: {
+  [ERideFlowEvents.OfferSent]: {
     id: 6,
     schema: offerSentSchema,
   },
-  [EVENTS.POSITION]: {
+  [ERideFlowEvents.Position]: {
     id: 7,
     schema: positionSchema,
   },
-  [EVENTS.DRIVER_SETUP]: {
+  [ERideFlowEvents.DriverSetup]: {
     id: 8,
     schema: driverSetupSchema,
   },
-  [EVENTS.STATE]: {
+  [ERideFlowEvents.AccountState]: {
     id: 9,
     schema: stateSchema,
   },
-  [EVENTS.AM_I_RUNNING]: {
+  [ERideFlowEvents.AmIRunning]: {
     id: 10,
     schema: amIRunningSchema,
   },
-  [EVENTS.CANCEL_RIDE]: {
+  [ERideFlowEvents.CancelRide]: {
     id: 11,
     schema: cancelRideSchema,
   },
-  [EVENTS.CANCELED_RIDE]: {
-    id: 12,
-    schema: canceledRideSchema,
-  },
-  [EVENTS.DELAYED_OFFER_RESPONSE]: {
+  [ERideFlowEvents.DelayedOfferResponse]: {
     id: 13,
     schema: delayedOfferReponse,
   },
-  [EVENTS.OFFER_GOT_TOO_LONG]: {
+  [ERideFlowEvents.OfferGotTooLong]: {
     id: 14,
     schema: offerGotTooLong,
   },
-  [EVENTS.PICKING_UP_PATH]: {
+  [ERideFlowEvents.GetOverHere]: {
     id: 15,
-    schema: pickingUpPathSchema,
+    schema: getOverHereSchema,
   },
-  [EVENTS.START_RIDE]: {
+  [ERideFlowEvents.StartRide]: {
     id: 16,
     schema: startRideSchema,
   },
-  [EVENTS.FINISH_RIDE]: {
+  [ERideFlowEvents.FinishRide]: {
     id: 17,
     schema: finishRideSchema,
   },
 };
 
-export interface EventsInterface {
-  [EVENTS.CONFIGURATION]: Configuration;
-  [EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE]: DriverRideAcceptedResponse;
-  [EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE]: VoyagerRideAcceptedResponse;
-  [EVENTS.OFFER]: OfferRequest;
-  [EVENTS.OFFER_RESPONSE]: OfferResponse;
-  [EVENTS.OFFER_SENT]: OfferSent;
-  [EVENTS.POSITION]: Position;
-  [EVENTS.DRIVER_SETUP]: Setup;
-  [EVENTS.STATE]: State;
-  [EVENTS.AM_I_RUNNING]: AmIRunning;
-  [EVENTS.CANCEL_RIDE]: CancelRide;
-  [EVENTS.CANCELED_RIDE]: CanceledRide;
-  [EVENTS.DELAYED_OFFER_RESPONSE]: DelayedOfferReponse;
-  [EVENTS.OFFER_GOT_TOO_LONG]: OfferGotTooLong;
-  [EVENTS.PICKING_UP_PATH]: PickingUpPath;
-  [EVENTS.START_RIDE]: StartRide;
-  [EVENTS.FINISH_RIDE]: FinishRide;
+export interface IRideFlowEvents {
+  [ERideFlowEvents.Configuration]: IConfiguration;
+  [ERideFlowEvents.DriverRideAcceptedResponse]: IDriverRideAcceptedResponse;
+  [ERideFlowEvents.VoyagerRideAcceptedResponse]: IVoyagerRideAcceptedResponse;
+  [ERideFlowEvents.Offer]: IOfferRequest;
+  [ERideFlowEvents.OfferResponse]: IOfferResponse;
+  [ERideFlowEvents.OfferSent]: IOfferSent;
+  [ERideFlowEvents.Position]: IPositionData;
+  [ERideFlowEvents.DriverSetup]: ISetup;
+  [ERideFlowEvents.AccountState]: IState;
+  [ERideFlowEvents.AmIRunning]: IAmIRunning;
+  [ERideFlowEvents.CancelRide]: ICancelRide;
+  [ERideFlowEvents.DelayedOfferResponse]: IDelayedOfferReponse;
+  [ERideFlowEvents.OfferGotTooLong]: IOfferGotTooLong;
+  [ERideFlowEvents.GetOverHere]: IGetOverHere;
+  [ERideFlowEvents.StartRide]: IStartRide;
+  [ERideFlowEvents.FinishRide]: IFinishRide;
 }

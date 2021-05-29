@@ -14,13 +14,19 @@ import { ContactDto, ContactVerificationCheckDto } from "../account.dto";
 import { AccountService } from "../account.service";
 import { RemoveContactDto } from "../account.dto";
 import { IContactVerificationResponseDto } from "@core/interfaces";
+import { AccountRoute } from "@core/routes";
 
-@Controller("user/contact")
+const basePath = AccountRoute.route("contact").basePath;
+const requestVerification = AccountRoute.route("contact").route("request-verifaction", {
+  endpointOnly: true
+});
+
+@Controller(basePath)
 @UseGuards(AuthGuard)
 export class AccountContactController {
   constructor(private usersService: AccountService) {}
 
-  @Get("verify/:contact")
+  @Get(requestVerification)
   async verifyContactRequest(
     @Param() { contact }: ContactDto,
   ): Promise<IContactVerificationResponseDto> {

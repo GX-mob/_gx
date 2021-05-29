@@ -1,14 +1,14 @@
 import { SchemaObject } from "../../types/schemapack";
-import { positionSchema, Position } from "./position";
-import { configurationSchema, Configuration } from "./configuration";
+import { positionSchema, IPositionData } from "./position";
+import { configurationSchema, IConfiguration } from "./configuration";
 
-export type Setup = {
-  position: Position;
-  config: Configuration;
+export interface ISetup {
+  position: IPositionData;
+  config: IConfiguration;
   vehicleId: string;
 };
 
-export const driverSetupSchema: SchemaObject<Setup> = {
+export const driverSetupSchema: SchemaObject<ISetup> = {
   position: positionSchema,
   config: configurationSchema,
   vehicleId: "string",

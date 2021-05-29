@@ -7,27 +7,22 @@ import {
 } from "@nestjs/websockets";
 import { PinoLogger } from "nestjs-pino";
 import { Socket } from "socket.io";
-import { PendencieRepository } from "@app/repositories";
 import { CacheService } from "@app/cache";
 import { AuthService } from "@app/auth";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
-import { IPendencie, RideStatus, UserRoles } from "@shared/interfaces";
 import {
-  EVENTS,
-  EventsInterface,
-  DriverState,
-  Position,
-  Setup,
-  Configuration,
-  OfferResponse,
-  CancelRide,
-  CanceledRide,
-  CANCELATION_RESPONSE,
-  PickingUpPath,
-  StartRide,
-  UserState,
-} from "@shared/events";
+  ERideFlowEvents,
+  IRideFlowEvents,
+  IPositionData,
+  ISetup,
+  IConfiguration,
+  IOfferResponse,
+  ICancelRide,
+  IGetOverHere,
+  IStartRide,
+  EUserState,
+} from "@core/events";
 import {
   UncancelableRideException,
   TooDistantOfExpectedException,
@@ -39,14 +34,15 @@ import {
 } from "../constants";
 import { Common } from "./common";
 import { ConnectionService, DriversService, RidesService } from "../state";
+import { EAccountRoles } from "@core/domain/account";
+import { ERideStatus } from "@core/domain/ride";
 
 @WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
 export class DriversGateway extends Common implements OnGatewayDisconnect {
-  role = UserRoles.DRIVER;
+  role = EAccountRoles.Driver;
 
   constructor(
-    readonly socketService: SocketService<EventsInterface>,
-    readonly pendencieRepository: PendencieRepository,
+    readonly socketService: SocketService<IRideFlowEvents>,
     readonly sessionService: AuthService,
     readonly cacheService: CacheService,
     readonly connectionService: ConnectionService,
@@ -56,7 +52,6 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
   ) {
     super(
       socketService,
-      pendencieRepository,
       sessionService,
       connectionService,
       cacheService,
@@ -66,35 +61,35 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     logger.setContext(DriversGateway.name);
   }
 
-  @SubscribeMessage(EVENTS.POSITION)
+  @SubscribeMessage(ERideFlowEvents.Position)
   positionEventHandler(
-    @MessageBody() position: Position,
+    @MessageBody() position: IPositionData,
     @ConnectedSocket() client: Socket,
   ) {
     super.positionEventHandler(position, client);
     this.driversService.positionEvent(client.id, position);
   }
 
-  @SubscribeMessage(EVENTS.DRIVER_SETUP)
+  @SubscribeMessage(ERideFlowEvents.DriverSetup)
   async setupEventHandler(
-    @MessageBody() setup: Setup,
+    @MessageBody() setup: ISetup,
     @ConnectedSocket() client: Socket,
   ) {
     await this.driversService.setupDriverEvent(client.id, setup, client.data);
     return true;
   }
 
-  @SubscribeMessage(EVENTS.CONFIGURATION)
+  @SubscribeMessage(ERideFlowEvents.Configuration)
   configurationEventHandler(
-    @MessageBody() config: Configuration,
+    @MessageBody() config: IConfiguration,
     @ConnectedSocket() client: Socket,
   ) {
     this.driversService.setConfigurationEvent(client.id, config);
   }
 
-  @SubscribeMessage(EVENTS.OFFER_RESPONSE)
+  @SubscribeMessage(ERideFlowEvents.OfferResponse)
   async offerResponseEventHandler(
-    @MessageBody() offerResponse: OfferResponse,
+    @MessageBody() offerResponse: IOfferResponse,
     @ConnectedSocket() client: Socket,
   ) {
     this.driversService.offerResponseEvent(
@@ -104,9 +99,9 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
     );
   }
 
-  @SubscribeMessage(EVENTS.PICKING_UP_PATH)
+  @SubscribeMessage(ERideFlowEvents.GetOverHere)
   async pickingUpPathEventHandler(
-    @MessageBody() pickingUp: PickingUpPath,
+    @MessageBody() pickingUp: IGetOverHere,
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await this.ridesService.getRide({ pid: pickingUp.ridePID });
@@ -121,14 +116,14 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
 
     this.socketService.emit(
       requesterSocketId,
-      EVENTS.PICKING_UP_PATH,
+      ERideFlowEvents.GetOverHere,
       pickingUp,
     );
   }
 
-  @SubscribeMessage(EVENTS.START_RIDE)
+  @SubscribeMessage(ERideFlowEvents.StartRide)
   async startRideEventHandler(
-    @MessageBody() { ridePID, latLng }: StartRide,
+    @MessageBody() { ridePID, latLng }: IStartRide,
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await this.ridesService.getRide({ pid: ridePID });
@@ -143,16 +138,16 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
 
     this.ridesService.updateRide(
       { pid: ridePID },
-      { status: RideStatus.RUNNING },
+      { status: ERideStatus.Running },
     );
-    this.driversService.updateDriver(client.id, { state: UserState.RUNNING });
+    this.driversService.updateDriver(client.id, { state: EUserState.RUNNING });
 
     return true;
   }
 
-  @SubscribeMessage(EVENTS.FINISH_RIDE)
+  @SubscribeMessage(ERideFlowEvents.FinishRide)
   async finishRideEventHandler(
-    @MessageBody() { ridePID, latLng }: StartRide,
+    @MessageBody() { ridePID, latLng }: IStartRide,
     @ConnectedSocket() client: Socket,
   ) {
     const ride = await this.ridesService.getRide({ pid: ridePID });
@@ -167,76 +162,49 @@ export class DriversGateway extends Common implements OnGatewayDisconnect {
 
     this.ridesService.updateRide(
       { pid: ridePID },
-      { status: RideStatus.COMPLETED },
+      { status: ERideStatus.Completed },
     );
-    this.driversService.updateDriver(client.id, { state: UserState.IDLE });
+    this.driversService.updateDriver(client.id, { state: EUserState.IDLE });
 
     return true;
   }
 
-  @SubscribeMessage(EVENTS.CANCEL_RIDE)
+  @SubscribeMessage(ERideFlowEvents.CancelRide)
   async cancelRideEventHandler(
-    @MessageBody() ridePID: CancelRide,
+    @MessageBody() { ridePID }: ICancelRide,
     @ConnectedSocket() client: Socket,
-  ): Promise<{
-    status: CanceledRide["status"] | "error";
-    error?: string;
-    pendencie?: IPendencie["_id"];
-  }> {
-    const now = Date.now();
+  ) {
     const ride = await this.ridesService.getRide({ pid: ridePID });
     const { _id } = client.data;
 
     this.ridesService.checkIfInRide(ride, _id);
 
     // block cancel running ride
-    if (ride.status === RideStatus.RUNNING) {
+    if (ride.status === ERideStatus.Running) {
       throw new UncancelableRideException(ride.pid, "running");
     }
 
     const offer = await this.ridesService.getOfferData(ridePID);
-    const { requesterSocketId, acceptTimestamp } = offer;
+    const { requesterSocketId } = offer;
 
     this.driversService.updateDriver(client.id, {
-      state: DriverState.SEARCHING,
+      state: EUserState.SEARCHING,
     });
     this.ridesService.updateRide({ pid: ridePID }, { driver: undefined });
 
-    const isSafeCancel = this.ridesService.isSafeCancel(
-      acceptTimestamp as number,
-      now,
-    );
-
-    const status = isSafeCancel
-      ? CANCELATION_RESPONSE.SAFE
-      : CANCELATION_RESPONSE.PENDENCIE_ISSUED;
-
-    this.socketService.emit(requesterSocketId, EVENTS.CANCELED_RIDE, {
+    this.socketService.emit(requesterSocketId, ERideFlowEvents.CancelRide, {
       ridePID,
-      status,
     });
-
-    /**
-     * No safe cancel, issue a pendencie
-     */
-    if (!isSafeCancel)
-      this.createPendencie({
-        ride: ride._id,
-        issuer: ride.driver,
-        affected: ride.voyager,
-      });
-
-    return { status };
   }
 
   handleDisconnect(client: Socket) {
     if (!client.data) return;
 
     switch (client.data.state) {
-      case UserState.SEARCHING:
-      case UserState.COMPLETING:
+      case EUserState.SEARCHING:
+      case EUserState.COMPLETING:
         return this.driversService.updateDriver(client.id, {
-          state: UserState.IDLE,
+          state: EUserState.IDLE,
         });
     }
   }

@@ -2,30 +2,29 @@ import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { util } from "@app/helpers";
 import { CacheService } from "@app/cache";
-import { IRide } from "@shared/interfaces";
+import { IRide } from "@core/domain/ride";
 import { RideRepository, VehicleRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
 import { geometry } from "@app/helpers";
 import {
   // Events interface,
-  EventsInterface,
-  EVENTS,
+  IRideFlowEvents,
+  ERideFlowEvents,
   // Enums
-  DriverState,
+  EUserState,
   // Common
-  Driver,
-  ConnectionData,
+  IDriverData,
+  IConnectionData,
   // Events
-  Position,
-  Setup,
-  OfferResponse,
-  OfferServer,
-  Configuration,
-  UserState,
-} from "@shared/events";
+  IPositionData,
+  ISetup,
+  IOfferResponse,
+  IOfferServer,
+  IConfiguration,
+} from "@core/events";
 import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "../constants";
 import {
-  NODES_EVENTS,
+  EServerNodesEvents,
   INodesEvents,
   TellMeYourDriversState,
 } from "../events/nodes";
@@ -40,12 +39,12 @@ export class DriversService {
   /**
    * Drivers list
    */
-  public drivers = new Map<string, Driver>();
+  public drivers = new Map<string, IDriverData>();
 
   constructor(
     readonly cacheService: CacheService,
     readonly rideRepository: RideRepository,
-    readonly socketService: SocketService<EventsInterface, INodesEvents>,
+    readonly socketService: SocketService<IRideFlowEvents, INodesEvents>,
     private readonly logger: PinoLogger,
     readonly configService: ConfigService,
     private vehicleRepository: VehicleRepository,
@@ -55,31 +54,37 @@ export class DriversService {
   ) {
     logger.setContext(DriversService.name);
 
-    this.socketService.on(EVENTS.DRIVER_SETUP, ({ socketId, data }) => {
+    this.socketService.on(ERideFlowEvents.DriverSetup, ({ socketId, data }) => {
       this.setupDriverEvent(socketId, data).catch((err) => {
         this.logger.error(err);
       });
     });
 
-    this.socketService.on(EVENTS.POSITION, ({ socketId, data }) => {
+    this.socketService.on(ERideFlowEvents.Position, ({ socketId, data }) => {
       this.positionEvent(socketId, data);
     });
 
-    this.socketService.on(EVENTS.CONFIGURATION, ({ socketId, data }) => {
-      this.setConfigurationEvent(socketId, data);
-    });
+    this.socketService.on(
+      ERideFlowEvents.Configuration,
+      ({ socketId, data }) => {
+        this.setConfigurationEvent(socketId, data);
+      },
+    );
 
-    this.socketService.on(EVENTS.OFFER_RESPONSE, ({ socketId, data }) => {
-      this.offerResponseEvent(socketId, data).catch((err) => {
-        this.logger.error(err);
-      });
-    });
+    this.socketService.on(
+      ERideFlowEvents.OfferResponse,
+      ({ socketId, data }) => {
+        this.offerResponseEvent(socketId, data).catch((err) => {
+          this.logger.error(err);
+        });
+      },
+    );
 
     /**
      * Internal nodes events
      */
     this.socketService.nodes.on(
-      NODES_EVENTS.UPDATE_DRIVER_STATE,
+      EServerNodesEvents.UpdateDriverState,
       ({ socketId, state }, ack) => {
         ack(true);
         this.updateDriver(socketId, state, true);
@@ -108,7 +113,7 @@ export class DriversService {
     }, driversObjectListCleanUpInterval);
 
     this.socketService.nodes.on(
-      NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
+      EServerNodesEvents.TellMeYourDriversState,
       (_data, ack) => {
         ack({ drivers: Array.from(this.drivers.values()) });
       },
@@ -125,22 +130,21 @@ export class DriversService {
    */
   private warmup() {
     this.socketService.nodes.emit(
-      NODES_EVENTS.TELL_ME_YOUR_DRIVERS_STATE,
+      EServerNodesEvents.TellMeYourDriversState,
       { drivers: [] },
       (replies) => {
         const filtredReplies = replies.filter(
           (replie) => replie,
         ) as TellMeYourDriversState[];
-        const responsesMerge = filtredReplies.reduce<Record<string, Driver>>(
-          (currentValue, { drivers }) => {
-            drivers.forEach((driver) => {
-              currentValue[driver.pid] = driver;
-            });
+        const responsesMerge = filtredReplies.reduce<
+          Record<string, IDriverData>
+        >((currentValue, { drivers }) => {
+          drivers.forEach((driver) => {
+            currentValue[driver.pid] = driver;
+          });
 
-            return currentValue;
-          },
-          {},
-        );
+          return currentValue;
+        }, {});
 
         this.drivers = new Map([
           ...this.drivers,
@@ -159,11 +163,11 @@ export class DriversService {
    */
   public async setupDriverEvent(
     socketId: string,
-    setup: Setup,
-    connectionData?: ConnectionData,
+    setup: ISetup,
+    connectionData?: IConnectionData,
   ) {
     if (!connectionData) {
-      connectionData = await this.connectionService.get(socketId);
+      connectionData = await this.connectionService.getByPid(socketId);
     }
 
     const vehicle = await this.vehicleRepository.find({ _id: setup.vehicleId });
@@ -172,13 +176,13 @@ export class DriversService {
       throw new VehicleNotFoundException(setup.vehicleId);
     }
 
-    const driverObject: Driver = {
+    const driverObject: IDriverData = {
       ...connectionData,
       socketId,
       position: setup.position,
       config: setup.config,
       vehicleType: vehicle.metadata.type,
-      state: DriverState.SEARCHING,
+      state: EUserState.SEARCHING,
       updatedAt: Date.now(),
     };
 
@@ -188,7 +192,7 @@ export class DriversService {
   findDriverBySocketId(
     socketId: string,
     logLevel: "error" | "info" | "warn" = "info",
-  ): Driver | undefined {
+  ): IDriverData | undefined {
     let driver;
 
     this.drivers.forEach((idriver) => {
@@ -211,7 +215,7 @@ export class DriversService {
    * @param {string} socketId
    * @param {Position} position
    */
-  positionEvent(socketId: string, position: Position) {
+  positionEvent(socketId: string, position: IPositionData) {
     const driver = this.findDriverBySocketId(socketId);
     if (!driver) return;
 
@@ -222,9 +226,9 @@ export class DriversService {
   /**
    * Set driver search ride configuration
    * @param {string} socketId
-   * @param {Configuration} config
+   * @param {IConfiguration} config
    */
-  setConfigurationEvent(socketId: string, config: Configuration) {
+  setConfigurationEvent(socketId: string, config: IConfiguration) {
     const driver = this.findDriverBySocketId(socketId);
     if (!driver) return;
 
@@ -236,14 +240,14 @@ export class DriversService {
    */
   async offerResponseEvent(
     socketId: string,
-    offerResponse: OfferResponse,
-    driverData?: ConnectionData,
+    offerResponse: IOfferResponse,
+    driverData?: IConnectionData,
   ) {
     const offer = this.ridesService.offers.get(offerResponse.ridePID);
     if (!offer) return;
 
     const driverConnectionData =
-      driverData || (await this.connectionService.get(socketId));
+      driverData || (await this.connectionService.getByPid(socketId));
 
     /**
      * To avoid any bug in a delayed response and other driver already received the offer
@@ -251,7 +255,7 @@ export class DriversService {
     if (offer.offeredTo !== driverConnectionData.pid) {
       return this.socketService.emit(
         socketId,
-        EVENTS.DELAYED_OFFER_RESPONSE,
+        ERideFlowEvents.DelayedOfferResponse,
         true,
       );
     }
@@ -264,16 +268,16 @@ export class DriversService {
     /**
      * If negative response, adds to ignoreds list and resume the offer
      */
-    if (!offerResponse.response) {
+    if (!offerResponse.accepted) {
       offer.ignoreds.push(driverConnectionData.pid);
 
       const ride = await this.ridesService.getRide({ pid: offer.ridePID });
 
-      this.ridesService.startOffer(offer, ride as IRide);
+      // this.ridesService.startOffer(offer, ride as IRide);
       return;
     }
 
-    this.updateDriver(socketId, { state: UserState.PICKING_UP });
+    this.updateDriver(socketId, { state: EUserState.GET_OVER_HERE });
 
     // Defines safe time cancel
     const acceptTimestamp = Date.now();
@@ -296,7 +300,7 @@ export class DriversService {
     // Update ride data
     await util.retry(
       () =>
-        this.rideRepository.update(
+        this.rideRepository.updateByQuery(
           { pid: offer.ridePID },
           { driver: driverConnectionData._id },
         ),
@@ -308,15 +312,19 @@ export class DriversService {
     const timestamp = Math.round(acceptTimestamp / 1000);
 
     // Emit to driver
-    this.socketService.emit(socketId, EVENTS.DRIVER_RIDE_ACCEPTED_RESPONSE, {
-      ridePID: offer.ridePID,
-      timestamp,
-    });
+    this.socketService.emit(
+      socketId,
+      ERideFlowEvents.DriverRideAcceptedResponse,
+      {
+        ridePID: offer.ridePID,
+        timestamp,
+      },
+    );
 
     // Emit to voyager
     this.socketService.emit(
       offer.requesterSocketId,
-      EVENTS.VOYAGER_RIDE_ACCEPTED_RESPONSE,
+      ERideFlowEvents.VoyagerRideAcceptedResponse,
       {
         ridePID: offer.ridePID,
         driverPID: driverConnectionData.pid,
@@ -324,17 +332,17 @@ export class DriversService {
       },
     );
 
-    const voyagerConnectionData = await this.connectionService.get(
+    const voyagerConnectionData = await this.connectionService.getByPid(
       offer.requesterSocketId,
     );
 
     await this.connectionService.insertObserver(driverConnectionData, {
-      socketId: offer.requesterSocketId,
+      pid: voyagerConnectionData.pid,
       p2p: voyagerConnectionData.p2p,
     });
 
     await this.connectionService.insertObserver(offer.requesterSocketId, {
-      socketId: driverConnectionData.socketId,
+      pid: "",
       p2p: driverConnectionData.p2p,
     });
   }
@@ -342,21 +350,21 @@ export class DriversService {
   /**
    * Match driver algorithm
    *
-   * @param {OfferServer} offer
-   * @param {Driver[]} list Next iteration list
+   * @param {IOfferServer} offer
+   * @param {IDriverData[]} list Next iteration list
    */
   async match(
-    offer: OfferServer,
+    offer: IOfferServer,
     ride: IRide,
-    list: Map<string, Driver> = this.drivers,
+    list: Map<string, IDriverData> = this.drivers,
     runTimes = 0,
-  ): Promise<Driver | null> {
+  ): Promise<IDriverData | null> {
     ++runTimes;
 
-    const nextList = new Map<string, Driver>();
+    const nextList = new Map<string, IDriverData>();
     const maxDistance = this.getDistance(runTimes);
     let currentDistance: number = Number.MAX_SAFE_INTEGER;
-    let choiced: Driver | null = null;
+    let choiced: IDriverData | null = null;
 
     list.forEach((current) => {
       const distance = geometry.distance.calculate(
@@ -394,7 +402,7 @@ export class DriversService {
         /**
          * Not searching ride
          */
-        current.state !== DriverState.SEARCHING ||
+        current.state !== EUserState.SEARCHING ||
         /**
          * Not match with the driver configured district
          */
@@ -490,7 +498,7 @@ export class DriversService {
    */
   updateDriver(
     socketId: string,
-    state: Partial<Driver>,
+    state: Partial<IDriverData>,
     // To prevent recursive propagation of the event
     isNodeEvent = false,
   ) {
@@ -504,7 +512,7 @@ export class DriversService {
     });
 
     if (!isNodeEvent) {
-      this.socketService.nodes.emit(NODES_EVENTS.UPDATE_DRIVER_STATE, {
+      this.socketService.nodes.emit(EServerNodesEvents.UpdateDriverState, {
         socketId,
         state,
       });

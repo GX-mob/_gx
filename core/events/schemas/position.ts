@@ -1,14 +1,14 @@
 import { SchemaObject } from "../../types/schemapack";
-import { latLngSchema, LatLng } from "./common";
+import { latLngSchema, ILatLng } from "./common";
 
 /**
  * Position event schema
  */
-export type Position = {
+export interface IPositionData {
   /**
    * Latitude & longitude
    */
-  latLng: LatLng;
+  latLng: ILatLng;
   /**
    * Geolocation heading
    */
@@ -24,7 +24,7 @@ export type Position = {
   pid: string;
 };
 
-export const positionSchema: SchemaObject<Position> = {
+export const positionSchema: SchemaObject<IPositionData> = {
   latLng: latLngSchema,
   heading: "uint8",
   kmh: "int16",

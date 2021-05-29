@@ -1,3 +1,11 @@
-export type Observer = { pid: string; p2p: boolean };
+import { SchemaObject } from "types/schemapack";
 
-export const observerSchema = { pid: "string", p2p: "boolean" };
+export interface IObserver {
+  pid: string;
+  p2p: boolean;
+}
+
+export const observerSchema: SchemaObject<IObserver> = {
+  pid: "string",
+  p2p: "boolean",
+};

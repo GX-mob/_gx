@@ -1,2 +1,9 @@
-export type CancelRide = string;
-export const cancelRideSchema = "string";
+import { SchemaObject } from "types/schemapack";
+
+export interface ICancelRide {
+  ridePID: string;
+};
+
+export const cancelRideSchema: SchemaObject<ICancelRide> = {
+  ridePID: "string",
+};

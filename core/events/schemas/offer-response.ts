@@ -1,14 +1,14 @@
 import { SchemaObject } from "../../types/schemapack";
 
-export type OfferResponse = {
+export interface IOfferResponse {
   /**
    * Ride public id
    */
   ridePID: string;
-  response: boolean;
+  accepted: boolean;
 };
 
-export const offerReponseSchema: SchemaObject<OfferResponse> = {
+export const offerReponseSchema: SchemaObject<IOfferResponse> = {
   ridePID: "string",
-  response: "bool",
+  accepted: "bool",
 };

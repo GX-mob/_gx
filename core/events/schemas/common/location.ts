@@ -1,6 +1,7 @@
-import { latLngSchema, LatLng } from "./lat-lng";
+import { SchemaObject } from "types/schemapack";
+import { latLngSchema, ILatLng } from "./lat-lng";
 
-export type Location = {
+export interface ILocation {
   /**
    * Main title, contains the street name and may the number
    */
@@ -16,10 +17,10 @@ export type Location = {
   /**
    * Latitude and longitude
    */
-  latLng: LatLng;
-};
+  latLng: ILatLng;
+}
 
-export const locationSchema = {
+export const locationSchema: SchemaObject<ILocation> = {
   main: "string",
   secondary: "string",
   district: "string",

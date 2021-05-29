@@ -1,11 +1,11 @@
 import { SchemaObject } from "../../types/schemapack";
 
-export type DriverRideAcceptedResponse = {
+export interface IDriverRideAcceptedResponse {
   ridePID: string;
   timestamp: number;
 };
 
-export const driverRideAcceptedResponseSchema: SchemaObject<DriverRideAcceptedResponse> = {
+export const driverRideAcceptedResponseSchema: SchemaObject<IDriverRideAcceptedResponse> = {
   ridePID: "string",
   timestamp: "uint32",
 };
