@@ -1,36 +1,34 @@
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { util } from "@app/helpers";
 import { CacheService } from "@app/cache";
-import { IRide } from "@core/domain/ride";
+import { geometry, util } from "@app/helpers";
 import { RideRepository, VehicleRepository } from "@app/repositories";
 import { SocketService } from "@app/socket";
-import { geometry } from "@app/helpers";
+import { IRide } from "@core/domain/ride";
 import {
-  // Events interface,
-  IRideFlowEvents,
   ERideFlowEvents,
   // Enums
   EUserState,
+  IConfiguration,
+  IConnectionData,
   // Common
   IDriverData,
-  IConnectionData,
-  // Events
-  IPositionData,
-  ISetup,
   IOfferResponse,
   IOfferServer,
-  IConfiguration,
-} from "@core/events";
-import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "../constants";
+  // Events
+  IPositionData,
+  // Events interface,
+  IRideFlowEvents,
+  ISetup,
+} from "@core/ride-flow/events";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PinoLogger } from "nestjs-pino";
+import { CacheNamespaces, CacheTTL } from "../constants";
 import {
   EServerNodesEvents,
   INodesEvents,
   TellMeYourDriversState,
 } from "../events/nodes";
-import { PinoLogger } from "nestjs-pino";
 import { VehicleNotFoundException } from "../exceptions";
-import { retryUnderHood } from "@app/helpers/util";
 import { ConnectionService } from "./connection.service";
 import { RidesService } from "./rides.service";
 
@@ -285,7 +283,7 @@ export class DriversService {
     // Store to decide in the future whether to generate a pendencie in a cancelation event
     const { offerResponseTimeout, ...offerStoreData } = offer;
     await this.cacheService.set(
-      CACHE_NAMESPACES.OFFERS,
+      CacheNamespaces.OFFERS,
       offer.ridePID,
       {
         ...offerStoreData,
@@ -293,7 +291,7 @@ export class DriversService {
         acceptTimestamp,
       },
       {
-        ex: CACHE_TTL.OFFERS,
+        ex: CacheTTL.OFFERS,
       },
     );
 

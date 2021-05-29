@@ -23,8 +23,8 @@ import {
   IOfferServer,
   IOfferRequest,
   IConfiguration,
-} from "@core/events";
-import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
+} from "@core/interfaces/events";
+import { CacheNamespaces, CacheTTL, GatewayNamespaces } from "./constants";
 import {
   EServerNodesEvents,
   INodesEvents,
@@ -305,7 +305,7 @@ export class StateService {
     await util.retry(
       () =>
         this.cacheService.set(
-          CACHE_NAMESPACES.OFFERS,
+          CacheNamespaces.OFFERS,
           offer.ridePID,
           {
             ...offerStoreData,
@@ -313,7 +313,7 @@ export class StateService {
             acceptTimestamp,
           },
           {
-            ex: CACHE_TTL.OFFERS,
+            ex: CacheTTL.OFFERS,
           },
         ),
       3,
@@ -389,13 +389,13 @@ export class StateService {
 
     this.socketService.nodes.emit(EServerNodesEvents.UpdateLocalAccountData, {
       socketId: voyagerConnectionData.socketId,
-      namespace: NAMESPACES.VOYAGERS,
+      namespace: GatewayNamespaces.Voyagers,
       data: voyagerUpdateConnectionData,
     });
 
     this.socketService.nodes.emit(EServerNodesEvents.UpdateLocalAccountData, {
       socketId: driverConnectionData.socketId,
-      namespace: NAMESPACES.DRIVERS,
+      namespace: GatewayNamespaces.Drivers,
       data: driverUpdateConnectionData,
     });
   }
@@ -424,11 +424,11 @@ export class StateService {
     this.offers.set(offer.ridePID, offerObject);
 
     await this.cacheService.set(
-      CACHE_NAMESPACES.OFFERS,
+      CacheNamespaces.OFFERS,
       ride.pid,
       offerObject,
       {
-        ex: CACHE_TTL.OFFERS,
+        ex: CacheTTL.OFFERS,
       },
     );
 
@@ -641,15 +641,15 @@ export class StateService {
     ridePID: string,
     data: Partial<Omit<IOfferServer, "offerResponseTimeout">>,
   ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
-    return this.setOrUpdateCache(CACHE_NAMESPACES.OFFERS, ridePID, data, {
-      ex: CACHE_TTL.OFFERS,
+    return this.setOrUpdateCache(CacheNamespaces.OFFERS, ridePID, data, {
+      ex: CacheTTL.OFFERS,
     });
   }
 
   getOfferData(
     ridePID: string,
   ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
-    return this.cacheService.get(CACHE_NAMESPACES.OFFERS, ridePID) as any;
+    return this.cacheService.get(CacheNamespaces.OFFERS, ridePID) as any;
   }
 
   /**
@@ -658,7 +658,7 @@ export class StateService {
    */
   public async getConnectionData(id: string): Promise<IConnectionData> {
     const connection = await this.cacheService.get(
-      CACHE_NAMESPACES.CONNECTIONS,
+      CacheNamespaces.CONNECTIONS,
       id,
     );
 
@@ -678,9 +678,9 @@ export class StateService {
     pid: string,
     data: Partial<IConnectionData>,
   ): Promise<IConnectionData> {
-    return this.setOrUpdateCache(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
+    return this.setOrUpdateCache(CacheNamespaces.CONNECTIONS, pid, data, {
       link: [data.socketId as string],
-      ex: CACHE_TTL.CONNECTIONS,
+      ex: CacheTTL.CONNECTIONS,
     });
   }
 

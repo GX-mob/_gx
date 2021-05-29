@@ -1,7 +1,7 @@
 import { TCreateRideDto } from "../../interfaces";
 import { hasProp } from "../../utils";
 import {
-  ERouteExceptionCodes,
+  ERouteExceptionsCodes,
   IncompleteRouteDataException,
   InvalidRoutePointException,
 } from "./ride.exceptions";
@@ -51,7 +51,7 @@ export class RideRoute {
       !hasProp(route, "distance") ||
       !hasProp(route, "end")
     ) {
-      throw new IncompleteRouteDataException(ERouteExceptionCodes.EmptyField);
+      throw new IncompleteRouteDataException(ERouteExceptionsCodes.EmptyField);
     }
   }
 
@@ -68,7 +68,7 @@ export class RideRoute {
 
   private validateRoutePoint(point: IRoutePoint) {
     if (!point.coord || !point.primary || !point.secondary || !point.district) {
-      throw new InvalidRoutePointException(ERouteExceptionCodes.EmptyField);
+      throw new InvalidRoutePointException(ERouteExceptionsCodes.EmptyField);
     }
 
     const hasInvalidCoordinate =
@@ -76,7 +76,7 @@ export class RideRoute {
       point.coord.some((coord) => typeof coord !== "number");
 
     if (hasInvalidCoordinate) {
-      throw new InvalidRoutePointException(ERouteExceptionCodes.InvalidField);
+      throw new InvalidRoutePointException(ERouteExceptionsCodes.InvalidField);
     }
   }
 }

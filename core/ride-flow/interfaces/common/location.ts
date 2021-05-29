@@ -1,4 +1,4 @@
-import { SchemaObject } from "types/schemapack";
+import { SchemaObject } from "../../../types/schemapack";
 import { latLngSchema, ILatLng } from "./lat-lng";
 
 export interface ILocation {

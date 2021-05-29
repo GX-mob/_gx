@@ -4,6 +4,7 @@ import mongoose, {
   CreateQuery,
   FilterQuery,
   UpdateQuery,
+  EnforceDocument,
 } from "mongoose";
 import { CacheService } from "@app/cache";
 import { util } from "@app/helpers";
@@ -65,7 +66,7 @@ export class RepositoryFactory<
    */
   private async makeQuery(query: Query) {
     return this.populateObject(
-      this.model.findOne(query as FilterQuery<ModelDocument>).lean(),
+      this.model.findOne(query),
     );
   }
 
@@ -73,7 +74,7 @@ export class RepositoryFactory<
    * Do auto populate on configured fields
    * @param query
    */
-  private populateObject(query: DocumentQuery<any, ModelDocument> | Document) {
+  private populateObject(query: FilterQuery<ModelDocument>) {
     this.settings.autoPopulate?.forEach((prop) => {
       query.populate(prop as string);
     });

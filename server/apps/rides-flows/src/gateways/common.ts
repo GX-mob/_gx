@@ -8,12 +8,11 @@ import { AuthService } from "@app/auth";
 import { CacheService } from "@app/cache";
 import {
   ERideFlowEvents,
-  IState,
   IPositionData,
   IRideFlowEvents,
   EUserState,
   IObserver,
-} from "@core/events";
+} from "@core/ride-flow/events";
 import { ConnectionService } from "../state";
 import { EAccountRoles } from "@core/domain/account";
 

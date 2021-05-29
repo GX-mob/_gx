@@ -22,7 +22,7 @@ export enum ERideTypes {
 }
 
 export enum ERidePayMethods {
-  Money = "money",
+  Cash = "cash",
   CreditCard = "credit-card",
 }
 

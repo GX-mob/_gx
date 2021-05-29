@@ -9,8 +9,8 @@ import {
   IOfferServer,
   IOfferRequest,
   IRideFlowEvents,
-} from "@core/events";
-import { CACHE_NAMESPACES, CACHE_TTL } from "../constants";
+} from "@core/ride-flow";
+import { CacheNamespaces, CacheTTL } from "../constants";
 import { INodesEvents } from "../events/nodes";
 import { PinoLogger } from "nestjs-pino";
 import {
@@ -62,14 +62,9 @@ export class RidesService {
 
     this.offers.set(offer.ridePID, offerObject);
 
-    await this.cacheService.set(
-      CACHE_NAMESPACES.OFFERS,
-      ride.pid,
-      offerObject,
-      {
-        ex: CACHE_TTL.OFFERS,
-      },
-    );
+    await this.cacheService.set(CacheNamespaces.OFFERS, ride.pid, offerObject, {
+      ex: CacheTTL.OFFERS,
+    });
 
     startOffer && this.startOffer(offerObject, ride);
   }
@@ -137,15 +132,15 @@ export class RidesService {
     ridePID: string,
     data: Partial<Omit<IOfferServer, "offerResponseTimeout">>,
   ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
-    return this.cacheService.update(CACHE_NAMESPACES.OFFERS, ridePID, data, {
-      ex: CACHE_TTL.OFFERS,
+    return this.cacheService.update(CacheNamespaces.OFFERS, ridePID, data, {
+      ex: CacheTTL.OFFERS,
     });
   }
 
   getOfferData(
     ridePID: string,
   ): Promise<Omit<IOfferServer, "offerResponseTimeout">> {
-    const data = this.cacheService.get(CACHE_NAMESPACES.OFFERS, ridePID);
+    const data = this.cacheService.get(CacheNamespaces.OFFERS, ridePID);
 
     if (!data) {
       throw new OfferNotFoundException(ridePID);

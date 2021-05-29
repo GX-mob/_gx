@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { IConnectionData, IObserver, IRideFlowEvents } from "@core/events";
+import { IConnectionData, IObserver, IRideFlowEvents } from "@core/ride-flow/events";
 import { CacheService } from "@app/cache";
-import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "../constants";
+import { CacheNamespaces, CacheTTL, GatewayNamespaces } from "../constants";
 import { ConnectionDataNotFoundException } from "../exceptions";
 import { SocketService } from "@app/socket";
 import { INodesEvents, EServerNodesEvents } from "../events/nodes";
@@ -14,8 +14,8 @@ export class ConnectionService {
   ) {}
 
   async set(pid: string, data: IConnectionData) {
-    await this.cacheService.set(CACHE_NAMESPACES.CONNECTIONS, pid, data, {
-      ex: CACHE_TTL.CONNECTIONS,
+    await this.cacheService.set(CacheNamespaces.CONNECTIONS, pid, data, {
+      ex: CacheTTL.CONNECTIONS,
       link: [data.socketId as string],
     });
     return data;
@@ -23,14 +23,14 @@ export class ConnectionService {
 
   find(pid: string) {
     return this.cacheService.get<IConnectionData>(
-      CACHE_NAMESPACES.CONNECTIONS,
+      CacheNamespaces.CONNECTIONS,
       pid,
     );
   }
 
   async getByPid(pid: string) {
     const connection = await this.cacheService.get<IConnectionData>(
-      CACHE_NAMESPACES.CONNECTIONS,
+      CacheNamespaces.CONNECTIONS,
       pid,
     );
 
@@ -43,11 +43,11 @@ export class ConnectionService {
 
   async updateByPid(pid: string, data: Partial<IConnectionData>) {
     return this.cacheService.update<IConnectionData>(
-      CACHE_NAMESPACES.CONNECTIONS,
+      CacheNamespaces.CONNECTIONS,
       pid,
       data,
       {
-        ex: CACHE_TTL.CONNECTIONS,
+        ex: CacheTTL.CONNECTIONS,
       },
     );
   }
@@ -70,7 +70,7 @@ export class ConnectionService {
 
     this.socketService.nodes.emit(EServerNodesEvents.UpdateLocalAccountData, {
       socketId: connection.socketId,
-      namespace: NAMESPACES.VOYAGERS,
+      namespace: GatewayNamespaces.Voyagers,
       data: { observers: connection.observers },
     });
   }

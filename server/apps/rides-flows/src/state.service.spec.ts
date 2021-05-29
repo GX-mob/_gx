@@ -33,7 +33,7 @@ import {
   UserState,
 } from "@shared/events";
 import faker from "faker";
-import { CACHE_NAMESPACES, CACHE_TTL, NAMESPACES } from "./constants";
+import { CacheNamespaces, CacheTTL, GatewayNamespaces } from "./constants";
 import deepmerge from "deepmerge";
 import { Types } from "mongoose";
 import {
@@ -653,14 +653,14 @@ describe("StateService", () => {
       const { offerResponseTimeout, ...offerCacheSaveCall } = offer;
 
       expect((offer.offerResponseTimeout as any)._destroyed).toBeTruthy();
-      expect(cacheCalls[0][0]).toBe(CACHE_NAMESPACES.OFFERS);
+      expect(cacheCalls[0][0]).toBe(CacheNamespaces.OFFERS);
       expect(cacheCalls[0][1]).toBe(offer.ridePID);
       expect(cacheCalls[0][2]).toMatchObject({
         ...offerCacheSaveCall,
         driverSocketId,
       });
       expect(typeof cacheCalls[0][2].acceptTimestamp).toBe("number");
-      expect(cacheCalls[0][3]).toStrictEqual({ ex: CACHE_TTL.OFFERS });
+      expect(cacheCalls[0][3]).toStrictEqual({ ex: CacheTTL.OFFERS });
 
       expect(rideRepository.update).toBeCalledWith(
         { pid: offer.ridePID },
@@ -682,7 +682,7 @@ describe("StateService", () => {
       });
       expect(typeof voyagerEmit[2].timestamp).toBe("number");
 
-      expect(cacheMock.get.mock.calls[0][0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(cacheMock.get.mock.calls[0][0]).toBe(CacheNamespaces.CONNECTIONS);
       expect(cacheMock.get.mock.calls[0][1]).toBe(voyagerSocketId);
 
       const [
@@ -691,7 +691,7 @@ describe("StateService", () => {
         voyagerUpdateCalls,
       ] = cacheMock.set.mock.calls;
 
-      expect(driverUpdateCalls[0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(driverUpdateCalls[0]).toBe(CacheNamespaces.CONNECTIONS);
       expect(driverUpdateCalls[1]).toBe(driverPID);
       expect(driverUpdateCalls[2]).toStrictEqual({
         ...driverConnectionData,
@@ -700,7 +700,7 @@ describe("StateService", () => {
         ],
       });
 
-      expect(voyagerUpdateCalls[0]).toBe(CACHE_NAMESPACES.CONNECTIONS);
+      expect(voyagerUpdateCalls[0]).toBe(CacheNamespaces.CONNECTIONS);
       expect(voyagerUpdateCalls[1]).toBe(voyagerPID);
       expect(voyagerUpdateCalls[2]).toStrictEqual({
         ...voyagerConnectionData,
@@ -719,7 +719,7 @@ describe("StateService", () => {
       );
       expect(voyagerNodeEmitCall[1]).toStrictEqual({
         socketId: voyagerSocketId,
-        namespace: NAMESPACES.VOYAGERS,
+        namespace: GatewayNamespaces.Voyagers,
         data: {
           observers: [
             { socketId: driverSocketId, p2p: driverConnectionData.p2p },
@@ -730,7 +730,7 @@ describe("StateService", () => {
       expect(driverNodeEmitCall[0]).toBe(EServerNodesEvents.UpdateLocalAccountData);
       expect(driverNodeEmitCall[1]).toStrictEqual({
         socketId: driverSocketId,
-        namespace: NAMESPACES.DRIVERS,
+        namespace: GatewayNamespaces.Drivers,
         data: {
           observers: [
             { socketId: voyagerSocketId, p2p: voyagerConnectionData.p2p },
@@ -770,10 +770,10 @@ describe("StateService", () => {
       expect(offer).toBeDefined();
       expect(socket.data.rides.includes(ridePID)).toBeTruthy();
       expect(cacheMock.set).toBeCalledWith(
-        CACHE_NAMESPACES.OFFERS,
+        CacheNamespaces.OFFERS,
         ridePID,
         offer,
-        { ex: CACHE_TTL.OFFERS },
+        { ex: CacheTTL.OFFERS },
       );
     });
   });
@@ -992,13 +992,13 @@ describe("StateService", () => {
 
       await service.setOfferData(ridePID, offerObject);
 
-      expect(cacheMock.get).toBeCalledWith(CACHE_NAMESPACES.OFFERS, ridePID);
+      expect(cacheMock.get).toBeCalledWith(CacheNamespaces.OFFERS, ridePID);
       expect(cacheMock.set).toBeCalledWith(
-        CACHE_NAMESPACES.OFFERS,
+        CacheNamespaces.OFFERS,
         ridePID,
         offerObject,
         {
-          ex: CACHE_TTL.OFFERS,
+          ex: CacheTTL.OFFERS,
         },
       );
     });
@@ -1027,14 +1027,14 @@ describe("StateService", () => {
       await service.setOfferData(ridePID, offerObject);
 
       expect(cacheMock.set).toBeCalledWith(
-        CACHE_NAMESPACES.OFFERS,
+        CacheNamespaces.OFFERS,
         ridePID,
         {
           ...offerObject,
           ignoreds: ["currentIgnored"],
         },
         {
-          ex: CACHE_TTL.OFFERS,
+          ex: CacheTTL.OFFERS,
         },
       );
     });

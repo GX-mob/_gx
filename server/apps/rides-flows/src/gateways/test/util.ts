@@ -1,7 +1,7 @@
 import faker from "faker";
 import deepmerge from "deepmerge";
-import { EVENTS } from "@shared/events";
-import { RidePayMethods } from "@shared/interfaces";
+import { ERideFlowEvents } from "@core/ride-flow/events";
+import { ERidePayMethods } from "@core/domain/ride";
 
 export function mockSocket(override: any = {}) {
   return deepmerge(
@@ -34,14 +34,14 @@ export function mockRide(override: any = {}) {
     pid: faker.random.alphaNumeric(12),
     voyager: { _id: faker.random.alphaNumeric(12) },
     driver: { _id: faker.random.alphaNumeric(12) },
-    payMethod: RidePayMethods.Money,
+    payMethod: ERidePayMethods.Cash,
     ...override,
   };
 }
 
 export function expectObservableFor(
   socketMock: any,
-  event: EVENTS,
+  event: ERideFlowEvents,
   eventBody: any,
   socketServiceMock: any,
 ) {

@@ -20,7 +20,7 @@ import {
   PickingUpPath,
   Position,
 } from "@shared/events";
-import { NAMESPACES } from "../src/constants";
+import { GatewayNamespaces } from "../src/constants";
 import { SocketAdapter, SocketService } from "@app/socket";
 import {
   IRide,
@@ -35,14 +35,14 @@ import { RideRepository, VehicleRepository } from "@app/repositories";
 import { combineLatest, from, fromEvent } from "rxjs";
 import faker from "faker";
 import { AuthService } from "@app/auth";
-import { BROADCASTED_EVENTS } from "../src/constants";
+import { ClientBroadcastedEvents } from "../src/constants";
 import { AccountRepository } from "@app/repositories";
 import { AddressInfo } from "net";
 import { mockUser, mockRide } from "@testing/testing";
 import { ConfigModule, registerAs } from "@nestjs/config";
 import { CacheService } from "@app/cache";
 import ms from "ms";
-import { EXCEPTIONS } from "../src/constants";
+import { CommonExceptionsCodes } from "../src/constants";
 //@ts-ignore
 const polyline = require("google-polyline");
 
@@ -108,7 +108,7 @@ describe("RidesWSService (e2e)", () => {
       new SocketAdapter(app, {
         parser,
         redis,
-        broadcastedEvents: BROADCASTED_EVENTS,
+        broadcastedEvents: ClientBroadcastedEvents,
       }),
     );
 
@@ -204,7 +204,7 @@ describe("RidesWSService (e2e)", () => {
   function createUserSocket(
     appNodeIndex: number,
     user: IUser,
-    namespace?: NAMESPACES,
+    namespace?: GatewayNamespaces,
     options: SocketIOClient.ConnectOpts = {},
   ) {
     const { httpServer } = appsNodes[appNodeIndex];
@@ -212,8 +212,8 @@ describe("RidesWSService (e2e)", () => {
 
     namespace =
       namespace || user.roles.includes(UserRoles.DRIVER)
-        ? NAMESPACES.DRIVERS
-        : NAMESPACES.VOYAGERS;
+        ? GatewayNamespaces.Drivers
+        : GatewayNamespaces.Voyagers;
 
     return IOClient(`ws://localhost:${port}${namespace}`, {
       ...options,
@@ -274,7 +274,7 @@ describe("RidesWSService (e2e)", () => {
 
     it("should throw ForbiddenException due to voyager trys access drivers namespace", async () => {
       const [voyager] = users;
-      const voyagerSocket = createUserSocket(0, voyager, NAMESPACES.DRIVERS);
+      const voyagerSocket = createUserSocket(0, voyager, GatewayNamespaces.Drivers);
 
       await expect(
         authorizeClient(0, voyagerSocket, voyager1Token),
@@ -381,7 +381,7 @@ describe("RidesWSService (e2e)", () => {
         fromEventAsync(driverSocket, "exception"),
       ).resolves.toStrictEqual({
         point: "start",
-        message: EXCEPTIONS.TOO_DISTANT_OF_EXPECTED,
+        message: CommonExceptionsCodes.TooDistantOfExpected,
       });
 
       const pickingUpVoyagerEvent = await fromEventAsync(
@@ -431,7 +431,7 @@ describe("RidesWSService (e2e)", () => {
         fromEventAsync(driverSocket, "exception"),
       ).resolves.toStrictEqual({
         point: "end",
-        message: EXCEPTIONS.TOO_DISTANT_OF_EXPECTED,
+        message: CommonExceptionsCodes.TooDistantOfExpected,
       });
 
       const pathRouteDecoded: [number, number][] = polyline.decode(

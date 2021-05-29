@@ -5,11 +5,11 @@ import fastifyCompress from "fastify-compress";
 import fastifyRateLimit from "fastify-rate-limit";
 import { parsers } from "extensor";
 import { SocketAdapter } from "@app/socket";
-import { serverEventsSchemas } from "@shared/events";
+import { serverEventsSchemas } from "@core/ride-flow";
 import { logger } from "@app/helpers";
 import { CacheService } from "@app/cache";
 import { AppModule } from "./app.module";
-import { BROADCASTED_EVENTS } from "./constants";
+import { ClientBroadcastedEvents } from "./constants";
 
 const FastifyAdapterInstance = new FastifyAdapter({
   logger,
@@ -39,7 +39,7 @@ async function bootstrap() {
         pubClient: cacheService.redis.duplicate(),
         subClient: cacheService.redis.duplicate(),
       },
-      broadcastedEvents: BROADCASTED_EVENTS,
+      broadcastedEvents: ClientBroadcastedEvents,
     }),
   );
 

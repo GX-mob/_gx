@@ -1,4 +1,4 @@
-import { SchemaObject } from "types/schemapack";
+import { SchemaObject } from "../types/schemapack";
 import {
   IConfiguration,
   configurationSchema,
@@ -47,28 +47,28 @@ import {
   //
   IFinishRide,
   finishRideSchema,
-} from "./schemas";
+} from "./interfaces";
 
-export * from "./schemas";
-export * from "./schemas/common";
+export * from "./interfaces";
+export * from "./interfaces/common";
 
 export enum ERideFlowEvents {
-  Configuration,
-  DriverRideAcceptedResponse,
-  VoyagerRideAcceptedResponse,
-  Offer,
-  OfferResponse,
-  OfferSent,
-  Position,
-  DriverSetup,
-  AccountState,
-  AmIRunning,
-  CancelRide,
-  DelayedOfferResponse,
-  OfferGotTooLong,
-  GetOverHere,
-  StartRide,
-  FinishRide,
+  Configuration = "Configuration",
+  DriverRideAcceptedResponse = "DriverRideAcceptedResponse",
+  VoyagerRideAcceptedResponse = "VoyagerRideAcceptedResponse",
+  Offer = "Offer",
+  OfferResponse = "OfferResponse",
+  OfferSent = "OfferSent",
+  Position = "Position",
+  DriverSetup = "DriverSetup",
+  AccountState = "AccountState",
+  AmIRunning = "AmIRunning",
+  CancelRide = "CancelRide",
+  DelayedOfferResponse = "DelayedOfferResponse",
+  OfferGotTooLong = "OfferGotTooLong",
+  GetOverHere = "GetOverHere",
+  StartRide = "StartRide",
+  FinishRide = "FinishRide",
 }
 
 export const serverEventsSchemas: {

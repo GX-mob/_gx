@@ -1,7 +1,7 @@
 import { configurationSchema, IConfiguration } from "../configuration";
 import { IUserBasic, userSchema } from "./user-basic";
-import { EAccountRoles } from "domain/account";
-import { SchemaObject } from "types/schemapack";
+import { EAccountRoles } from "../../../domain/account";
+import { SchemaObject } from "../../../types/schemapack";
 import { IObserver, observerSchema } from "./observer";
 
 export interface IConnectionData extends IUserBasic {

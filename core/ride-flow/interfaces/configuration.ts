@@ -1,4 +1,4 @@
-import { ERidePayMethods, ERideTypes } from "domain/ride";
+import { ERidePayMethods, ERideTypes } from "../../domain/ride";
 import { SchemaObject } from "../../types/schemapack";
 
 export interface IConfiguration {

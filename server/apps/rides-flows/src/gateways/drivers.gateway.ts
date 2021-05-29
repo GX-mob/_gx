@@ -22,13 +22,13 @@ import {
   IGetOverHere,
   IStartRide,
   EUserState,
-} from "@core/events";
+} from "@core/ride-flow/events";
 import {
   UncancelableRideException,
   TooDistantOfExpectedException,
 } from "../exceptions";
 import {
-  NAMESPACES,
+  GatewayNamespaces,
   DISTANCE_TOLERANCE_TO_FINISH_RIDE,
   DISTANCE_TOLERANCE_TO_START_RIDE,
 } from "../constants";
@@ -37,7 +37,7 @@ import { ConnectionService, DriversService, RidesService } from "../state";
 import { EAccountRoles } from "@core/domain/account";
 import { ERideStatus } from "@core/domain/ride";
 
-@WebSocketGateway({ namespace: NAMESPACES.DRIVERS })
+@WebSocketGateway({ namespace: GatewayNamespaces.Drivers })
 export class DriversGateway extends Common implements OnGatewayDisconnect {
   role = EAccountRoles.Driver;
 

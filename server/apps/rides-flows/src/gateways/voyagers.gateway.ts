@@ -16,15 +16,15 @@ import {
   IOfferRequest,
   ICancelRide,
   EUserState,
-} from "@core/events";
+} from "@core/ride-flow/events";
 import { UncancelableRideException } from "../exceptions";
-import { NAMESPACES } from "../constants";
+import { GatewayNamespaces } from "../constants";
 import { ConnectionService, DriversService, RidesService } from "../state";
 import { Common } from "./common";
 import { EAccountRoles } from "@core/domain/account";
 import { ERideStatus } from "@core/domain/ride";
 
-@WebSocketGateway({ namespace: NAMESPACES.VOYAGERS })
+@WebSocketGateway({ namespace: GatewayNamespaces.Voyagers })
 export class VoyagersGateway extends Common {
   role = EAccountRoles.Voyager;
   constructor(

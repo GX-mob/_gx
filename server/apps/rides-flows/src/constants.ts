@@ -1,53 +1,41 @@
 import ms from "ms";
-import { EVENTS } from "@shared/events";
+import { ERideFlowEvents } from "@core/ride-flow/events";
 
-export enum NAMESPACES {
-  VOYAGERS = "/voyagers",
-  DRIVERS = "/drivers",
+export enum GatewayNamespaces {
+  Voyagers = "/voyagers",
+  Drivers = "/drivers",
 }
 
-export enum CACHE_NAMESPACES {
+export enum CacheNamespaces {
   CONNECTIONS = "ridesConnections",
   OFFERS = "ridesOffers",
 }
 
-export enum CACHE_TTL {
+export enum CacheTTL {
   CONNECTIONS = 1000 * 60 * 60 * 2, // 2 hours
   OFFERS = 1000 * 60 * 60, // 1 hour
 }
 
-export enum CANCELATION {
-  SAFE_TIME_MS = 1000 * 60 * 3, // 3 minutes
-  FARE = 3,
+export enum CancelationExceptionsCodes {
+  RideRunning = "ride-running",
 }
 
-export enum CANCELATION_EXCEPTIONS {
-  RIDE_NOT_FOUND = "ride-not-found",
-  RIDE_RUNNING = "ride-running",
-  NOT_IN_RIDE = "not-in-ride",
+export enum CommonExceptionsCodes {
+  ConnectionDataNotFound = "conn-data-404",
+  RideNotFound = "ride-404",
+  OfferNotFound = "offer-404",
+  VehicleNotFound = "vehicle-404",
+  UncancelableRide = "uncancelable-ride",
+  NotInRide = "not-in-ride",
+  TooDistantOfExpected = "too-distant",
 }
 
-export enum CANCELATION_REPONSE {
-  SAFE,
-  PENDENCIE_ISSUED,
-}
-
-export enum EXCEPTIONS {
-  CONNECTION_DATA_NOT_FOUND = "CONNECTION_DATA_NOT_FOUND",
-  RIDE_NOT_FOUND = "RIDE_NOT_FOUND",
-  OFFER_NOT_FOUND = "OFFER_NOT_FOUND",
-  VEHICLE_NOT_FOUND = "VEHICLE_NOT_FOUND",
-  UNCANCELABLE_RIDE = "UNCANCELABLE_RIDE",
-  NOT_IN_RIDE = "NOT_IN_RIDE",
-  TOO_DISTANT_OF_EXPECTED = "TOO_DISTANT_OF_EXPECTED",
-}
-
-export const BROADCASTED_EVENTS = {
-  [NAMESPACES.DRIVERS]: [
-    EVENTS.POSITION,
-    EVENTS.DRIVER_SETUP,
-    EVENTS.OFFER_RESPONSE,
-    EVENTS.CONFIGURATION,
+export const ClientBroadcastedEvents = {
+  [GatewayNamespaces.Drivers]: [
+    ERideFlowEvents.Position,
+    ERideFlowEvents.DriverSetup,
+    ERideFlowEvents.OfferResponse,
+    ERideFlowEvents.Configuration,
   ],
 };
 

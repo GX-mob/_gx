@@ -9,12 +9,17 @@ export interface IRideTypeConfiguration {
   minuteMultipler: number;
   overBusinessTimeKmAdd: number;
   overBusinessTimeMinuteAdd: number;
+  /**
+   * Minimum value of a ride
+   */
+  minRideTax: number;
 }
 
 export interface IOfferConfig {
   initialRadiusSize: number;
   additionalRadiusSizeByEachIteration: number;
   maxRadiusSize: number;
+  finishingRideAcceptableRangeRadius: number;
 }
 
 export interface IRideAreaConfiguration {

@@ -1,4 +1,4 @@
-import { SchemaObject } from "types/schemapack";
+import { SchemaObject } from "../../../types/schemapack";
 
 export interface IObserver {
   pid: string;

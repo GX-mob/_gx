@@ -1,5 +1,5 @@
-import { IConnectionData, IDriverData } from "@core/events";
-import { NAMESPACES } from "../constants";
+import { IConnectionData, IDriverData } from "@core/ride-flow/events";
+import { GatewayNamespaces } from "../constants";
 
 interface IServiceNodeBroadcastedSocketEvent {
   /**
@@ -23,8 +23,9 @@ export interface IUpdateDriverState extends IServiceNodeBroadcastedSocketEvent {
   state: Partial<IDriverData>;
 }
 
-export interface IUpdateLocalSocketData extends IServiceNodeBroadcastedSocketEvent {
-  namespace: NAMESPACES;
+export interface IUpdateLocalSocketData
+  extends IServiceNodeBroadcastedSocketEvent {
+  namespace: GatewayNamespaces;
   data: Partial<IConnectionData>;
 }
 
