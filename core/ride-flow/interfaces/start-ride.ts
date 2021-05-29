@@ -1,12 +1,15 @@
-import { SchemaObject } from "../../types/schemapack";
-import { IPositionData, positionSchema } from "./position";
+import { Schema, type } from "@colyseus/schema";
+import { ILatLng, LatLngSchema } from "ride-flow";
 
 export interface IStartRide {
   ridePID: string;
-  latLng: IPositionData["latLng"];
+  latLng: ILatLng;
 }
 
-export const startRideSchema: SchemaObject<IStartRide> = {
-  ridePID: "string",
-  latLng: positionSchema.latLng,
-};
+export class StartRideSchema extends Schema implements IStartRide {
+  @type("string")
+  ridePID!: string;
+
+  @type(LatLngSchema)
+  latLng!: LatLngSchema;
+}

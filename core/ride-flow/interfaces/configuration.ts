@@ -1,5 +1,5 @@
+import { Schema, type } from "@colyseus/schema";
 import { ERidePayMethods, ERideTypes } from "../../domain/ride";
-import { SchemaObject } from "../../types/schemapack";
 
 export interface IConfiguration {
   /**
@@ -23,10 +23,15 @@ export interface IConfiguration {
    * destination for receive only offers that match
    */
   drops: string[];
-};
+}
 
-export const configurationSchema: SchemaObject<IConfiguration> = {
-  payMethods: ["uint8"],
-  types: ["uint8"],
-  drops: ["string"],
-};
+export class ConfigurationSchema extends Schema implements IConfiguration {
+  @type(["string"])
+  payMethods!: ERidePayMethods[];
+
+  @type(["string"])
+  types!: ERideTypes[];
+
+  @type(["string"])
+  drops!: string[];
+}

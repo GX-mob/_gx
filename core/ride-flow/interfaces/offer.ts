@@ -1,4 +1,4 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 import { IGetOverHere } from "./picking-up-path";
 
 export interface IOfferRequest {
@@ -6,7 +6,12 @@ export interface IOfferRequest {
    * The public ID of created ride.
    */
   ridePID: string;
-};
+}
+
+export class OfferRequestSchema extends Schema implements IOfferRequest {
+  @type("string")
+  ridePID!: string;
+}
 
 export interface IOfferServer {
   /**
@@ -49,8 +54,9 @@ export interface IOfferServer {
    */
   acceptTimestamp?: number;
   pickingUpPath?: IGetOverHere;
-};
+}
 
-export const offerSchema: SchemaObject<IOfferRequest> = {
-  ridePID: "string",
-};
+export class OfferSchema extends Schema implements IOfferRequest {
+  @type("string")
+  ridePID!: string;
+}

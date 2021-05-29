@@ -1,15 +1,20 @@
-import { SchemaObject } from "../../types/schemapack";
-import { positionSchema, IPositionData } from "./position";
-import { configurationSchema, IConfiguration } from "./configuration";
+import { Schema, type } from "@colyseus/schema";
+import { ConfigurationSchema, IConfiguration } from "./configuration";
+import { IPositionData, PositionSchema } from "./position";
 
 export interface ISetup {
   position: IPositionData;
   config: IConfiguration;
   vehicleId: string;
-};
+}
 
-export const driverSetupSchema: SchemaObject<ISetup> = {
-  position: positionSchema,
-  config: configurationSchema,
-  vehicleId: "string",
-};
+export class DriverSetupSchema extends Schema implements ISetup {
+  @type(PositionSchema)
+  position!: PositionSchema;
+
+  @type(ConfigurationSchema)
+  config!: ConfigurationSchema;
+
+  @type("string")
+  vehicleId!: string;
+}

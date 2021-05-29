@@ -1,5 +1,5 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema } from "@colyseus/schema";
 
-export interface IOfferGotTooLong {};
+export interface IOfferGotTooLong {}
 
-export const offerGotTooLong: SchemaObject<IOfferGotTooLong>  = {};
+export class OfferGotTooLongSchema extends Schema {}

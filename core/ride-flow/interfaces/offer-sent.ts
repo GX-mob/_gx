@@ -1,6 +1,12 @@
+import { Schema, type } from "@colyseus/schema";
 import { SchemaObject } from "../../types/schemapack";
-import { userSendableDataSchema, ISendableUserData } from "./common";
+import { ISendableUserData, UserSendableDataSchema } from "./common";
 
-export interface IOfferSent extends ISendableUserData {}
+export interface IOfferSent {
+  userData: ISendableUserData;
+}
 
-export const offerSentSchema: SchemaObject<IOfferSent> = userSendableDataSchema;
+export class OfferSent extends Schema implements IOfferSent {
+  @type(UserSendableDataSchema)
+  userData!: UserSendableDataSchema;
+}

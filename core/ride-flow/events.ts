@@ -1,52 +1,51 @@
+import { Schema } from "@colyseus/schema";
 import { SchemaObject } from "../types/schemapack";
 import {
   IConfiguration,
-  configurationSchema,
+  ConfigurationSchema,
   //
   IDriverRideAcceptedResponse,
-  driverRideAcceptedResponseSchema,
+  DriverRideAcceptedResponseSchema,
   //
   IVoyagerRideAcceptedResponse,
-  voyagerRideAcceptedResponseSchema,
+  VoyagerRideAcceptedResponseSchema,
   //
   IOfferRequest,
-  offerSchema,
+  OfferSchema,
   //
   IOfferResponse,
-  offerReponseSchema,
+  OfferResponseSchema,
   //
   IOfferSent,
-  offerSentSchema,
+  OfferSent,
   //
   IPositionData,
-  positionSchema,
+  PositionSchema,
   //
   ISetup,
-  driverSetupSchema,
+  DriverSetupSchema,
   //
-  IState,
-  stateSchema,
   //
   ICancelRide,
-  cancelRideSchema,
+  CancelRideSchema,
   //
   IDelayedOfferReponse,
-  delayedOfferReponse,
+  DelayedOfferReponse,
   //
   IAmIRunning,
-  amIRunningSchema,
+  AmIRunningSchema,
   //
   IOfferGotTooLong,
-  offerGotTooLong,
+  OfferGotTooLongSchema,
   //
   IGetOverHere,
-  getOverHereSchema,
+  GetOverHereSchema,
   //
   IStartRide,
-  startRideSchema,
+  StartRideSchema,
   //
   IFinishRide,
-  finishRideSchema,
+  FinishRideSchema,
 } from "./interfaces";
 
 export * from "./interfaces";
@@ -61,7 +60,6 @@ export enum ERideFlowEvents {
   OfferSent = "OfferSent",
   Position = "Position",
   DriverSetup = "DriverSetup",
-  AccountState = "AccountState",
   AmIRunning = "AmIRunning",
   CancelRide = "CancelRide",
   DelayedOfferResponse = "DelayedOfferResponse",
@@ -74,72 +72,68 @@ export enum ERideFlowEvents {
 export const serverEventsSchemas: {
   [key in ERideFlowEvents]: {
     id: number;
-    schema: SchemaObject<unknown>;
+    schema: typeof Schema;
   };
 } = {
   [ERideFlowEvents.Configuration]: {
     id: 1,
-    schema: configurationSchema,
+    schema: ConfigurationSchema,
   },
   [ERideFlowEvents.DriverRideAcceptedResponse]: {
     id: 2,
-    schema: driverRideAcceptedResponseSchema,
+    schema: DriverRideAcceptedResponseSchema,
   },
   [ERideFlowEvents.VoyagerRideAcceptedResponse]: {
     id: 3,
-    schema: voyagerRideAcceptedResponseSchema,
+    schema: VoyagerRideAcceptedResponseSchema,
   },
   [ERideFlowEvents.Offer]: {
     id: 4,
-    schema: offerSchema,
+    schema: OfferSchema,
   },
   [ERideFlowEvents.OfferResponse]: {
     id: 5,
-    schema: offerReponseSchema,
+    schema: OfferResponseSchema,
   },
   [ERideFlowEvents.OfferSent]: {
     id: 6,
-    schema: offerSentSchema,
+    schema: OfferSent,
   },
   [ERideFlowEvents.Position]: {
     id: 7,
-    schema: positionSchema,
+    schema: PositionSchema,
   },
   [ERideFlowEvents.DriverSetup]: {
     id: 8,
-    schema: driverSetupSchema,
-  },
-  [ERideFlowEvents.AccountState]: {
-    id: 9,
-    schema: stateSchema,
+    schema: DriverSetupSchema,
   },
   [ERideFlowEvents.AmIRunning]: {
     id: 10,
-    schema: amIRunningSchema,
+    schema: AmIRunningSchema,
   },
   [ERideFlowEvents.CancelRide]: {
     id: 11,
-    schema: cancelRideSchema,
+    schema: CancelRideSchema,
   },
   [ERideFlowEvents.DelayedOfferResponse]: {
     id: 13,
-    schema: delayedOfferReponse,
+    schema: DelayedOfferReponse,
   },
   [ERideFlowEvents.OfferGotTooLong]: {
     id: 14,
-    schema: offerGotTooLong,
+    schema: OfferGotTooLongSchema,
   },
   [ERideFlowEvents.GetOverHere]: {
     id: 15,
-    schema: getOverHereSchema,
+    schema: GetOverHereSchema,
   },
   [ERideFlowEvents.StartRide]: {
     id: 16,
-    schema: startRideSchema,
+    schema: StartRideSchema,
   },
   [ERideFlowEvents.FinishRide]: {
     id: 17,
-    schema: finishRideSchema,
+    schema: FinishRideSchema,
   },
 };
 
@@ -152,7 +146,6 @@ export interface IRideFlowEvents {
   [ERideFlowEvents.OfferSent]: IOfferSent;
   [ERideFlowEvents.Position]: IPositionData;
   [ERideFlowEvents.DriverSetup]: ISetup;
-  [ERideFlowEvents.AccountState]: IState;
   [ERideFlowEvents.AmIRunning]: IAmIRunning;
   [ERideFlowEvents.CancelRide]: ICancelRide;
   [ERideFlowEvents.DelayedOfferResponse]: IDelayedOfferReponse;

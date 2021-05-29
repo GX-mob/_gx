@@ -1,9 +1,10 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
 export interface ICancelRide {
   ridePID: string;
-};
+}
 
-export const cancelRideSchema: SchemaObject<ICancelRide> = {
-  ridePID: "string",
-};
+export class CancelRideSchema extends Schema implements ICancelRide {
+  @type("string")
+  ridePID!: string;
+}

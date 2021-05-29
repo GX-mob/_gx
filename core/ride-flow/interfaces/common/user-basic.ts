@@ -1,4 +1,4 @@
-import { SchemaObject } from "../../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
 export enum EUserState {
   IDLE = 1,
@@ -39,25 +39,44 @@ export interface IUserBasic {
    * * Server only
    */
   socketId: string;
-};
-
-export interface ISendableUserData extends Pick<IUserBasic, "pid" | "p2p" | "rate"> {
-
 }
 
-export const userSendableDataSchema: SchemaObject<ISendableUserData> = {
-  p2p: "boolean",
-  pid: "bool",
-  rate: "int8"
-};
+export interface ISendableUserData
+  extends Pick<IUserBasic, "pid" | "p2p" | "rate"> {}
 
+export class UserSendableDataSchema
+  extends Schema
+  implements ISendableUserData
+{
+  @type("string")
+  pid!: string;
 
-export const userSchema: SchemaObject<IUserBasic> = {
-  ...userSendableDataSchema,
-  _id: "string",
-  pid: "string",
-  p2p: "bool",
-  rate: "string",
-  state: "string",
-  socketId: "string"
-};
+  @type("boolean")
+  p2p!: boolean;
+
+  @type("number")
+  rate!: number;
+}
+
+export class UserDataSchema
+  extends UserSendableDataSchema
+  implements IUserBasic
+{
+  @type("string")
+  _id!: string;
+
+  @type("string")
+  pid!: string;
+
+  @type("boolean")
+  p2p!: boolean;
+
+  @type("number")
+  rate!: number;
+
+  @type("string")
+  state!: EUserState;
+
+  @type("string")
+  socketId!: string;
+}

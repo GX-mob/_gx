@@ -1,13 +1,15 @@
-import { SchemaObject } from "../../types/schemapack";
-import { ILatLng } from "./common";
-import { positionSchema } from "./position";
+import { Schema, type } from "@colyseus/schema";
+import { ILatLng, LatLngSchema } from "./common";
 
 export interface IFinishRide {
   ridePID: string;
   latLng: ILatLng;
 }
 
-export const finishRideSchema: SchemaObject<IFinishRide> = {
-  ridePID: "string",
-  latLng: positionSchema.latLng,
-};
+export class FinishRideSchema extends Schema implements IFinishRide {
+  @type("string")
+  ridePID!: string;
+
+  @type(LatLngSchema)
+  latLng!: LatLngSchema;
+}

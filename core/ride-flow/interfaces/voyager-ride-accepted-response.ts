@@ -1,13 +1,21 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
 export interface IVoyagerRideAcceptedResponse {
   ridePID: string;
   driverPID: string;
   timestamp: number;
-};
+}
 
-export const voyagerRideAcceptedResponseSchema: SchemaObject<IVoyagerRideAcceptedResponse> = {
-  ridePID: "string",
-  driverPID: "string",
-  timestamp: "uint32",
-};
+export class VoyagerRideAcceptedResponseSchema
+  extends Schema
+  implements IVoyagerRideAcceptedResponse
+{
+  @type("string")
+  ridePID!: string;
+
+  @type("string")
+  driverPID!: string;
+
+  @type("number")
+  timestamp!: number;
+}

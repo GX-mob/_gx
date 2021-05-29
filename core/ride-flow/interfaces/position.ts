@@ -1,5 +1,5 @@
-import { SchemaObject } from "../../types/schemapack";
-import { latLngSchema, ILatLng } from "./common";
+import { Schema, type } from "@colyseus/schema";
+import { LatLngSchema, ILatLng } from "./common";
 
 /**
  * Position event schema
@@ -22,12 +22,21 @@ export interface IPositionData {
    */
   ignore: string[];
   pid: string;
-};
+}
 
-export const positionSchema: SchemaObject<IPositionData> = {
-  latLng: latLngSchema,
-  heading: "uint8",
-  kmh: "int16",
-  ignore: ["string"],
-  pid: "string",
-};
+export class PositionSchema extends Schema implements IPositionData {
+  @type(LatLngSchema)
+  latLng!: LatLngSchema;
+
+  @type("number")
+  heading!: number;
+
+  @type("number")
+  kmh!: number;
+
+  @type(["string"])
+  ignore!: string[];
+
+  @type("string")
+  pid!: string;
+}

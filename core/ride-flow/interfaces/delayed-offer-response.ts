@@ -1,5 +1,5 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema } from "@colyseus/schema";
 
 export interface IDelayedOfferReponse {}
 
-export const delayedOfferReponse: SchemaObject<IDelayedOfferReponse> = {};
+export class DelayedOfferReponse extends Schema {}

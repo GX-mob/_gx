@@ -1,5 +1,6 @@
+import { Schema, type } from "@colyseus/schema";
 import { SchemaObject } from "../../../types/schemapack";
-import { latLngSchema, ILatLng } from "./lat-lng";
+import { ILatLng, LatLngSchema } from "./lat-lng";
 
 export interface ILocation {
   /**
@@ -20,9 +21,16 @@ export interface ILocation {
   latLng: ILatLng;
 }
 
-export const locationSchema: SchemaObject<ILocation> = {
-  main: "string",
-  secondary: "string",
-  district: "string",
-  latLng: latLngSchema,
-};
+export class LocationSchema extends Schema implements ILocation {
+  @type("string")
+  main!: string;
+
+  @type("string")
+  secondary!: string;
+
+  @type("string")
+  district!: string;
+
+  @type("string")
+  latLng!: LatLngSchema;
+}

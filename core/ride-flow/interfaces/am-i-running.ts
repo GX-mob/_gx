@@ -1,4 +1,4 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema } from "@colyseus/schema";
 
-export interface IAmIRunning {};
-export const amIRunningSchema: SchemaObject<IAmIRunning> = {};
+export interface IAmIRunning {}
+export class AmIRunningSchema extends Schema implements IAmIRunning {}

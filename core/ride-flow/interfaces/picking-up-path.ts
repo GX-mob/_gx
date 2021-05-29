@@ -1,13 +1,18 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
-export type IGetOverHere = {
+export interface IGetOverHere {
   ridePID: string;
   path: string;
   duration: number;
-};
+}
 
-export const getOverHereSchema: SchemaObject<IGetOverHere> = {
-  ridePID: "string",
-  path: "string",
-  duration: "uint8",
-};
+export class GetOverHereSchema extends Schema implements IGetOverHere {
+  @type("string")
+  ridePID!: string;
+
+  @type("string")
+  path!: string;
+
+  @type("number")
+  duration!: number;
+}

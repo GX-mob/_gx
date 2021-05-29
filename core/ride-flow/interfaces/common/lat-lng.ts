@@ -1,11 +1,14 @@
-import { SchemaObject } from "../../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
 export interface ILatLng {
   lat: number;
   lng: number;
 }
 
-export const latLngSchema: SchemaObject<ILatLng> = {
-  lat: "float64",
-  lng: "float64",
-};
+export class LatLngSchema extends Schema implements ILatLng {
+  @type("number")
+  lat!: number;
+
+  @type("number")
+  lng!: number;
+}

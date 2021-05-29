@@ -1,4 +1,4 @@
-import { SchemaObject } from "../../types/schemapack";
+import { Schema, type } from "@colyseus/schema";
 
 export interface IOfferResponse {
   /**
@@ -6,9 +6,12 @@ export interface IOfferResponse {
    */
   ridePID: string;
   accepted: boolean;
-};
+}
 
-export const offerReponseSchema: SchemaObject<IOfferResponse> = {
-  ridePID: "string",
-  accepted: "bool",
-};
+export class OfferResponseSchema extends Schema implements IOfferResponse {
+  @type("string")
+  ridePID!: string;
+
+  @type("boolean")
+  accepted!: boolean;
+}

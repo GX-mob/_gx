@@ -1,8 +1,8 @@
-import { configurationSchema, IConfiguration } from "../configuration";
-import { IUserBasic, userSchema } from "./user-basic";
+import { ArraySchema, type } from "@colyseus/schema";
 import { EAccountRoles } from "../../../domain/account";
-import { SchemaObject } from "../../../types/schemapack";
-import { IObserver, observerSchema } from "./observer";
+import { ConfigurationSchema, IConfiguration } from "../configuration";
+import { IObserver, ObserverSchema } from "./observer";
+import { IUserBasic, UserDataSchema } from "./user-basic";
 
 export interface IConnectionData extends IUserBasic {
   mode: EAccountRoles;
@@ -17,10 +17,19 @@ export interface IConnectionData extends IUserBasic {
   rides: string[];
 }
 
-export const connectionDataSchema: SchemaObject<IConnectionData> = {
-  ...userSchema,
-  mode: "string",
-  observers: [observerSchema],
-  config: configurationSchema,
-  rides: ["string"],
-};
+export class ConnectionDataSchema
+  extends UserDataSchema
+  implements IConnectionData
+{
+  @type("string")
+  mode!: EAccountRoles;
+
+  @type([ObserverSchema])
+  observers!: ObserverSchema[];
+
+  @type(ConfigurationSchema)
+  config!: ConfigurationSchema;
+
+  @type(["string"])
+  rides!: string[];
+}
