@@ -1,4 +1,4 @@
-import { Schema, type } from "@colyseus/schema";
+import { ArraySchema, Schema, type } from "@colyseus/schema";
 import { LatLngSchema, ILatLng } from "./common";
 
 /**
@@ -35,7 +35,7 @@ export class PositionSchema extends Schema implements IPositionData {
   kmh!: number;
 
   @type(["string"])
-  ignore!: string[];
+  ignore = new ArraySchema<string>();
 
   @type("string")
   pid!: string;

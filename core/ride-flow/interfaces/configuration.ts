@@ -1,4 +1,4 @@
-import { Schema, type } from "@colyseus/schema";
+import { ArraySchema, Schema, type } from "@colyseus/schema";
 import { ERidePayMethods, ERideTypes } from "../../domain/ride";
 
 export interface IConfiguration {
@@ -27,11 +27,11 @@ export interface IConfiguration {
 
 export class ConfigurationSchema extends Schema implements IConfiguration {
   @type(["string"])
-  payMethods!: ERidePayMethods[];
+  payMethods = new ArraySchema<ERidePayMethods>();
 
   @type(["string"])
-  types!: ERideTypes[];
+  types = new ArraySchema<ERideTypes>();
 
   @type(["string"])
-  drops!: string[];
+  drops = new ArraySchema<string>();
 }

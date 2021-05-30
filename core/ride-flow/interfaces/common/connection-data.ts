@@ -1,4 +1,4 @@
-import { type } from "@colyseus/schema";
+import { ArraySchema, type } from "@colyseus/schema";
 import { EAccountRoles } from "../../../domain/account";
 import { ConfigurationSchema, IConfiguration } from "../configuration";
 import { IObserver, ObserverSchema } from "./observer";
@@ -31,5 +31,5 @@ export class ConnectionDataSchema
   config!: ConfigurationSchema;
 
   @type(["string"])
-  rides!: string[];
+  rides = new ArraySchema<string>();
 }
