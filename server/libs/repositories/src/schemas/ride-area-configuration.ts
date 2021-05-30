@@ -41,7 +41,7 @@ RideAreaConfigurationSchema.add({
       validator(v: any[]) {
         return Boolean(v.length);
       },
-      message(props) {
+      message(props: { value: string }) {
         return `${props.value} must have last one value.`;
       },
     },
@@ -54,6 +54,8 @@ RideAreaConfigurationSchema.add({
   offerConfig: { type: OfferConfigSchema, required: true },
 });
 
-export const RideAreaConfigurationModel = Configuration.model<
-  RideAreaConfigurationDocument
->("RideAreaConfiruation", RideAreaConfigurationSchema);
+export const RideAreaConfigurationModel =
+  Configuration.model<RideAreaConfigurationDocument>(
+    "RideAreaConfiruation",
+    RideAreaConfigurationSchema,
+  );

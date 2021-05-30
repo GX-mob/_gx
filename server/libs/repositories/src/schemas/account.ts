@@ -21,14 +21,14 @@ import { IAccount, EAccountRoles, EAccountMode, EAvailableCountries } from "@cor
 import { VerificationModel } from "./verification";
 import { EDatabaseCollectionsNames } from "../constants";
 
-export interface AccountDocument extends IAccount, Document {}
+export interface AccountDocument extends Omit<IAccount, "_id">, Document {}
 
 const RolesSchema: Schema = new Schema({
   type: [String],
   enum: Object.values(EAccountRoles)
 })
 
-export const AccountSchema: Schema = new Schema<IAccount>(
+export const AccountSchema: Schema = new Schema(
   {
     pid: { type: String, required: true, unique: true },
     mode: { type: String, enum: Object.values(EAccountMode), default: EAccountMode.ParentAccount },

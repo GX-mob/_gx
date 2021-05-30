@@ -1,13 +1,11 @@
-import mongoose, {
-  DocumentQuery,
-  Document,
-  CreateQuery,
-  FilterQuery,
-  UpdateQuery,
-  EnforceDocument,
-} from "mongoose";
 import { CacheService } from "@app/cache";
 import { util } from "@app/helpers";
+import mongoose, {
+  CreateQuery,
+  Document,
+  FilterQuery,
+  UpdateQuery,
+} from "mongoose";
 
 export interface Settings<Model> {
   namespace: string;
@@ -26,14 +24,14 @@ export interface ConfigurationInterface<Model> {
  */
 export class RepositoryFactory<
   Model,
-  ModelDocument extends Model & Document,
+  ModelDocument extends Document,
   Insert,
   Query,
-  Update
+  Update,
 > {
   constructor(
     private cache: CacheService,
-    public model: mongoose.Model<ModelDocument>,
+    public mongooseModel: mongoose.Model<ModelDocument>,
     private settings: Settings<Model>,
   ) {}
 
@@ -50,31 +48,37 @@ export class RepositoryFactory<
     }
 
     // const data = await this.persistenceLayer.makeQuery(query);
-    const data = await this.makeQuery(query);
+    const data = await this.makeFindOneQuery(query);
     if (!data) {
       return null;
     }
 
     this.setCache(data);
 
-    return (data as unknown) as Model;
+    return data as unknown as Model;
   }
 
   /**
    * Execute autopopulate on query
    * @param query
    */
-  private async makeQuery(query: Query) {
-    return this.populateObject(
-      this.model.findOne(query),
+  private async makeFindOneQuery(query: Query) {
+    const obj = this.mongooseModel.findOne(
+      query as mongoose.FilterQuery<ModelDocument>,
     );
+    return this.populateObject(obj);
   }
 
   /**
    * Do auto populate on configured fields
    * @param query
    */
-  private populateObject(query: FilterQuery<ModelDocument>) {
+  private populateObject(
+    query: mongoose.Query<
+      mongoose.EnforceDocument<ModelDocument, {}> | null,
+      mongoose.EnforceDocument<ModelDocument, {}>
+    >,
+  ) {
     this.settings.autoPopulate?.forEach((prop) => {
       query.populate(prop as string);
     });
@@ -98,15 +102,36 @@ export class RepositoryFactory<
     util.handleRejectionByUnderHood(promise);
   }
 
+  async cacheObject(_id: string) {
+    const fromPersistent = await this.makeFindOneQuery({
+      _id,
+    } as unknown as Query);
+
+    if (!fromPersistent) {
+      // TODO: should throw or warn log
+      return;
+    }
+
+    if (this.settings.autoPopulate) {
+      for (const prop of this.settings.autoPopulate) {
+        fromPersistent?.populate(prop as string);
+      }
+
+      await fromPersistent?.execPopulate();
+    }
+
+    this.setCache(fromPersistent.toJSON());
+  }
+
   /**
    * Updates a record in persistent storage and cache
    * @param query
    * @param data
    */
   async updateByQuery(query: Query, data: Update) {
-    await this.model.updateOne(
+    await this.mongooseModel.updateOne(
       query as FilterQuery<ModelDocument>,
-      (data as unknown) as UpdateQuery<ModelDocument>,
+      data as unknown as UpdateQuery<ModelDocument>,
     );
     this.updateCache(query);
   }
@@ -118,25 +143,16 @@ export class RepositoryFactory<
    * @default true
    * @returns Lean document
    */
-  public async insert(
-    data: Insert,
-    options = { cache: true },
-  ): Promise<Model> {
-    let modelResult = await this.model.create(
+  public async insert(data: Insert, options = { cache: true }): Promise<Model> {
+    const modelResultInsertQuery = await this.mongooseModel.create(
       data as CreateQuery<ModelDocument>,
     );
 
-    if (this.settings.autoPopulate) {
-      modelResult = await (this.populateObject(
-        modelResult,
-      ) as ModelDocument).execPopulate();
-    }
-
     if (options.cache) {
-      this.setCache(modelResult);
+      this.setCache(modelResultInsertQuery);
     }
 
-    return modelResult;
+    return modelResultInsertQuery.toJSON<Model>();
   }
 
   /**
@@ -144,7 +160,7 @@ export class RepositoryFactory<
    * @param query
    */
   async updateCache(query: Query) {
-    const data = await this.makeQuery(query);
+    const data = await this.makeFindOneQuery(query);
 
     if (!data) return;
 
@@ -158,7 +174,7 @@ export class RepositoryFactory<
    * @returns {Promise<void>}
    */
   async remove(query: any): Promise<void> {
-    await this.model.deleteOne(query);
+    await this.mongooseModel.deleteOne(query);
     await this.cache.del(this.settings.namespace, query);
   }
 

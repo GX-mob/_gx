@@ -23,7 +23,7 @@ import {
   IOfferServer,
   IOfferRequest,
   IConfiguration,
-} from "@core/interfaces/events";
+} from "@core/ride-flow/events";
 import { CacheNamespaces, CacheTTL, GatewayNamespaces } from "./constants";
 import {
   EServerNodesEvents,
@@ -73,15 +73,21 @@ export class StateService {
       this.positionEvent(socketId, data);
     });
 
-    this.socketService.on(ERideFlowEvents.Configuration, ({ socketId, data }) => {
-      this.setConfigurationEvent(socketId, data);
-    });
+    this.socketService.on(
+      ERideFlowEvents.Configuration,
+      ({ socketId, data }) => {
+        this.setConfigurationEvent(socketId, data);
+      },
+    );
 
-    this.socketService.on(ERideFlowEvents.OfferResponse, ({ socketId, data }) => {
-      this.offerResponseEvent(socketId, data).catch((err) => {
-        this.logger.error(err);
-      });
-    });
+    this.socketService.on(
+      ERideFlowEvents.OfferResponse,
+      ({ socketId, data }) => {
+        this.offerResponseEvent(socketId, data).catch((err) => {
+          this.logger.error(err);
+        });
+      },
+    );
 
     /**
      * Internal nodes events
@@ -99,9 +105,8 @@ export class StateService {
       ({ socketId, namespace, data }, ack) => {
         ack(true);
 
-        const client = this.socketService.server.of(namespace).sockets[
-          socketId
-        ];
+        const client =
+          this.socketService.server.of(namespace).sockets[socketId];
         if (!client) return;
 
         client.data = { ...client.data, ...data };
@@ -153,16 +158,15 @@ export class StateService {
         const filtredReplies = replies.filter(
           (replie) => replie,
         ) as TellMeYourDriversState[];
-        const responsesMerge = filtredReplies.reduce<Record<string, IDriverData>>(
-          (currentValue, { drivers }) => {
-            drivers.forEach((driver) => {
-              currentValue[driver.pid] = driver;
-            });
+        const responsesMerge = filtredReplies.reduce<
+          Record<string, IDriverData>
+        >((currentValue, { drivers }) => {
+          drivers.forEach((driver) => {
+            currentValue[driver.pid] = driver;
+          });
 
-            return currentValue;
-          },
-          {},
-        );
+          return currentValue;
+        }, {});
 
         this.drivers = new Map([
           ...this.drivers,
@@ -335,10 +339,14 @@ export class StateService {
     const timestamp = Math.round(acceptTimestamp / 1000);
 
     // Emit to driver
-    this.socketService.emit(socketId, ERideFlowEvents.DriverRideAcceptedResponse, {
-      ridePID: offer.ridePID,
-      timestamp,
-    });
+    this.socketService.emit(
+      socketId,
+      ERideFlowEvents.DriverRideAcceptedResponse,
+      {
+        ridePID: offer.ridePID,
+        timestamp,
+      },
+    );
 
     // Emit to voyager
     this.socketService.emit(
@@ -423,14 +431,9 @@ export class StateService {
 
     this.offers.set(offer.ridePID, offerObject);
 
-    await this.cacheService.set(
-      CacheNamespaces.OFFERS,
-      ride.pid,
-      offerObject,
-      {
-        ex: CacheTTL.OFFERS,
-      },
-    );
+    await this.cacheService.set(CacheNamespaces.OFFERS, ride.pid, offerObject, {
+      ex: CacheTTL.OFFERS,
+    });
 
     startOffer && this.offerRide(offerObject, ride);
 
@@ -475,7 +478,11 @@ export class StateService {
     /**
      * Inform the user that we have a compatible driver and we awaiting the driver response
      */
-    this.socketService.emit(offer.requesterSocketId, ERideFlowEvents.OfferSent, driver);
+    this.socketService.emit(
+      offer.requesterSocketId,
+      ERideFlowEvents.OfferSent,
+      { userData: driver },
+    );
 
     /**
      * Defines a timeout to driver response

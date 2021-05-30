@@ -1,5 +1,5 @@
 import { Schema, type } from "@colyseus/schema";
-import { ILatLng, LatLngSchema } from "ride-flow";
+import { ILatLng, LatLngSchema } from "./common/lat-lng";
 
 export interface IStartRide {
   ridePID: string;

@@ -31,9 +31,9 @@ export class RidesService {
     /**
      * Get and store all area and subArea configuration for all rides types and prices in memory
      */
-    const rideAreas = await this.rideAreaConfigurationRepository.model
+    const rideAreas = await this.rideAreaConfigurationRepository.mongooseModel
       .find()
-      .lean<IRideAreaConfiguration>();
+      .lean<IRideAreaConfiguration[]>();
 
     this.rideAreas = new RideAreas(rideAreas);
   }

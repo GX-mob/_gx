@@ -1,4 +1,4 @@
-import { ArraySchema, type } from "@colyseus/schema";
+import { type } from "@colyseus/schema";
 import { EAccountRoles } from "../../../domain/account";
 import { ConfigurationSchema, IConfiguration } from "../configuration";
 import { IObserver, ObserverSchema } from "./observer";

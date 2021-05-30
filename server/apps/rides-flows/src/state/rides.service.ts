@@ -109,7 +109,7 @@ export class RidesService {
     this.socketService.emit(
       offer.requesterSocketId,
       ERideFlowEvents.OfferSent,
-      driver,
+      { userData: driver },
     );
 
     // TODO: ?maybe delegate to user the responsability of re-start an offer

@@ -21,7 +21,7 @@ import { ISession } from "@core/domain/session";
 import { AccountModel } from "./account";
 import { EDatabaseCollectionsNames } from "../constants";
 
-export interface SessionDocument extends ISession, Document {}
+export interface SessionDocument extends Omit<ISession, "_id">, Document {}
 
 export const SessionSchema: Schema = new Schema(
   {

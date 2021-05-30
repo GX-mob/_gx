@@ -27,7 +27,7 @@ import {
 import { AccountModel } from "./account";
 import { EDatabaseCollectionsNames } from "../constants";
 
-export interface RideDocument extends IRide, Document {}
+export interface RideDocument extends Omit<IRide, "_id">, Document {}
 
 export const RoutePoint = new Schema({
   coord: { type: [Number], required: true },

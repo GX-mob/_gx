@@ -5,7 +5,7 @@ import { EDatabaseCollectionsNames } from "../constants";
 import { AccountModel } from "./account";
 import { VehicleMetadataModel } from "./vehicle-metadata";
 
-export interface VehicleDocument extends IVehicle, Document {}
+export interface VehicleDocument extends Omit<IVehicle, "_id">, Document {}
 
 export const VehicleSchema = new Schema(
   {
@@ -23,7 +23,7 @@ export const VehicleSchema = new Schema(
       of: Schema.Types.ObjectId,
       ref: AccountModel,
     },
-    verificationId: String
+    verificationId: String,
   },
   { collection: EDatabaseCollectionsNames.Vehicles },
 );
