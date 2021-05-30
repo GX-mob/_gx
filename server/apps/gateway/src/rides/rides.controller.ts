@@ -1,5 +1,6 @@
 import { AuthGuard, DAccount, Driver } from "@app/auth";
 import { Account, EAccountRoles } from "@core/domain/account";
+import { RideRoute } from "@core/routes";
 import {
   Body,
   ClassSerializerInterceptor,
@@ -20,12 +21,21 @@ import {
 } from "./rides.dto";
 import { RidesService } from "./rides.service";
 
-@Controller("rides/")
+const basePath = RideRoute.basePath;
+const findPath = RideRoute.route("find", {
+  endpointOnly: true
+});
+
+const priceStatusPath = RideRoute.route("prices-status", {
+  endpointOnly: true
+});
+
+@Controller(basePath)
 @UseGuards(AuthGuard)
 export class RidesController {
   constructor(readonly rideService: RidesService) {}
 
-  @Get("prices-status/:area/:subArea?")
+  @Get(priceStatusPath)
   getPricesStatusHandler(@Param() { area, subArea }: GetRidesPricesDto) {
     return this.rideService.getPricesOfRidesType(area, subArea);
   }
@@ -36,8 +46,8 @@ export class RidesController {
     excludePrefixes: ["_"],
     groups: [EAccountRoles.Driver],
   })
-  @Get(":pid")
-  async getRideDataHandler(
+  @Get(findPath)
+  async find(
     @DAccount() account: Account,
     @Param() { pid }: GetRideInfoDto,
   ) {
